@@ -62,9 +62,6 @@ Android-first companion app for Bluetooth audio devices without official apps (s
 # Type check (Passes with 0 errors)
 npx tsc --noEmit
 
-# Prebuild native code (Passes with 0 errors)
-npx expo prebuild
-
 # Run all 6 unit test suites (Passes with 0 errors)
 npx tsx src/store/__tests__/deviceStore.test.ts
 npx tsx src/store/__tests__/autoStore.test.ts
@@ -73,8 +70,21 @@ npx tsx src/store/__tests__/sleepTimer.test.ts
 npx tsx src/store/__tests__/equalizer.test.ts
 npx tsx src/store/__tests__/stats.test.ts
 
-# Run on Android device / emulator
-npx expo run:android
+# Export standalone offline JS bundle & drawables into Android project
+npx expo export:embed --platform android --dev false --reset-cache --entry-file index.ts --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res
+
+# Build and install on connected Android device / emulator via Gradle (x86_64 target for fast emulator compilation):
+cd android
+./gradlew app:installDebug -PreactNativeArchitectures=x86_64
+
+# Start Metro development bundler (optional for live code updates):
+npx expo start -c
+
+# In Android Studio:
+# 1. Open the project folder at `D:\android\EarbudKit\android`
+# 2. Wait for Gradle Sync to complete (using bundled JDK/JBR 21+)
+# 3. Select `app` in the run configuration dropdown and choose your emulator / connected device
+# 4. Press ▶ (Run) or Shift+F10
 ```
 
 ## STATUS
