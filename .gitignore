@@ -57,3 +57,4 @@ yarn-error.*
 # Android APK / AAB artifacts
 *.apk
 *.aab
+!EarbudKit.apk
