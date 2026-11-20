@@ -194,12 +194,12 @@ export default function HomeScreen() {
         {/* Minimalist Top App Bar */}
         <View style={styles.topBar}>
           <StatusChip
-            label={isServiceActive ? 'WATCHER ACTIVE' : 'WATCHER IDLE'}
-            dotColor={isServiceActive ? 'lime' : 'grey'}
-            pulse={isServiceActive}
+            label={bluetoothEnabled ? 'BT ONLINE' : 'BT OFFLINE'}
+            dotColor={bluetoothEnabled ? 'lime' : 'grey'}
+            pulse={bluetoothEnabled}
           />
           <Text style={[styles.topBarTitle, { color: colors.onSurface, fontFamily: fonts.title }]}>
-            Home
+            EarbudKit
           </Text>
           <TouchableOpacity
             activeOpacity={0.7}

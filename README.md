@@ -57,11 +57,18 @@ An Android-first companion app for Bluetooth audio devices that have **NO offici
    - Dedicated `Stats` screen with lifetime and daily usage breakdown, session counts, and live active session timer.
    - Native Android **Quick Settings Tile** (`EarbudQuickTileService`) in notification shade for 1-tap app launch and live monitoring.
 
-9. **Material 3 Design & Polish (Stage 11)**
-   - Material 3 theme palette with dark and light modes.
-   - Contextual permission request banners (Bluetooth, Location, Notifications, DND) with explanations.
-   - Clean empty states across all screens with 1-tap preset buttons.
-   - Explicit iOS fallback stating "Not supported on iOS" for Android-specific Bluetooth APIs.
+9. **Sonic Neo-Glass Design System & UI Architecture (Stages D1–D7)**
+   - Complete visual reskin inspired by cybernetic glassmorphism and bento ergonomics.
+   - **Color Palette**: Void base (`#0B0B10`), Electric Violet (`#7C5CFF`), Cyber Hot Pink (`#FF4FD8`), and Neon Lime (`#C6FF3D`) in Dark mode; matched with high-contrast, clean frosted surfaces (`#FCF8FF`, `#5E39E0`, `#AF0093`, `#006947`) in Light mode.
+   - **Typography**: Space Grotesk for bold headlines, numerical telemetry readouts, and badge chips; Inter for clear body text. Native offline TTF font bundling in Android assets.
+   - **Component Suite (`src/components/ui/`)**:
+     - `GlassCard`: 24px Bento radius, translucent surface fills, 1px subtle borders, and optional active target violet glow.
+     - `FloatingPillNav`: Elevated floating bottom navigation dock across 5 core tabs (Home, Devices, Auto, Tools, Settings) with active violet highlight and hot pink indicator.
+     - `PillButton`: 48px touch targets, full 9999px pill morphology, with primary violet, secondary glass, ghost lime, and danger red variants.
+     - `Toggle`: Chunky tactile 50×28 switch with animated sliding thumb, flooding with Lime Neon when active.
+     - `NeonSlider`: 4px gradient track (violet to hot pink) with tactile - / + stepping buttons.
+     - `BatteryRing`: SVG telemetry arc with dynamic color shifting (Lime > 20%, Error <= 20%) and friendly "Unavailable" fallback state.
+     - `StatusChip`: Micro-chips with pulsing live activity dots.
 
 ---
 
