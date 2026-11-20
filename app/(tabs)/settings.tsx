@@ -89,6 +89,29 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* D1 Design Showcase */}
+      <View style={[styles.section, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Design System (D1)</Text>
+        <Text style={[styles.bodyText, { color: colors.onSurfaceVariant, marginBottom: 12 }]}>
+          Explore the Sonic Neo-Glass design system showcase (GlassCard, PillButton, StatusChip, Toggle, NeonSlider, BatteryRing, FloatingPillNav).
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.statsNavButton,
+            {
+              backgroundColor: colors.electricViolet,
+              borderRadius: borderRadius.md,
+            },
+          ]}
+          onPress={() => router.push('/showcase')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.statsNavText, { color: '#FFFFFF' }]}>
+            ✨ Open Sonic Neo-Glass Showcase
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Quick Settings Tile */}
       <View style={[styles.section, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
         <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Quick Settings Tile</Text>

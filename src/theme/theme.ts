@@ -1,41 +1,66 @@
 /**
- * EarbudKit Material 3 inspired theme system
- * Supports light and dark modes
+ * EarbudKit "Sonic Neo-Glass" Design System Theme
+ * Fuses Glassmorphism, Neo-Brutalism data density, and Techno-Minimalism.
+ * Deep void backgrounds, luminous glass surfaces, electric violet, hot pink, and lime neon.
  */
 
 export interface ThemeColors {
   // Surfaces
   background: string;
   surface: string;
-  surfaceVariant: string;
+  surfaceDim: string;
+  surfaceBright: string;
+  surfaceContainerLowest: string;
+  surfaceContainerLow: string;
   surfaceContainer: string;
   surfaceContainerHigh: string;
+  surfaceContainerHighest: string;
+  surfaceVariant: string;
 
   // Content
   onBackground: string;
   onSurface: string;
   onSurfaceVariant: string;
 
-  // Primary
+  // Primary (Electric Violet family)
   primary: string;
   onPrimary: string;
   primaryContainer: string;
   onPrimaryContainer: string;
+  inversePrimary: string;
 
-  // Secondary
+  // Secondary (Hot Pink family)
   secondary: string;
   onSecondary: string;
   secondaryContainer: string;
   onSecondaryContainer: string;
 
-  // Tertiary
+  // Tertiary (Lime Neon family)
   tertiary: string;
   onTertiary: string;
+  tertiaryContainer: string;
+  onTertiaryContainer: string;
+  tertiaryFixed: string;
+  tertiaryFixedDim: string;
+
+  // Sonic Neo-Glass Core Accents
+  electricViolet: string;
+  hotPink: string;
+  limeNeon: string;
+  voidBlack: string;
+
+  // Glassmorphic tokens
+  glassFill: string;
+  glassBorder: string;
+  glassActiveFill: string;
+  glassActiveBorder: string;
+  glassGlow: string;
 
   // Error
   error: string;
   onError: string;
   errorContainer: string;
+  onErrorContainer: string;
 
   // Outline
   outline: string;
@@ -52,9 +77,20 @@ export interface ThemeColors {
   inverseOnSurface: string;
 }
 
+export interface ThemeFonts {
+  display: string;
+  headline: string;
+  title: string;
+  label: string;
+  body: string;
+  bodyMedium: string;
+  bodyBold: string;
+}
+
 export interface Theme {
   dark: boolean;
   colors: ThemeColors;
+  fonts: ThemeFonts;
   spacing: {
     xs: number;
     sm: number;
@@ -62,6 +98,7 @@ export interface Theme {
     lg: number;
     xl: number;
     xxl: number;
+    gutter: number;
   };
   borderRadius: {
     sm: number;
@@ -93,117 +130,192 @@ const spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  gutter: 16,
 };
 
 const borderRadius = {
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 28,
-  full: 9999,
+  md: 16,
+  lg: 20,
+  xl: 24,    // Standard Bento panel radius (DESIGN.md)
+  full: 9999, // Pill morphology (DESIGN.md)
 };
 
 const typography = {
-  displayLarge: 57,
-  displayMedium: 45,
+  displayLarge: 48,
+  displayMedium: 36,
   headlineLarge: 32,
-  headlineMedium: 28,
-  titleLarge: 22,
-  titleMedium: 16,
+  headlineMedium: 24,
+  titleLarge: 20,
+  titleMedium: 18,
   bodyLarge: 16,
   bodyMedium: 14,
   bodySmall: 12,
   labelLarge: 14,
   labelMedium: 12,
-  labelSmall: 11,
+  labelSmall: 10,
 };
 
-export const LightTheme: Theme = {
-  dark: false,
+export const fonts: ThemeFonts = {
+  display: 'SpaceGrotesk_700Bold',
+  headline: 'SpaceGrotesk_600SemiBold',
+  title: 'SpaceGrotesk_600SemiBold',
+  label: 'SpaceGrotesk_600SemiBold',
+  body: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodyBold: 'Inter_600SemiBold',
+};
+
+export const DarkTheme: Theme = {
+  dark: true,
+  fonts,
   colors: {
-    background: '#F8F9FF',
-    surface: '#FFFFFF',
-    surfaceVariant: '#E1E2EC',
-    surfaceContainer: '#F0F0FA',
-    surfaceContainerHigh: '#E9E9F3',
+    background: '#0B0B10', // Base Void (DESIGN.md)
+    surface: '#131318',
+    surfaceDim: '#131318',
+    surfaceBright: '#39383E',
+    surfaceContainerLowest: '#0E0E13',
+    surfaceContainerLow: '#1B1B20',
+    surfaceContainer: '#1F1F24',
+    surfaceContainerHigh: '#2A292F',
+    surfaceContainerHighest: '#35343A',
+    surfaceVariant: '#2A292F',
 
-    onBackground: '#1A1C1E',
-    onSurface: '#1A1C1E',
-    onSurfaceVariant: '#44474F',
+    onBackground: '#E4E1E9',
+    onSurface: '#E4E1E9',
+    onSurfaceVariant: '#C9C4D8',
 
-    primary: '#3F5AA9',
+    // Electric Violet family
+    primary: '#7C5CFF',
     onPrimary: '#FFFFFF',
-    primaryContainer: '#D9E2FF',
-    onPrimaryContainer: '#001945',
+    primaryContainer: '#947DFF',
+    onPrimaryContainer: '#1C0062',
+    inversePrimary: '#603CE2',
 
-    secondary: '#585E71',
+    // Hot Pink family
+    secondary: '#FF4FD8',
     onSecondary: '#FFFFFF',
-    secondaryContainer: '#DCE2F9',
-    onSecondaryContainer: '#151B2C',
+    secondaryContainer: '#C000A2',
+    onSecondaryContainer: '#FFE0F0',
 
-    tertiary: '#745470',
-    onTertiary: '#FFFFFF',
+    // Lime Neon family
+    tertiary: '#C6FF3D',
+    onTertiary: '#1A2E00',
+    tertiaryContainer: '#759E00',
+    onTertiaryContainer: '#202E00',
+    tertiaryFixed: '#BDF532',
+    tertiaryFixedDim: '#A2D801',
 
-    error: '#BA1A1A',
-    onError: '#FFFFFF',
-    errorContainer: '#FFDAD6',
+    // Accents
+    electricViolet: '#7C5CFF',
+    hotPink: '#FF4FD8',
+    limeNeon: '#C6FF3D',
+    voidBlack: '#0B0B10',
 
-    outline: '#757780',
-    outlineVariant: '#C5C6D0',
+    // Glassmorphic tokens
+    glassFill: 'rgba(255, 255, 255, 0.04)',
+    glassBorder: 'rgba(255, 255, 255, 0.10)',
+    glassActiveFill: 'rgba(124, 92, 255, 0.10)',
+    glassActiveBorder: 'rgba(124, 92, 255, 0.45)',
+    glassGlow: 'rgba(124, 92, 255, 0.25)',
 
-    success: '#386A20',
-    warning: '#7D5800',
+    // Error
+    error: '#FFB4AB',
+    onError: '#690005',
+    errorContainer: '#93000A',
+    onErrorContainer: '#FFDAD6',
 
+    // Outline
+    outline: '#938EA1',
+    outlineVariant: '#484555',
+
+    // Status
+    success: '#C6FF3D',
+    warning: '#FABD00',
+
+    // Misc
     shadow: '#000000',
     scrim: '#000000',
-    inverseSurface: '#2F3033',
-    inverseOnSurface: '#F1F0F4',
+    inverseSurface: '#E4E1E9',
+    inverseOnSurface: '#303036',
   },
   spacing,
   borderRadius,
   typography,
 };
 
-export const DarkTheme: Theme = {
-  dark: true,
+export const LightTheme: Theme = {
+  dark: false,
+  fonts,
   colors: {
-    background: '#121316',
-    surface: '#1A1C1E',
-    surfaceVariant: '#44474F',
-    surfaceContainer: '#1E2022',
-    surfaceContainerHigh: '#292A2D',
+    background: '#FCF8FF',
+    surface: '#FCF8FF',
+    surfaceDim: '#DBD8E6',
+    surfaceBright: '#FCF8FF',
+    surfaceContainerLowest: '#FFFFFF',
+    surfaceContainerLow: '#F5F2FF',
+    surfaceContainer: '#EFECFA',
+    surfaceContainerHigh: '#E9E6F4',
+    surfaceContainerHighest: '#E4E1EE',
+    surfaceVariant: '#E4E1EE',
 
-    onBackground: '#E3E2E6',
-    onSurface: '#E3E2E6',
-    onSurfaceVariant: '#C5C6D0',
+    onBackground: '#1B1B24',
+    onSurface: '#1B1B24',
+    onSurfaceVariant: '#484555',
 
-    primary: '#B0C6FF',
-    onPrimary: '#08286E',
-    primaryContainer: '#263F8F',
-    onPrimaryContainer: '#D9E2FF',
+    // Violet family
+    primary: '#5E39E0',
+    onPrimary: '#FFFFFF',
+    primaryContainer: '#7757FA',
+    onPrimaryContainer: '#FFFBFF',
+    inversePrimary: '#CABEFF',
 
-    secondary: '#C0C6DC',
-    onSecondary: '#2A3042',
-    secondaryContainer: '#404659',
-    onSecondaryContainer: '#DCE2F9',
+    // Hot pink family
+    secondary: '#AF0093',
+    onSecondary: '#FFFFFF',
+    secondaryContainer: '#FE4ED7',
+    onSecondaryContainer: '#5F004F',
 
-    tertiary: '#E2BBDB',
-    onTertiary: '#422740',
+    // Lime/Emerald family
+    tertiary: '#006947',
+    onTertiary: '#FFFFFF',
+    tertiaryContainer: '#00855B',
+    onTertiaryContainer: '#F5FFF6',
+    tertiaryFixed: '#6FFBBE',
+    tertiaryFixedDim: '#4EDEA3',
 
-    error: '#FFB4AB',
-    onError: '#690005',
-    errorContainer: '#93000A',
+    // Accents
+    electricViolet: '#5E39E0',
+    hotPink: '#AF0093',
+    limeNeon: '#00855B',
+    voidBlack: '#FCF8FF',
 
-    outline: '#8F909A',
-    outlineVariant: '#44474F',
+    // Glassmorphic tokens
+    glassFill: 'rgba(255, 255, 255, 0.85)',
+    glassBorder: 'rgba(94, 57, 224, 0.12)',
+    glassActiveFill: 'rgba(94, 57, 224, 0.08)',
+    glassActiveBorder: 'rgba(94, 57, 224, 0.35)',
+    glassGlow: 'rgba(94, 57, 224, 0.15)',
 
-    success: '#9CD67D',
-    warning: '#FABD00',
+    // Error
+    error: '#BA1A1A',
+    onError: '#FFFFFF',
+    errorContainer: '#FFDAD6',
+    onErrorContainer: '#93000A',
 
-    shadow: '#000000',
+    // Outline
+    outline: '#797587',
+    outlineVariant: '#C9C4D8',
+
+    // Status
+    success: '#006947',
+    warning: '#7D5800',
+
+    // Misc
+    shadow: '#1B1B24',
     scrim: '#000000',
-    inverseSurface: '#E3E2E6',
-    inverseOnSurface: '#2F3033',
+    inverseSurface: '#302F39',
+    inverseOnSurface: '#F2EFFD',
   },
   spacing,
   borderRadius,

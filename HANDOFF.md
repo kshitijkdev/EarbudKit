@@ -88,7 +88,7 @@ npx expo start -c
 ```
 
 ## STATUS
-All 11 Stages Complete!
+All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
 - [x] Stage 1: Project setup
 - [x] Stage 2: Native module core (Kotlin)
 - [x] Stage 3: Multi-device store and Devices screen
@@ -100,3 +100,28 @@ All 11 Stages Complete!
 - [x] Stage 9: Equalizer (best effort)
 - [x] Stage 10: Extras and codec
 - [x] Stage 11: Polish & verification
+
+## Design Reskin (Sonic Neo-Glass) Checklist
+- [x] Stage D1: Design system foundation (theme tokens, fonts, reusable UI components: GlassCard, PillButton, StatusChip, Toggle, NeonSlider, BatteryRing, SectionHeader, FloatingPillNav)
+- [ ] Stage D2: Navigation shell and Home
+- [ ] Stage D3: Devices
+- [ ] Stage D4: Auto-actions
+- [ ] Stage D5: Tools
+- [ ] Stage D6: Settings and Stats
+- [ ] Stage D7: Light theme, polish, verify
+
+## Design Reskin Decisions & File Map (D1)
+- `src/theme/theme.ts`: Fully updated with Sonic Neo-Glass tokens for dark mode (Base Void `#0B0B10`, Electric Violet `#7C5CFF`, Hot Pink `#FF4FD8`, Lime Neon `#C6FF3D`, glass opacities) and light mode (`#FCF8FF`, `#5E39E0`, `#AF0093`, `#006947`). Space Grotesk / Inter typography scale and 24px bento / 9999px pill radii.
+- `android/app/src/main/assets/fonts/`: Stored native offline font assets for Space Grotesk and Inter for zero-latency standalone offline rendering.
+- `src/components/ui/`:
+  - `GlassCard.tsx`: Glassmorphic container with 24px radius, 1px border, translucent fill, and optional electric violet glow.
+  - `PillButton.tsx`: Full pill morphology (9999px radius) with 48px touch targets, 4 variants (primary violet, secondary glass, ghost lime, danger red).
+  - `StatusChip.tsx`: Compact metadata chip with pulsing colored micro-dot.
+  - `Toggle.tsx`: Chunky 50×28 pill with animated sliding circular thumb, floods with Lime Neon when ON.
+  - `NeonSlider.tsx`: 4px track, violet-to-pink gradient fill, white thumb with lime rim, and direct stepper buttons.
+  - `BatteryRing.tsx`: SVG ring with percentage readout, Lime (>20%) / Error (<=20%), friendly "Unavailable" fallback state.
+  - `SectionHeader.tsx`: Space Grotesk headline, Inter body, and action button support.
+  - `FloatingPillNav.tsx`: Elevated dock with 5 tabs, active violet glow and hot pink micro-dot.
+- `app/showcase.tsx`: Modal screen demonstrating all 8 components in both Light and Dark themes.
+
+## NEXT STEP: Stage D2, first action is replacing the tab bar in `app/(tabs)/_layout.tsx` with `FloatingPillNav` and rebuilding Home screen (`app/(tabs)/index.tsx`) to match the Sonic Neo-Glass mockup using real telemetry and device data.
