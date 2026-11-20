@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,30 +7,83 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/theme';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme, StudioAccentKey } from '../../src/theme';
 import { FeedbackToast } from '../../src/components/FeedbackToast';
-import {
-  GlassCard,
-  PillButton,
-  StatusChip,
-} from '../../src/components/ui';
+import { GlassCard, PillButton, StatusChip } from '../../src/components/ui';
+import { useDeviceStore } from '../../src/store/deviceStore';
+import { useStatsStore } from '../../src/store/statsStore';
+
+const POLLING_STORAGE_KEY = '@earbudkit/polling-interval';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { theme, themeMode, setThemeMode } = useTheme();
+  const { theme, themeMode, setThemeMode, accentColor, setAccentColor, accents } = useTheme();
   const { colors, fonts, borderRadius } = theme;
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => setToastMessage(msg);
 
-  const themeOptions: Array<{ label: string; value: 'system' | 'light' | 'dark'; icon: string }> = [
-    { label: 'Auto', value: 'system', icon: '🌐' },
-    { label: 'Light', value: 'light', icon: '☀️' },
-    { label: 'Dark', value: 'dark', icon: '🌙' },
+  // Polling interval state
+  const [pollingInterval, setPollingInterval] = useState<'15s' | '5s' | '1s'>('5s');
+
+  useEffect(() => {
+    AsyncStorage.getItem(POLLING_STORAGE_KEY).then((val) => {
+      if (val === '15s' || val === '5s' || val === '1s') {
+        setPollingInterval(val);
+      }
+    });
+  }, []);
+
+  const handleSelectPolling = (val: '15s' | '5s' | '1s') => {
+    setPollingInterval(val);
+    AsyncStorage.setItem(POLLING_STORAGE_KEY, val).catch(() => {});
+    showToast(`Polling interval set to ${val === '15s' ? 'Relaxed (15s)' : val === '5s' ? 'Balanced (5s)' : 'Instant (1s)'}`);
+  };
+
+  const handleOpenTileGuide = () => {
+    Alert.alert(
+      'Install Quick Settings Tile',
+      '1. Swipe down from the top of your screen twice to reveal all Quick Settings tiles.\n\n2. Tap the pencil/edit icon at the bottom of the shade.\n\n3. Scroll down to find "EarbudKit Watcher" and drag it up into your active tiles.',
+      [{ text: 'Understood' }]
+    );
+  };
+
+  const handleClearStorage = () => {
+    Alert.alert(
+      'Clear Local Device Storage?',
+      'This will permanently reset all saved Bluetooth devices, auto-actions, custom equalizer curves, personal hearing profiles, and listening statistics. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All Data',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              useDeviceStore.setState({ trackedDevices: {}, activeDeviceAddress: null });
+              useStatsStore.getState().clearStats();
+              showToast('Local device storage cleared');
+            } catch (err) {
+              showToast('Failed to clear storage');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const accentList: Array<{ key: StudioAccentKey; label: string; color: string }> = [
+    { key: 'crimson', label: 'Brand Crimson', color: '#FA2D48' },
+    { key: 'blue', label: 'Cool Sky Blue', color: '#74D1FF' },
+    { key: 'amber', label: 'Warm Amber', color: '#FBBF24' },
+    { key: 'emerald', label: 'Emerald Studio', color: '#34D399' },
   ];
 
   return (
@@ -42,291 +95,495 @@ export default function SettingsScreen() {
           styles.scrollContent,
           {
             paddingTop: insets.top + 16,
-            paddingBottom: insets.bottom + 100,
+            paddingBottom: insets.bottom + 120,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header Area */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Settings</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.onSurfaceVariant }]}>
-              Companion config, hardware diagnostics & telemetry controls.
-            </Text>
+        <View style={styles.header}>
+          <Text style={[styles.categoryHeader, { color: colors.primary }]}>
+            PREFERENCES
+          </Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.screenTitle, { color: colors.onSurface }]}>Settings</Text>
+            <StatusChip label="STUDIO ENGINE" dotColor="lime" />
           </View>
-
-          <StatusChip
-            label="ENGINE V1.4"
-            dotColor="lime"
-            pulse
-          />
         </View>
 
-        {/* Section 1: Appearance & Theme Switcher */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: colors.primary + '20' }]}>
-              <Text style={{ fontSize: 20 }}>🎨</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                Appearance & Interface
-              </Text>
-              <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant }]}>
-                Display mode & dynamic color aura
-              </Text>
-            </View>
-          </View>
-
-          {/* Segmented Theme Pill Selector */}
-          <View style={[styles.themePillsContainer, { backgroundColor: colors.surfaceContainerLowest + '90' }]}>
-            {themeOptions.map((opt) => {
-              const isSelected = themeMode === opt.value;
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[
-                    styles.themePill,
-                    isSelected && {
-                      backgroundColor: colors.primary,
-                      shadowColor: colors.primary,
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.35,
-                      shadowRadius: 8,
-                      elevation: 4,
-                    },
-                  ]}
-                  onPress={() => {
-                    setThemeMode(opt.value);
-                    showToast(`✓ Switched to ${opt.label} theme`);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={{ fontSize: 15 }}>{opt.icon}</Text>
-                  <Text
-                    style={[
-                      styles.themePillText,
-                      {
-                        color: isSelected ? colors.onPrimary : colors.onSurfaceVariant,
-                        fontWeight: isSelected ? '700' : '500',
-                      },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Active Palette Glow Indicator */}
-          <View style={[styles.palettePod, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-            <View style={styles.spectrumDots}>
-              <View style={[styles.spectrumDot, { backgroundColor: colors.primary }]} />
-              <View style={[styles.spectrumDot, { backgroundColor: colors.secondary }]} />
-              <View style={[styles.spectrumDot, { backgroundColor: colors.tertiary }]} />
-              <Text style={[styles.paletteLabel, { color: colors.onSurface }]}>
-                Sonic Neo-Spectrum
-              </Text>
-            </View>
-            <Text style={[styles.paletteActiveText, { color: colors.tertiary }]}>
-              {themeMode.toUpperCase()} ACTIVE
+        {/* Inset Group 1: Appearance & Studio Engine */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Appearance</Text>
+            <Text style={[styles.sectionBadge, { color: colors.onSurfaceVariant }]}>
+              Studio Engine
             </Text>
           </View>
-        </GlassCard>
 
-        {/* Section 2: Listening Statistics Navigation Tile */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: colors.secondary + '20' }]}>
-              <Text style={{ fontSize: 20 }}>📊</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                Telemetry & Listening Stats
+          <GlassCard style={styles.card}>
+            {/* Display Theme Segmented Control */}
+            <View style={styles.settingBlock}>
+              <Text style={[styles.subLabel, { color: colors.onSurfaceVariant }]}>
+                Display Theme
               </Text>
-              <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant }]}>
-                Hardware audio codecs & listening duration
-              </Text>
+              <View
+                style={[
+                  styles.segmentedContainer,
+                  { backgroundColor: colors.surfaceContainerHigh },
+                ]}
+              >
+                {(['system', 'light', 'dark'] as const).map((mode) => {
+                  const isSelected = themeMode === mode;
+                  const label = mode === 'system' ? 'Auto' : mode === 'light' ? 'Light' : 'Dark';
+                  return (
+                    <TouchableOpacity
+                      key={mode}
+                      style={[
+                        styles.segmentButton,
+                        isSelected && [
+                          styles.segmentButtonActive,
+                          {
+                            backgroundColor: colors.surfaceContainer,
+                            shadowColor: '#000000',
+                            shadowOpacity: 0.15,
+                            shadowRadius: 4,
+                            elevation: 2,
+                          },
+                        ],
+                      ]}
+                      onPress={() => {
+                        setThemeMode(mode);
+                        showToast(`Theme switched to ${label}`);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentButtonText,
+                          {
+                            color: isSelected ? colors.onSurface : colors.onSurfaceVariant,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </View>
 
-          <Text style={[styles.cardBodyText, { color: colors.onSurfaceVariant }]}>
-            Inspect today's listening session load, total audio hours across all tracked devices, and active Bluetooth codecs (LDAC, aptX HD, AAC, SBC).
-          </Text>
+            {/* Hairline Divider */}
+            <View style={[styles.divider, { backgroundColor: colors.surfaceVariant }]} />
 
-          <View style={{ marginTop: 12 }}>
-            <PillButton
-              variant="primary"
-              size="md"
-              label="📊 View Listening Stats & Codecs"
-              onPress={() => router.push('/stats')}
-            />
-          </View>
-        </GlassCard>
-
-        {/* Section 3: Quick Settings Tile Integration */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: colors.tertiary + '20' }]}>
-              <Text style={{ fontSize: 20 }}>⚡</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                  Quick Settings Tile
+            {/* Studio Accent Color Selector */}
+            <View style={styles.accentRow}>
+              <View style={styles.accentTextCol}>
+                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>Studio Accent</Text>
+                <Text style={[styles.rowSubtitle, { color: colors.onSurfaceVariant }]}>
+                  Dynamic acoustic trace & glow
                 </Text>
-                <View style={[styles.miniChip, { backgroundColor: colors.secondary + '30' }]}>
-                  <Text style={[styles.miniChipText, { color: colors.secondary }]}>QS API</Text>
+              </View>
+
+              <View style={styles.accentPickers}>
+                {accentList.map((acc) => {
+                  const isSelected = accentColor === acc.key;
+                  return (
+                    <TouchableOpacity
+                      key={acc.key}
+                      style={[
+                        styles.accentDotOuter,
+                        isSelected && {
+                          borderColor: acc.color,
+                          borderWidth: 2,
+                          shadowColor: acc.color,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.45,
+                          shadowRadius: 6,
+                          elevation: 4,
+                        },
+                      ]}
+                      onPress={() => {
+                        setAccentColor(acc.key);
+                        showToast(`Accent set to ${acc.label}`);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <View style={[styles.accentDotInner, { backgroundColor: acc.color }]}>
+                        {isSelected && (
+                          <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </GlassCard>
+        </View>
+
+        {/* Inset Group 2: System Quick Settings Tile */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>System Tile</Text>
+            <Text style={[styles.sectionBadge, { color: colors.primary }]}>Android 14+</Text>
+          </View>
+
+          <GlassCard style={styles.card}>
+            {/* Android QS Tile Mockup */}
+            <View
+              style={[
+                styles.tileMockup,
+                { backgroundColor: colors.surfaceContainerLow },
+              ]}
+            >
+              <View style={styles.tileMockupLeft}>
+                <View
+                  style={[
+                    styles.tileIconContainer,
+                    { backgroundColor: colors.primary },
+                  ]}
+                >
+                  <Ionicons name="radio" size={20} color="#FFFFFF" />
+                </View>
+                <View style={styles.tileTextCol}>
+                  <View style={styles.tileHeaderRow}>
+                    <Text style={[styles.tileTitle, { color: colors.onSurface }]}>
+                      EarbudKit Watcher
+                    </Text>
+                    <View style={[styles.pulseDot, { backgroundColor: colors.primary }]} />
+                  </View>
+                  <Text
+                    style={[styles.tileSubtitle, { color: colors.onSurfaceVariant }]}
+                    numberOfLines={1}
+                  >
+                    Active • LDAC 990kbps • 92%
+                  </Text>
                 </View>
               </View>
-              <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant }]}>
-                Android notification shade integration
-              </Text>
-            </View>
-          </View>
 
-          <Text style={[styles.cardBodyText, { color: colors.onSurfaceVariant }]}>
-            Instantly toggle background watcher polling, check battery levels, and jump to tools straight from your phone's notification pull-down shade.
-          </Text>
-
-          {/* Mock Android QS Tile Display */}
-          <View style={[styles.mockTilePod, { backgroundColor: colors.surfaceContainerLowest + '90' }]}>
-            <View style={styles.mockTileLeft}>
-              <View style={[styles.mockTileIcon, { backgroundColor: colors.primary }]}>
-                <Text style={{ fontSize: 20, color: colors.onPrimary }}>🎧</Text>
+              <View
+                style={[
+                  styles.tilePowerBtn,
+                  { backgroundColor: colors.surfaceContainerHigh },
+                ]}
+              >
+                <Ionicons name="power" size={18} color={colors.primary} />
               </View>
-              <View>
-                <Text style={[styles.mockTileName, { color: colors.onSurface }]}>
-                  EarbudKit Watcher
-                </Text>
-                <View style={styles.mockTileStatus}>
-                  <View style={[styles.microDot, { backgroundColor: colors.tertiary }]} />
-                  <Text style={[styles.mockTileStatusText, { color: colors.tertiary }]}>
-                    ACTIVE · System Tile Ready
+            </View>
+
+            {/* Step-by-Step Instruction Card */}
+            <View
+              style={[
+                styles.tileStepsCard,
+                { backgroundColor: colors.surfaceContainerHigh },
+              ]}
+            >
+              <Text style={[styles.stepsTitle, { color: colors.onSurfaceVariant }]}>
+                HOW TO INSTALL TILE
+              </Text>
+              <View style={styles.stepsList}>
+                <View style={styles.stepRow}>
+                  <View
+                    style={[
+                      styles.stepBadge,
+                      { backgroundColor: colors.surfaceContainer },
+                    ]}
+                  >
+                    <Text style={[styles.stepNum, { color: colors.onSurface }]}>1</Text>
+                  </View>
+                  <Text style={[styles.stepText, { color: colors.onSurface }]}>
+                    Swipe down notification shade twice to open Quick Settings
+                  </Text>
+                </View>
+
+                <View style={styles.stepRow}>
+                  <View
+                    style={[
+                      styles.stepBadge,
+                      { backgroundColor: colors.surfaceContainer },
+                    ]}
+                  >
+                    <Text style={[styles.stepNum, { color: colors.onSurface }]}>2</Text>
+                  </View>
+                  <Text style={[styles.stepText, { color: colors.onSurface }]}>
+                    Tap the pencil or edit icon at the bottom of the shade
+                  </Text>
+                </View>
+
+                <View style={styles.stepRow}>
+                  <View
+                    style={[
+                      styles.stepBadge,
+                      { backgroundColor: colors.surfaceContainer },
+                    ]}
+                  >
+                    <Text style={[styles.stepNum, { color: colors.onSurface }]}>3</Text>
+                  </View>
+                  <Text style={[styles.stepText, { color: colors.onSurface }]}>
+                    Drag <Text style={{ color: colors.primary, fontWeight: '700' }}>EarbudKit Watcher</Text> into active top tiles
                   </Text>
                 </View>
               </View>
             </View>
-            <Text style={{ fontSize: 16 }}>👆</Text>
+
+            {/* Open Tile Manager Button */}
+            <TouchableOpacity
+              style={[
+                styles.tileCtaBtn,
+                { backgroundColor: colors.surfaceContainerHigh },
+              ]}
+              onPress={handleOpenTileGuide}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="apps-outline" size={18} color={colors.primary} />
+              <Text style={[styles.tileCtaText, { color: colors.onSurface }]}>
+                Open System Tile Manager
+              </Text>
+            </TouchableOpacity>
+          </GlassCard>
+        </View>
+
+        {/* Inset Group 3: Privacy & Telemetry */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
+              Privacy & Telemetry
+            </Text>
+            <View style={[styles.verifiedBadge, { backgroundColor: colors.surfaceContainerHigh }]}>
+              <View style={[styles.greenDot, { backgroundColor: '#34D399' }]} />
+              <Text style={styles.verifiedText}>Verified</Text>
+            </View>
           </View>
 
-          <View style={{ marginTop: 4 }}>
-            <PillButton
-              variant="secondary"
-              size="sm"
-              label="ℹ️ How to Add: Swipe down shade & tap ✏️"
+          <GlassCard style={styles.card}>
+            <View style={styles.privacyHeaderRow}>
+              <View
+                style={[
+                  styles.privacyIconWrap,
+                  { backgroundColor: colors.surfaceContainerHigh },
+                ]}
+              >
+                <Ionicons name="shield-checkmark" size={22} color={colors.primary} />
+              </View>
+              <View style={styles.privacyTitleCol}>
+                <Text style={[styles.privacyTitle, { color: colors.onSurface }]}>
+                  100% On-Device & Air-Gapped
+                </Text>
+                <Text style={[styles.privacySubtitle, { color: colors.primary }]}>
+                  No network permission requested
+                </Text>
+              </View>
+            </View>
+
+            <Text style={[styles.privacyDescription, { color: colors.onSurfaceVariant }]}>
+              No accounts, no cloud sync, no analytics, zero telemetry. Bluetooth packet telemetry is decoded and processed exclusively in ephemeral volatile RAM.
+            </Text>
+
+            <View style={styles.privacyFooter}>
+              <View style={styles.privacyFooterLeft}>
+                <Ionicons name="lock-closed-outline" size={14} color="#34D399" />
+                <Text style={[styles.privacyFooterText, { color: colors.onSurfaceVariant }]}>
+                  Zero socket permissions
+                </Text>
+              </View>
+              <Text style={[styles.privacyPidText, { color: colors.onSurfaceVariant }]}>
+                PID: sandboxed
+              </Text>
+            </View>
+          </GlassCard>
+        </View>
+
+        {/* Inset Group 4: Audio Engine & Bluetooth Stack */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
+              Audio & Bluetooth Stack
+            </Text>
+            <Text style={[styles.sectionBadge, { color: colors.onSurfaceVariant }]}>
+              AOSP Low-Latency
+            </Text>
+          </View>
+
+          <GlassCard style={styles.card}>
+            {/* Polling Interval Selector */}
+            <View style={styles.settingBlock}>
+              <View style={styles.pollingLabelRow}>
+                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                  Bluetooth Polling Interval
+                </Text>
+                <Text style={[styles.pollingValText, { color: colors.primary }]}>
+                  {pollingInterval === '15s' ? '15000ms' : pollingInterval === '5s' ? '5000ms' : '1000ms'}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.segmentedContainer,
+                  { backgroundColor: colors.surfaceContainerHigh },
+                ]}
+              >
+                {(['15s', '5s', '1s'] as const).map((interval) => {
+                  const isSelected = pollingInterval === interval;
+                  const label =
+                    interval === '15s'
+                      ? 'Relaxed (15s)'
+                      : interval === '5s'
+                      ? 'Balanced (5s)'
+                      : 'Instant (1s)';
+                  return (
+                    <TouchableOpacity
+                      key={interval}
+                      style={[
+                        styles.segmentButton,
+                        isSelected && [
+                          styles.segmentButtonActive,
+                          {
+                            backgroundColor: colors.surfaceContainer,
+                            borderColor: colors.primary + '50',
+                            borderWidth: 1,
+                          },
+                        ],
+                      ]}
+                      onPress={() => handleSelectPolling(interval)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentButtonText,
+                          {
+                            color: isSelected ? colors.primary : colors.onSurfaceVariant,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Hairline Divider */}
+            <View style={[styles.divider, { backgroundColor: colors.surfaceVariant }]} />
+
+            {/* Unrestricted Battery Execution Row */}
+            <View style={styles.batteryRow}>
+              <View style={styles.batteryTextCol}>
+                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                  Unrestricted Battery Execution
+                </Text>
+                <Text style={[styles.rowSubtitle, { color: colors.onSurfaceVariant }]}>
+                  Keeps high-res codec monitoring active in pocket
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.permittedBadge,
+                  { backgroundColor: colors.surfaceContainerHigh },
+                ]}
+              >
+                <Ionicons name="checkmark-circle" size={16} color="#34D399" />
+                <Text style={[styles.permittedText, { color: colors.onSurface }]}>
+                  Permitted
+                </Text>
+              </View>
+            </View>
+          </GlassCard>
+        </View>
+
+        {/* Inset Group 5: About & Maintenance */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
+              About & Maintenance
+            </Text>
+            <Text style={[styles.sectionBadge, { color: colors.onSurfaceVariant }]}>
+              Build 2024.11
+            </Text>
+          </View>
+
+          <GlassCard style={styles.card}>
+            {/* Version Row */}
+            <View style={styles.infoRow}>
+              <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                EarbudKit Version
+              </Text>
+              <Text style={[styles.rowValue, { color: colors.onSurfaceVariant }]}>
+                v1.0.0 (API 35 Ready)
+              </Text>
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: colors.surfaceVariant }]} />
+
+            {/* Dedicated Stats Navigation Row */}
+            <TouchableOpacity
+              style={styles.navRow}
+              onPress={() => router.push('/stats')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.navRowLeft}>
+                <Ionicons name="bar-chart-outline" size={18} color={colors.primary} />
+                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                  Listening Statistics & Codecs
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceVariant} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: colors.surfaceVariant }]} />
+
+            {/* Source Code Row */}
+            <TouchableOpacity
+              style={styles.navRow}
               onPress={() => {
-                Alert.alert(
-                  'Adding EarbudKit Tile',
-                  '1. Swipe down from the top of your screen to open Quick Settings.\n2. Tap the Pencil icon (Edit Tiles).\n3. Find "EarbudKit" and drag it into your active tiles!'
-                );
+                Linking.openURL('https://github.com/kshitijkdev/EarbudKit').catch(() => {
+                  showToast('Unable to open URL');
+                });
               }}
-            />
-          </View>
-        </GlassCard>
-
-        {/* Section 4: Privacy & Zero Telemetry */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: colors.tertiary + '20' }]}>
-              <Text style={{ fontSize: 20 }}>🛡️</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                  100% On-Device & Private
+              activeOpacity={0.7}
+            >
+              <View style={styles.navRowLeft}>
+                <Ionicons name="code-slash-outline" size={18} color={colors.onSurfaceVariant} />
+                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                  Source Code on GitHub
                 </Text>
               </View>
-              <Text style={[styles.cardSublabel, { color: colors.tertiary }]}>
-                AIR-GAPPED OPERATION
-              </Text>
-            </View>
-          </View>
+              <Ionicons name="open-outline" size={16} color={colors.onSurfaceVariant} />
+            </TouchableOpacity>
 
-          <Text style={[styles.cardBodyText, { color: colors.onSurfaceVariant }]}>
-            No accounts, no remote trackers, no analytics servers. All Bluetooth MAC caches, battery curves, and automated DSP rules never leave your hardware.
-          </Text>
+            <View style={[styles.divider, { backgroundColor: colors.surfaceVariant }]} />
 
-          <View style={styles.privacyTagsRow}>
-            <View style={[styles.privacyTag, { backgroundColor: colors.surfaceContainerLowest }]}>
-              <Text style={{ fontSize: 14 }}>✓</Text>
-              <Text style={[styles.privacyTagText, { color: colors.tertiary }]}>
-                Local Sandbox Verified
-              </Text>
-            </View>
-            <View style={[styles.privacyTag, { backgroundColor: colors.surfaceContainerLowest }]}>
-              <Text style={{ fontSize: 14 }}>🔒</Text>
-              <Text style={[styles.privacyTagText, { color: colors.primary }]}>
-                Zero Network Requests
-              </Text>
-            </View>
-          </View>
-        </GlassCard>
-
-        {/* Section 5: Design System Showcase (D1) */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: colors.primary + '20' }]}>
-              <Text style={{ fontSize: 20 }}>✨</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                Sonic Neo-Glass Showcase
-              </Text>
-              <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant }]}>
-                Reusable UI components preview (D1)
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ marginTop: 8 }}>
-            <PillButton
-              variant="ghost"
-              size="sm"
-              label="✨ Open Component Showcase"
-              onPress={() => router.push('/showcase')}
-            />
-          </View>
-        </GlassCard>
-
-        {/* Section 6: About & Build Specs */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBox, { backgroundColor: colors.primary + '20' }]}>
-              <Text style={{ fontSize: 20 }}>🎧</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                  EarbudKit
+            {/* Changelog Row */}
+            <View style={styles.navRow}>
+              <View style={styles.navRowLeft}>
+                <Ionicons name="document-text-outline" size={18} color={colors.onSurfaceVariant} />
+                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                  Acoustic Profiles Changelog
                 </Text>
-                <View style={[styles.miniChip, { backgroundColor: colors.surfaceContainerHigh }]}>
-                  <Text style={[styles.miniChipText, { color: colors.primary }]}>v1.0.0-core</Text>
-                </View>
               </View>
-              <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant }]}>
-                Crafted for third-party & unbranded Bluetooth audio
-              </Text>
+              <Text style={[styles.rowValue, { color: colors.onSurfaceVariant }]}>v1.0-soft</Text>
             </View>
-          </View>
+          </GlassCard>
 
-          <View style={styles.aboutLinksStack}>
-            <View style={[styles.aboutItem, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-              <Text style={[styles.aboutItemTitle, { color: colors.onSurface }]}>Platform</Text>
-              <Text style={[styles.aboutItemValue, { color: colors.outline }]}>
-                Android Native (API 26–35)
-              </Text>
-            </View>
-            <View style={[styles.aboutItem, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-              <Text style={[styles.aboutItemTitle, { color: colors.onSurface }]}>Audio Targets</Text>
-              <Text style={[styles.aboutItemValue, { color: colors.outline }]}>
-                Noise Buds Vector & realme Studio H1
-              </Text>
-            </View>
+          {/* Destructive Action Button */}
+          <View style={styles.destructiveArea}>
+            <TouchableOpacity
+              style={[
+                styles.destructiveBtn,
+                { backgroundColor: colors.surfaceContainer },
+              ]}
+              onPress={handleClearStorage}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="trash-outline" size={18} color="#FF453A" />
+              <Text style={styles.destructiveBtnText}>Clear Local Device Storage</Text>
+            </TouchableOpacity>
           </View>
-        </GlassCard>
+        </View>
       </ScrollView>
     </View>
   );
@@ -338,187 +595,368 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    gap: 16,
   },
-  headerRow: {
+  header: {
+    marginBottom: 20,
+  },
+  categoryHeader: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  headerTitle: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 22,
+  screenTitle: {
+    fontSize: 34,
+    fontFamily: 'Inter',
+    fontWeight: '700',
     letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 13,
-    marginTop: 4,
-    lineHeight: 18,
+  section: {
+    marginBottom: 20,
   },
-  sectionCard: {
-    padding: 18,
-    gap: 14,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  iconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardTitle: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 16,
-    letterSpacing: -0.3,
-  },
-  cardSubtitle: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  cardSublabel: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 10,
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  cardBodyText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  themePillsContainer: {
-    flexDirection: 'row',
-    borderRadius: 9999,
-    padding: 4,
-    gap: 4,
-  },
-  themePill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 9999,
-    gap: 6,
-  },
-  themePillText: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 13,
-  },
-  palettePod: {
+  sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 14,
+    marginBottom: 8,
+    paddingHorizontal: 2,
   },
-  spectrumDots: {
+  sectionTitle: {
+    fontSize: 17,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  sectionBadge: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  card: {
+    padding: 16,
+    borderRadius: 20,
+  },
+  settingBlock: {
+    marginBottom: 12,
+  },
+  subLabel: {
+    fontSize: 13,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  segmentedContainer: {
+    flexDirection: 'row',
+    borderRadius: 9999,
+    padding: 3,
+  },
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9999,
+  },
+  segmentButtonActive: {
+    borderRadius: 9999,
+  },
+  segmentButtonText: {
+    fontSize: 13,
+    fontFamily: 'Inter',
+  },
+  divider: {
+    height: 0.5,
+    marginVertical: 12,
+  },
+  accentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  accentTextCol: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  rowTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    marginTop: 2,
+  },
+  rowValue: {
+    fontSize: 13,
+    fontFamily: 'Inter',
+  },
+  accentPickers: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  spectrumDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  paletteLabel: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  paletteActiveText: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 11,
-    letterSpacing: 0.8,
-  },
-  miniChip: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  miniChipText: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 10,
-    letterSpacing: 0.5,
-  },
-  mockTilePod: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  accentDotOuter: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  accentDotInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileMockup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 14,
     borderRadius: 16,
+    marginBottom: 12,
   },
-  mockTileLeft: {
+  tileMockupLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
-  mockTileIcon: {
+  tileIconContainer: {
     width: 44,
     height: 44,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mockTileName: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 14,
+  tileTextCol: {
+    flex: 1,
   },
-  mockTileStatus: {
+  tileHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 2,
   },
-  microDot: {
+  tileTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+  },
+  pulseDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  mockTileStatusText: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 11,
+  tileSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    marginTop: 2,
   },
-  privacyTagsRow: {
+  tilePowerBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileStepsCard: {
+    padding: 14,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  stepsTitle: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 10,
+  },
+  stepsList: {
+    gap: 8,
+  },
+  stepRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 10,
   },
-  privacyTag: {
+  stepBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  stepNum: {
+    fontSize: 10,
+    fontFamily: 'Inter',
+    fontWeight: '700',
+  },
+  stepText: {
+    fontSize: 12,
+    fontFamily: 'Inter',
     flex: 1,
+    lineHeight: 16,
+  },
+  tileCtaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 9999,
     gap: 8,
-    padding: 10,
-    borderRadius: 12,
   },
-  privacyTagText: {
-    fontFamily: 'SpaceGrotesk-Medium',
+  tileCtaText: {
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
+    gap: 4,
+  },
+  greenDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  verifiedText: {
     fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    color: '#34D399',
   },
-  aboutLinksStack: {
-    gap: 8,
+  privacyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 10,
   },
-  aboutItem: {
+  privacyIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  privacyTitleCol: {
+    flex: 1,
+  },
+  privacyTitle: {
+    fontSize: 15,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+  },
+  privacySubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    marginTop: 2,
+  },
+  privacyDescription: {
+    fontSize: 13,
+    fontFamily: 'Inter',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  privacyFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
   },
-  aboutItemTitle: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 13,
+  privacyFooterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  aboutItemValue: {
-    fontFamily: 'SpaceGrotesk-Regular',
+  privacyFooterText: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+  },
+  privacyPidText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+  },
+  pollingLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  pollingValText: {
     fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+  },
+  batteryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  batteryTextCol: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  permittedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    gap: 5,
+  },
+  permittedText: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  navRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  navRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  destructiveArea: {
+    marginTop: 12,
+  },
+  destructiveBtn: {
+    height: 50,
+    borderRadius: 9999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  destructiveBtnText: {
+    fontSize: 15,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    color: '#FF453A',
   },
 });

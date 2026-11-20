@@ -246,7 +246,41 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - HearID Calibration Card: active compensation curve visualization bars, profile toggle, interactive 6-step Hearing Test modal sheet with tone pulses, volume sliders, hearing threshold detection, and 1-tap profile save.
     - 100% zero emojis; Inter typography and vector icons only.
   - All 8 unit test suites passing cleanly; TypeScript passing with 0 errors.
-- [ ] **Stage S6: Settings Screen (Theme & Accent Switching) & Stats Dashboard**
+- [x] **Stage S6: Settings Screen (Theme & Accent Switching) & Stats Dashboard**
+  - Rebuilt `app/(tabs)/settings.tsx`: Soft Studio editorial style:
+    - 34px bold "Settings" screen heading with "PREFERENCES" category header and "STUDIO ENGINE" status chip.
+    - Inset Group 1 (Appearance & Studio Engine):
+      - Display Theme Segmented Control: `[ Auto | Light | Dark ]` dynamically bound to `themeMode` and `setThemeMode`.
+      - Studio Accent Selector: 4 studio accents (Brand Crimson `#FA2D48`, Cool Sky Blue `#74D1FF`, Warm Amber `#FBBF24`, Emerald Studio `#34D399`) with active ring, checkmark icon, and real-time palette regeneration.
+    - Inset Group 2 (System Quick Settings Tile):
+      - Android QS Tile Mockup: rounded card showing EarbudKit Watcher with pulsing live dot, "Active • LDAC 990kbps • 92%", power button.
+      - 3-step numbered installation guide for Android notification shade.
+      - "Open System Tile Manager" CTA pill button.
+    - Inset Group 3 (Privacy & Telemetry):
+      - Verified shield badge with emerald dot.
+      - 100% On-Device & Air-Gapped card: "No network permission requested", zero telemetry explanation, "Zero socket permissions", "PID: sandboxed".
+    - Inset Group 4 (Audio Engine & Bluetooth Stack):
+      - Bluetooth Polling Interval radio group: `[ Relaxed (15s) | Balanced (5s) | Instant (1s) ]` with persistent storage.
+      - Unrestricted Battery Execution row with "Permitted" checkmark badge.
+    - Inset Group 5 (About & Maintenance):
+      - App Version row (`v1.0.0 (API 35 Ready)`).
+      - Listening Statistics & Codecs navigation row (`/stats`).
+      - Source Code on GitHub row with external link.
+      - Acoustic Profiles Changelog row.
+      - Destructive "Clear Local Device Storage" button with confirmation alert and state reset.
+    - 100% zero emojis; Inter typography and vector icons only.
+  - Rebuilt `app/stats.tsx`: Dedicated Soft Studio Listening Stats Dashboard:
+    - Top bar with Back button, "Listening Stats" title, and Theme toggle button.
+    - Timeframe Segmented Capsule Selector: `[ Today | This Week | All-Time ]`.
+    - Hero Acoustic Consumption Card with dynamic listening hours (`statsStore`), trend badge (`+18% vs last week`), and category description.
+    - Daily Breakdown Weekly Bar Chart: 7-bar visualizer (Mon–Sun) with peak day highlight and floating badge (`3h 15m`).
+    - Fleet Usage Distribution Card: stacked hardware allocation for tracked devices (over-ear headphones, TWS earbuds, sweatproof sport pods) with percentage progress bars.
+    - Codec & Fidelity Quality Card: multi-tier distribution bar (LDAC 78%, AAC 16%, SBC 6%) and itemized tier list for Sony LDAC Hi-Res Audio (990 kbps master), AAC HD (256 kbps), and SBC Standard (328 kbps).
+    - Hearing Health Safety Card: 72 dB Average readout with WHO 85 dB threshold comparison and segmented green-to-amber-red decibel meter bar.
+    - Telemetry testing simulation buttons (`+15m Session`, `+1h Session`, `Reset`).
+    - 100% zero emojis; Inter typography and vector icons only.
+  - All 8 unit test suites passing cleanly; TypeScript passing with 0 errors.
+- [ ] **Stage S7: Light Theme Polish, Verification, APK Build & Docs
 - [ ] **Stage S7: Light Theme Polish, Verification, APK Build & Docs
 
 ## Upcoming Roadmap
