@@ -94,6 +94,20 @@ export default function HomeScreen() {
     (d) => d.batteryLevel !== null && d.batteryLevel <= d.lowBatteryThreshold
   );
 
+  if (Platform.OS !== 'android') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, padding: 16 }]}>
+        <View style={[styles.emptyStateCard, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
+          <Text style={styles.emptyEmoji}>🍎</Text>
+          <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>Not supported on iOS</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant }]}>
+            EarbudKit is designed for Android using standard Bluetooth and Audio APIs. iOS restricts background Bluetooth management for third-party audio devices.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}

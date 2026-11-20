@@ -67,6 +67,20 @@ export default function StatsScreen() {
     }
   };
 
+  if (Platform.OS !== 'android') {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, padding: 16 }]}>
+        <View style={[styles.emptyCard, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
+          <Text style={styles.emptyEmoji}>🍎</Text>
+          <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>Not supported on iOS</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant }]}>
+            Listening statistics and Bluetooth audio codec inspection require Android system APIs.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
