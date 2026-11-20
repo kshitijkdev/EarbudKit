@@ -107,10 +107,10 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
 - [x] Stage D3: Devices
 - [x] Stage D4: Auto-actions
 - [x] Stage D5: Tools
-- [ ] Stage D6: Settings and Stats
+- [x] Stage D6: Settings and Stats
 - [ ] Stage D7: Light theme, polish, verify
 
-## Design Reskin Decisions & File Map (D1 to D5)
+## Design Reskin Decisions & File Map (D1 to D6)
 - `src/theme/theme.ts`: Fully updated with Sonic Neo-Glass tokens for dark mode (Base Void `#0B0B10`, Electric Violet `#7C5CFF`, Hot Pink `#FF4FD8`, Lime Neon `#C6FF3D`, glass opacities) and light mode (`#FCF8FF`, `#5E39E0`, `#AF0093`, `#006947`). Space Grotesk / Inter typography scale and 24px bento / 9999px pill radii.
 - `android/app/src/main/assets/fonts/`: Stored native offline font assets for Space Grotesk and Inter for zero-latency standalone offline rendering.
 - `src/components/ui/`:
@@ -150,5 +150,16 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
   - Tool 1 (Find My Device): BLE 2.4GHz Proximity Radar with concentric distance rings, cold-to-hot blip glow shift, live dBm and proximity status readout, Last Seen GPS address with Google Maps navigation button, and Disconnect Drop Alert toggle + test button.
   - Tool 2 (Smart Sleep Timer): Large SVG circular countdown ring with violet-to-lime sweep gradient, live countdown readout, 15m/30m/45m/60m quick preset pills, custom minutes stepper, 10-second volume fade notice, and 15s quick test / cancel buttons.
   - Tool 3 (Parametric Equalizer): Master DSP toggle with instant lime feedback, EQ presets row (Flat, Bass Boost, Vocal, Treble, Custom), 5-band `NeonSlider`s (-15dB to +15dB / -1500 to +1500 mB) with direct step buttons, and friendly "EQ unavailable on this device" degradation banner.
+- `app/(tabs)/settings.tsx`: Rebuilt Settings matching the Sonic Neo-Glass mockup:
+  - Segmented Theme Pill Selector (Auto, Light, Dark) with active Electric Violet styling.
+  - Active Palette Glow Indicator showing the Sonic Neo-Spectrum micro-dots.
+  - Quick Settings Tile card with mock Android status shade notification tile and setup instructions.
+  - Privacy & Zero Telemetry verified badge card (100% on-device, air-gapped, zero network requests).
+  - Navigation links to Listening Stats & Codecs (`/stats`) and D1 Showcase (`/showcase`).
+  - About and build specifications.
+- `app/stats.tsx`: Rebuilt dedicated Listening Statistics screen in the Sonic Neo-Glass design:
+  - Huge Today's Audio Load Bento Hero Card with 42px Space Grotesk number, lifetime hours, and 7-bar animated audio waveform visualizer.
+  - Per-device breakdown with listening load share comparison bars and active audio codec introspection (LDAC, aptX HD, AAC, SBC).
+  - Telemetry simulation controls (+15m, +1h, Reset) for manual verification.
 
-## NEXT STEP: Stage D6, first action is restyling Settings (`app/(tabs)/settings.tsx`) with theme segmented pills, Quick Settings tile card, privacy card, and about; and restyling Stats (`app/stats.tsx`) in the same Sonic Neo-Glass design with huge today's total listening number and audio waveform bars.
+## NEXT STEP: Stage D7, first action is verifying light mode against `designstich/Light_theme`, ensuring empty states and permission states adhere to 360dp/412dp responsiveness, running Gradle build, tests, and updating README.
