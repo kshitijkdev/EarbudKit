@@ -106,11 +106,11 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
 - [x] Stage D2: Navigation shell and Home
 - [x] Stage D3: Devices
 - [x] Stage D4: Auto-actions
-- [ ] Stage D5: Tools
+- [x] Stage D5: Tools
 - [ ] Stage D6: Settings and Stats
 - [ ] Stage D7: Light theme, polish, verify
 
-## Design Reskin Decisions & File Map (D1 to D4)
+## Design Reskin Decisions & File Map (D1 to D5)
 - `src/theme/theme.ts`: Fully updated with Sonic Neo-Glass tokens for dark mode (Base Void `#0B0B10`, Electric Violet `#7C5CFF`, Hot Pink `#FF4FD8`, Lime Neon `#C6FF3D`, glass opacities) and light mode (`#FCF8FF`, `#5E39E0`, `#AF0093`, `#006947`). Space Grotesk / Inter typography scale and 24px bento / 9999px pill radii.
 - `android/app/src/main/assets/fonts/`: Stored native offline font assets for Space Grotesk and Inter for zero-latency standalone offline rendering.
 - `src/components/ui/`:
@@ -145,5 +145,10 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
   - "When Hardware Links" (On Connect) glass card: Master Lime `Toggle`, interactive 3-column app launcher grid (Spotify, YouTube Music, Apple, Pocket Casts, Audible, VLC, Amazon, Podcast Addict) with active electric violet borders, checkmark badges and instant touch feedback; Auto-Set Media Gain with hero percentage readout and `NeonSlider` + quick volume presets; Do Not Disturb `Toggle` with system permission handling; and ghost "▶ Test Connect Profile" button.
   - "When Disconnected" (On Disconnect) glass card: Master Lime `Toggle`, instant media halt toggle, volume fallback level preset chips, restore DND ringer toggle, and ghost "▶ Test Disconnect Profile" button.
   - Master "⚡ Test Full Automation Flow" PillButton with live execution feedback banner.
+- `app/(tabs)/tools.tsx`: Rebuilt Tools screen with segmented control for Find / Sleep / EQ:
+  - Segmented control dock at the top (Find Radar / Sleep Timer / Equalizer) with active violet highlight.
+  - Tool 1 (Find My Device): BLE 2.4GHz Proximity Radar with concentric distance rings, cold-to-hot blip glow shift, live dBm and proximity status readout, Last Seen GPS address with Google Maps navigation button, and Disconnect Drop Alert toggle + test button.
+  - Tool 2 (Smart Sleep Timer): Large SVG circular countdown ring with violet-to-lime sweep gradient, live countdown readout, 15m/30m/45m/60m quick preset pills, custom minutes stepper, 10-second volume fade notice, and 15s quick test / cancel buttons.
+  - Tool 3 (Parametric Equalizer): Master DSP toggle with instant lime feedback, EQ presets row (Flat, Bass Boost, Vocal, Treble, Custom), 5-band `NeonSlider`s (-15dB to +15dB / -1500 to +1500 mB) with direct step buttons, and friendly "EQ unavailable on this device" degradation banner.
 
-## NEXT STEP: Stage D5, first action is restyling the Tools screen (`app/(tabs)/tools.tsx`) with segmented control (Find / Sleep / EQ), BLE RSSI proximity radar with cold-to-hot glow rings, sleep countdown ring & presets, and 5-band NeonSliders for EQ.
+## NEXT STEP: Stage D6, first action is restyling Settings (`app/(tabs)/settings.tsx`) with theme segmented pills, Quick Settings tile card, privacy card, and about; and restyling Stats (`app/stats.tsx`) in the same Sonic Neo-Glass design with huge today's total listening number and audio waveform bars.
