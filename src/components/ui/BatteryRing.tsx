@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme';
 
 export interface BatteryRingProps {
@@ -33,15 +34,15 @@ export function BatteryRing({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  // Determine ring color
+  // Determine ring color (Green #34C759 for normal, error/accent below 20%)
   const getRingColor = () => {
     if (isUnavailable) {
-      return theme.dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(94, 57, 224, 0.15)';
+      return theme.dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)';
     }
     if (numericValue <= 20) {
       return colors.error;
     }
-    return colors.limeNeon;
+    return colors.limeNeon; // #34C759
   };
 
   const ringColor = getRingColor();
@@ -53,7 +54,7 @@ export function BatteryRing({
   const effectiveCenterMode = centerMode ?? (size < 60 ? 'icon' : 'percent');
   const shouldShowLabel = Boolean(showLabel && size >= 84 && effectiveCenterMode === 'percent');
   const percentFontSize = Math.max(10, Math.round(size * (shouldShowLabel ? 0.20 : 0.28)));
-  const iconFontSize = Math.max(12, Math.round(size * 0.36));
+  const iconSize = Math.max(12, Math.round(size * 0.38));
 
   const renderCenterContent = () => {
     if (effectiveCenterMode === 'none') {
@@ -62,7 +63,7 @@ export function BatteryRing({
 
     if (centerIcon !== undefined) {
       return typeof centerIcon === 'string' ? (
-        <Text style={{ fontSize: iconFontSize }}>{centerIcon}</Text>
+        <Text style={{ fontSize: iconSize }}>{centerIcon}</Text>
       ) : (
         centerIcon
       );
@@ -83,17 +84,11 @@ export function BatteryRing({
 
     if (effectiveCenterMode === 'icon') {
       return (
-        <Text
-          style={[
-            styles.iconText,
-            {
-              color: ringColor,
-              fontSize: iconFontSize,
-            },
-          ]}
-        >
-          ⚡
-        </Text>
+        <Ionicons
+          name="flash"
+          size={iconSize}
+          color={ringColor}
+        />
       );
     }
 
@@ -193,9 +188,6 @@ const styles = StyleSheet.create({
   },
   percentText: {
     fontWeight: '700',
-    textAlign: 'center',
-  },
-  iconText: {
     textAlign: 'center',
   },
   batterySubLabel: {

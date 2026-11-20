@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-surface": "#e4e2e4", "secondary-fixed-dim": "#c6c6cb", "surface-container-lowest": "#0e0e10", "surface-container-highest": "#353437", "on-secondary-fixed": "#1a1b1f", "inverse-surface": "#e4e2e4", "primary": "#ffb3b2", "on-secondary-container": "#b5b4ba", "secondary-fixed": "#e3e2e7", "on-tertiary": "#303032", "inverse-primary": "#bf002c", "on-tertiary-container": "#29292b", "surface-container": "#1f1f21", "surface-container-high": "#2a2a2c", "primary-container": "#ff525e", "on-error-container": "#ffdad6", "on-tertiary-fixed": "#1b1b1d", "background": "#131315", "tertiary-fixed-dim": "#c8c6c8", "secondary-container": "#46464b", "surface": "#131315", "surface-bright": "#39393b", "tertiary-container": "#919092", "inverse-on-surface": "#303032", "on-secondary": "#2f3034", "on-secondary-fixed-variant": "#46464b", "outline-variant": "#5d3f3f", "on-background": "#e4e2e4", "outline": "#ad8887", "primary-fixed": "#ffdad9", "on-primary-fixed-variant": "#92001f", "surface-container-low": "#1b1b1d", "on-primary-fixed": "#410008", "error-container": "#93000a", "surface-tint": "#ffb3b2", "surface-variant": "#353437", "on-primary-container": "#5b0010", "on-primary": "#680013", "on-error": "#690005", "surface-dim": "#131315", "error": "#ffb4ab", "on-tertiary-fixed-variant": "#474649", "secondary": "#c6c6cb", "tertiary": "#c8c6c8", "primary-fixed-dim": "#ffb3b2", "tertiary-fixed": "#e4e2e4", "on-surface-variant": "#e6bdbc" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter-mobile": "0.75rem", "space-md": "1rem", "space-lg": "1.25rem", "margin": "1.5rem", "gutter": "1rem", "space-xl": "1.5rem", "margin-mobile": "1rem" }, fontFamily: { "label-md": ["Inter"], "headline-sm": ["Inter"], "body-lg": ["Inter"], "label-sm": ["Inter"], "headline-lg": ["Inter"], "headline-lg-mobile": ["Inter"], "body-md": ["Inter"] }, fontSize: { "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "25px", "fontWeight": "700" }], "body-lg": ["17px", { "lineHeight": "22px", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "13px", "fontWeight": "600" }], "headline-lg": ["34px", { "lineHeight": "41px", "fontWeight": "700" }], "headline-lg-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }], "body-md": ["15px", { "lineHeight": "20px", "fontWeight": "400" }] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; } body { overscroll-behavior: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_12px_rgba(0,0,0,0.25)]"><div class="h-16 px-space-md flex items-center justify-between"><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Settings</h1><div class="flex items-center gap-space-xs"><button aria-label="Toggle Theme" class="w-11 h-11 flex items-center justify-center rounded-full text-secondary hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[22px]">dark_mode</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface"><div class="flex flex-col w-full px-margin-mobile py-space-md gap-space-xl">
+<!-- Top Category / Header Section -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-tertiary-fixed font-label-sm text-label-sm tracking-wider uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8]"></span>
+<span>Preferences</span>
+</div>
+<div class="flex items-baseline justify-between">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface font-bold tracking-tight">Settings</h2>
+<span class="font-label-sm text-label-sm text-tertiary px-space-sm py-0.5 rounded-full bg-surface-container-high">v1.0.0 Stable</span>
+</div>
+</div>
+<!-- Appearance Card (Studio Engine) -->
+<div class="flex flex-col bg-surface-container rounded-xl p-space-lg gap-space-lg shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">palette</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface">Appearance</h3>
+<p class="font-label-sm text-label-sm text-secondary">Studio Engine Theme &amp; Acoustic Trace</p>
+</div>
+</div>
+<span class="font-label-sm text-label-sm px-space-sm py-0.5 rounded-full bg-surface-container-highest text-tertiary-fixed">Real-time</span>
+</div>
+<!-- Display Theme Segmented Selector -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm text-secondary font-medium">Display Theme</span>
+<div class="grid grid-cols-3 bg-surface-container-lowest p-1 rounded-full text-center">
+<button class="theme-btn py-space-xs font-label-md text-label-md text-secondary rounded-full transition-all duration-200 hover:text-on-surface" data-theme="auto" type="button">
+          Auto
+        </button>
+<button class="theme-btn py-space-xs font-label-md text-label-md text-secondary rounded-full transition-all duration-200 hover:text-on-surface" data-theme="light" type="button">
+          Light
+        </button>
+<button class="theme-btn py-space-xs font-label-md text-label-md bg-surface-container-high text-tertiary-fixed font-semibold rounded-full shadow-sm" data-theme="dark" type="button">
+          Dark
+        </button>
+</div>
+</div>
+<!-- Studio Accent Color Swatch Picker -->
+<div class="flex flex-col gap-space-sm">
+<div class="flex justify-between items-baseline">
+<span class="font-label-sm text-label-sm text-secondary font-medium">Studio Accent (Dynamic acoustic trace &amp; glow)</span>
+<span class="font-label-sm text-label-sm text-tertiary-fixed font-semibold" id="selected-accent-label">Warm Sand</span>
+</div>
+<div class="flex items-center justify-between px-space-sm py-space-xs">
+<!-- Crimson -->
+<button class="swatch-btn group relative flex items-center justify-center w-12 h-12 rounded-full focus:outline-none" data-color="#FA2D48" data-name="Crimson" type="button">
+<div class="w-8 h-8 rounded-full bg-[#FA2D48] transition-transform group-active:scale-95 flex items-center justify-center shadow-md"></div>
+</button>
+<!-- Cool Sky Blue -->
+<button class="swatch-btn group relative flex items-center justify-center w-12 h-12 rounded-full focus:outline-none" data-color="#74D1FF" data-name="Cool Sky Blue" type="button">
+<div class="w-8 h-8 rounded-full bg-[#74D1FF] transition-transform group-active:scale-95 flex items-center justify-center shadow-md"></div>
+</button>
+<!-- Warm Sand (Selected) -->
+<button class="swatch-btn group relative flex items-center justify-center w-12 h-12 rounded-full focus:outline-none" data-color="#E8D8C8" data-name="Warm Sand" type="button">
+<div class="absolute inset-0 rounded-full bg-tertiary-fixed/20 animate-pulse"></div>
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shadow-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shadow-md">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+</div>
+</button>
+<!-- Mint Green -->
+<button class="swatch-btn group relative flex items-center justify-center w-12 h-12 rounded-full focus:outline-none" data-color="#47E266" data-name="Mint Green" type="button">
+<div class="w-8 h-8 rounded-full bg-[#47E266] transition-transform group-active:scale-95 flex items-center justify-center shadow-md"></div>
+</button>
+</div>
+</div>
+</div>
+<!-- System Tile Card (ANDROID 14+) -->
+<div class="flex flex-col bg-surface-container rounded-xl p-space-lg gap-space-lg shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">widgets</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface">System Tile</h3>
+<p class="font-label-sm text-label-sm text-secondary">Android 14+ Quick Settings</p>
+</div>
+</div>
+<span class="font-label-sm text-label-sm px-space-sm py-0.5 rounded-full bg-surface-container-high text-tertiary-fixed">Interactive</span>
+</div>
+<!-- Quick Settings Tile Preview -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md flex flex-col gap-space-sm relative">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-md">
+<!-- Circular Badge filled in Warm Sand -->
+<div class="w-11 h-11 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shadow-[0_0_12px_rgba(232,216,200,0.3)]">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">graphic_eq</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-body-lg text-body-lg text-on-surface leading-tight">EarbudKit Watcher</span>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed shadow-[0_0_6px_#E8D8C8] animate-ping"></span>
+</div>
+<p class="font-label-sm text-label-sm text-secondary">Active • LDAC 990kbps • 92%</p>
+</div>
+</div>
+<!-- Power Toggle -->
+<button aria-label="Toggle Tile Power" class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary-fixed transition-transform active:scale-90" type="button">
+<span class="material-symbols-outlined text-[20px]">power_settings_new</span>
+</button>
+</div>
+<div class="flex items-center justify-between pt-space-xs text-tertiary font-label-sm text-label-sm">
+<span>Hardware Sync: Connected</span>
+<span class="text-tertiary-fixed font-semibold">Low Latency</span>
+</div>
+</div>
+<!-- How to Install Guide -->
+<div class="flex flex-col gap-space-xs bg-surface-container-low p-space-md rounded-lg">
+<div class="flex items-center gap-space-xs text-secondary font-label-sm text-label-sm font-semibold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[15px] text-tertiary-fixed">info</span>
+<span>How to Install Tile</span>
+</div>
+<ol class="font-label-md text-label-md text-secondary space-y-1 pl-space-sm list-decimal">
+<li>Swipe down twice from top of screen to expand Quick Settings.</li>
+<li>Tap the edit pencil icon at the bottom of the panel.</li>
+<li>Drag <strong class="text-tertiary-fixed font-semibold">EarbudKit Watcher</strong> into your active top tiles.</li>
+</ol>
+</div>
+<!-- Action Button -->
+<button class="w-full h-[50px] rounded-full bg-surface-container-highest flex items-center justify-center gap-space-sm text-tertiary-fixed font-body-lg text-body-lg font-semibold hover:bg-surface-bright active:scale-[0.98] transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px] text-tertiary-fixed">settings_suggest</span>
+<span>Open System Tile Manager</span>
+</button>
+</div>
+<!-- Privacy & Telemetry Card (Air-gapped) -->
+<div class="flex flex-col bg-surface-container rounded-xl p-space-lg gap-space-md shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface">Privacy &amp; Telemetry</h3>
+<p class="font-label-sm text-label-sm text-secondary">Verified Local Runtime Architecture</p>
+</div>
+</div>
+<span class="font-label-sm text-label-sm px-space-sm py-0.5 rounded-full bg-surface-container-highest text-tertiary-fixed">Verified</span>
+</div>
+<div class="flex flex-col gap-space-sm bg-surface-container-lowest p-space-md rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary-fixed text-[20px]">security</span>
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-on-surface font-semibold">100% On-Device &amp; Air-Gapped</span>
+<span class="font-label-md text-label-md text-secondary">No telemetry sockets, analytics, or external cloud relays are registered in this application manifest.</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-space-xs pt-space-xs">
+<span class="px-space-sm py-1 rounded-full bg-surface-container-high text-tertiary-fixed font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">block</span> No Network Permission
+        </span>
+<span class="px-space-sm py-1 rounded-full bg-surface-container-high text-tertiary-fixed font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">shield</span> Zero Sockets
+        </span>
+<span class="px-space-sm py-1 rounded-full bg-surface-container-high text-tertiary-fixed font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">lock</span> Local Bluetooth Only
+        </span>
+</div>
+</div>
+</div>
+<!-- Audio & Bluetooth Stack Card -->
+<div class="flex flex-col bg-surface-container rounded-xl p-space-lg gap-space-lg shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">bluetooth_searching</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface">Audio &amp; Bluetooth Stack</h3>
+<p class="font-label-sm text-label-sm text-secondary">Hardware Polling &amp; Latency Profiles</p>
+</div>
+</div>
+</div>
+<!-- Bluetooth Polling Interval -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-baseline">
+<span class="font-label-sm text-label-sm text-secondary font-medium">Bluetooth Polling Interval</span>
+<span class="font-label-sm text-label-sm text-tertiary-fixed font-semibold tracking-wide" id="polling-readout">5000ms</span>
+</div>
+<div class="grid grid-cols-3 bg-surface-container-lowest p-1 rounded-full text-center gap-1">
+<button class="poll-btn py-space-xs font-label-sm text-label-sm text-secondary rounded-full transition-all duration-200 hover:text-on-surface" data-ms="15000ms" type="button">
+          Relaxed (15s)
+        </button>
+<!-- Selected Pill highlighted in Warm Sand (#E8D8C8) with dark text (#2A2118) -->
+<button class="poll-btn py-space-xs font-label-sm text-label-sm bg-tertiary-fixed text-[#2A2118] font-bold rounded-full shadow-sm" data-ms="5000ms" type="button">
+          Balanced (5s)
+        </button>
+<button class="poll-btn py-space-xs font-label-sm text-label-sm text-secondary rounded-full transition-all duration-200 hover:text-on-surface" data-ms="1000ms" type="button">
+          Instant (1s)
+        </button>
+</div>
+</div>
+<!-- Battery Execution Row -->
+<div class="flex items-center justify-between p-space-md bg-surface-container-lowest rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-tertiary-fixed">battery_charging_full</span>
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-on-surface">Unrestricted Battery Execution</span>
+<span class="font-label-sm text-label-sm text-secondary">Prevents OS from killing GATT connection</span>
+</div>
+</div>
+<span class="flex items-center gap-1 font-label-sm text-label-sm px-space-sm py-1 rounded-full bg-surface-container-high text-tertiary-fixed font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+        Permitted
+      </span>
+</div>
+</div>
+<!-- About & Maintenance Card -->
+<div class="flex flex-col bg-surface-container rounded-xl p-space-lg gap-space-md shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">build</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface">About &amp; Maintenance</h3>
+<p class="font-label-sm text-label-sm text-secondary">Open Engine Metadata &amp; Diagnostics</p>
+</div>
+</div>
+</div>
+<!-- Rows -->
+<div class="flex flex-col divide-y divide-surface-container-high bg-surface-container-lowest rounded-lg overflow-hidden">
+<div class="flex items-center justify-between px-space-md py-space-sm">
+<span class="font-body-md text-body-md text-on-surface">EarbudKit Version</span>
+<span class="font-label-md text-label-md text-secondary">v1.0.0 (API 37 Ready)</span>
+</div>
+<div class="flex items-center justify-between px-space-md py-space-sm cursor-pointer hover:bg-surface-container-high/40 transition-colors">
+<span class="font-body-md text-body-md text-on-surface">Source Code on GitHub</span>
+<div class="flex items-center gap-1 text-tertiary-fixed">
+<span class="font-label-md text-label-md font-semibold">earbudkit/core</span>
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</div>
+</div>
+<div class="flex items-center justify-between px-space-md py-space-sm cursor-pointer hover:bg-surface-container-high/40 transition-colors">
+<span class="font-body-md text-body-md text-on-surface">Acoustic Profiles Changelog</span>
+<div class="flex items-center gap-1 text-secondary">
+<span class="font-label-md text-label-md">Release #44</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Maintenance Action Button -->
+<button class="w-full h-[50px] rounded-full bg-surface-container-high text-secondary hover:text-on-surface flex items-center justify-center gap-space-sm font-body-lg text-body-lg font-semibold active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+<span>Clear Local Device Storage</span>
+</button>
+</div>
+</div>
+<script>
+  // Micro-interaction handlers for segmented themes & polling
+  document.querySelectorAll('.theme-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('bg-surface-container-high', 'text-tertiary-fixed', 'font-semibold', 'shadow-sm');
+        btn.classList.add('text-secondary');
+      });
+      button.classList.add('bg-surface-container-high', 'text-tertiary-fixed', 'font-semibold', 'shadow-sm');
+      button.classList.remove('text-secondary');
+    });
+  });
+
+  document.querySelectorAll('.poll-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.poll-btn').forEach(btn => {
+        btn.classList.remove('bg-tertiary-fixed', 'text-[#2A2118]', 'font-bold', 'shadow-sm');
+        btn.classList.add('text-secondary');
+      });
+      button.classList.add('bg-tertiary-fixed', 'text-[#2A2118]', 'font-bold', 'shadow-sm');
+      button.classList.remove('text-secondary');
+      const readout = document.getElementById('polling-readout');
+      if (readout) readout.textContent = button.getAttribute('data-ms');
+    });
+  });
+
+  document.querySelectorAll('.swatch-btn').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      const label = document.getElementById('selected-accent-label');
+      if (label) label.textContent = swatch.getAttribute('data-name');
+    });
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_-2px_16px_rgba(0,0,0,0.35)]" data-active-classes="text-tertiary-fixed [&amp;&gt;span.material-symbols-outlined]:text-tertiary-fixed [&amp;_.active-dot]:opacity-100"><div class="flex justify-around items-center h-20 px-space-xs"><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="home" href="#"><span class="material-symbols-outlined text-[24px]">home</span><span class="font-label-sm text-label-sm">Home</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="devices" href="#"><span class="material-symbols-outlined text-[24px]">headphones</span><span class="font-label-sm text-label-sm">Devices</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="auto" href="#"><span class="material-symbols-outlined text-[24px]">auto_mode</span><span class="font-label-sm text-label-sm">Auto</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="tools" href="#"><span class="material-symbols-outlined text-[24px]">tune</span><span class="font-label-sm text-label-sm">Tools</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 transition-all duration-200 group relative text-tertiary-fixed [&amp;&gt;span.material-symbols-outlined]:text-tertiary-fixed [&amp;_.active-dot]:opacity-100" data-path="settings" href="#"><span class="material-symbols-outlined text-[24px]">settings</span><span class="font-label-sm text-label-sm">Settings</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a></div></nav></body></html>

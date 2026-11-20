@@ -1,0 +1,261 @@
+<!DOCTYPE html><html class="dark" lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#131315;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { colors: { 'on-tertiary-fixed': '#1b1b1d', 'surface-tint': '#ffb3b2', 'on-secondary-fixed-variant': '#46464b', 'tertiary': '#c8c6c8', 'secondary-fixed': '#e3e2e7', 'tertiary-fixed': '#e4e2e4', 'secondary': '#c6c6cb', 'outline': '#ad8887', 'surface-variant': '#353437', 'primary-fixed': '#ffdad9', 'secondary-fixed-dim': '#c6c6cb', 'on-primary-container': '#5b0010', 'tertiary-container': '#919092', 'on-primary-fixed': '#410008', 'error': '#ffb4ab', 'on-primary-fixed-variant': '#92001f', 'inverse-surface': '#e4e2e4', 'on-surface': '#e4e2e4', 'primary-container': '#ff525e', 'inverse-primary': '#bf002c', 'on-error': '#690005', 'on-error-container': '#ffdad6', 'on-tertiary': '#303032', 'on-surface-variant': '#e6bdbc', 'outline-variant': '#5d3f3f', 'inverse-on-surface': '#303032', 'on-secondary-container': '#b5b4ba', 'secondary-container': '#46464b', 'on-background': '#e4e2e4', 'on-secondary-fixed': '#1a1b1f', 'on-tertiary-container': '#29292b', 'tertiary-fixed-dim': '#c8c6c8', 'surface-container-highest': '#353437', 'primary': '#ffb3b2', 'surface-dim': '#131315', 'surface-container-low': '#1b1b1d', 'on-secondary': '#2f3034', 'surface': '#131315', 'on-primary': '#680013', 'surface-container-lowest': '#0e0e10', 'surface-container-high': '#2a2a2c', 'error-container': '#93000a', 'surface-bright': '#39393b', 'on-tertiary-fixed-variant': '#474649', 'primary-fixed-dim': '#ffb3b2', 'background': '#131315', 'surface-container': '#1f1f21' }, borderRadius: { 'DEFAULT': '0.25rem', 'lg': '0.5rem', 'xl': '0.75rem', 'full': '9999px' }, spacing: { 'space-md': '1rem', 'gutter': '1rem', 'space-sm': '0.5rem', 'space-xl': '1.5rem', 'margin': '1.5rem', 'space-xs': '0.25rem', 'margin-mobile': '1rem', 'gutter-mobile': '0.75rem', 'space-lg': '1.25rem' }, fontFamily: { 'label-md': ['Inter'], 'body-md': ['Inter'], 'headline-sm': ['Inter'], 'headline-lg-mobile': ['Inter'], 'headline-lg': ['Inter'], 'body-lg': ['Inter'], 'label-sm': ['Inter'] }, fontSize: { 'label-md': ['13px', { lineHeight: '18px', fontWeight: '400' }], 'body-md': ['15px', { lineHeight: '20px', fontWeight: '400' }], 'headline-sm': ['20px', { lineHeight: '25px', fontWeight: '700' }], 'headline-lg-mobile': ['28px', { lineHeight: '34px', fontWeight: '700' }], 'headline-lg': ['34px', { lineHeight: '41px', fontWeight: '700' }], 'body-lg': ['17px', { lineHeight: '22px', fontWeight: '600' }], 'label-sm': ['11px', { lineHeight: '13px', fontWeight: '600' }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style><style id="theme-accent-override">
+.bg-primary { background-color: #FA2D48 !important; }
+.bg-primary-container { background-color: #FA2D48 !important; }
+.text-primary { color: #FA2D48 !important; }
+.text-primary-container { color: #FA2D48 !important; }
+.text-on-primary { color: #ffffff !important; }
+.text-on-primary-container { color: #ffffff !important; }
+.border-primary { border-color: #FA2D48 !important; }
+.border-primary-container { border-color: #FA2D48 !important; }
+#tab-week[aria-selected="true"], button[aria-selected="true"].bg-primary-container { background-color: #FA2D48 !important; color: #ffffff !important; }
+</style></head><body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl border-b border-surface-container-highest/20"><div class="flex justify-between items-center px-margin-mobile pt-space-xs text-on-surface text-[12px] font-medium tracking-tight"><span class="w-12 text-left font-semibold">9:41</span><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-[14px]">bluetooth</span><span class="material-symbols-outlined text-[14px]">wifi</span><span class="material-symbols-outlined text-[16px]">battery_full</span></div></div><div class="h-12 px-margin-mobile flex items-center justify-between"><button aria-label="Go Back" class="flex items-center gap-1 text-on-surface hover:text-primary transition-colors active:scale-95" type="button"><span class="material-symbols-outlined text-[18px]">arrow_back_ios_new</span><span class="font-body-md text-body-md font-medium">Back</span></button><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Listening Stats</span><div class="flex items-center gap-1"><button aria-label="Share Stats" class="w-9 h-9 flex items-center justify-center rounded-full text-secondary hover:text-on-surface active:scale-95 transition-all" type="button"><span class="material-symbols-outlined text-[20px]">ios_share</span></button><button aria-label="Toggle Theme" class="w-9 h-9 flex items-center justify-center rounded-full text-secondary hover:text-on-surface active:scale-95 transition-all" onclick="document.documentElement.classList.toggle('dark')"><span class="material-symbols-outlined text-[20px]">contrast</span></button></div></div></header><main class="flex-1 flex flex-col relative w-full pt-[98px] pb-24 px-margin-mobile bg-surface min-h-screen"><div class="flex flex-col w-full space-y-space-md">
+<!-- Timeframe Segmented Capsule Selector -->
+<div class="p-1 rounded-full bg-surface-container flex items-center justify-between">
+<button class="flex-1 py-1.5 rounded-full text-center font-label-md text-label-md text-secondary hover:text-on-surface transition-all active:scale-95" type="button">
+      Today
+    </button>
+<button class="flex-1 py-1.5 rounded-full text-center font-label-md text-label-md bg-primary-container text-on-primary-container font-semibold shadow-sm transition-all" type="button">
+      This Week
+    </button>
+<button class="flex-1 py-1.5 rounded-full text-center font-label-md text-label-md text-secondary hover:text-on-surface transition-all active:scale-95" type="button">
+      All-Time
+    </button>
+</div>
+<!-- Hero Daily Average Card -->
+<div class="relative overflow-hidden rounded-[20px] bg-surface-container p-space-lg">
+<!-- Subtle Acoustic Radial Ambient Light -->
+<div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-primary-container/15 blur-2xl pointer-events-none"></div>
+<div class="flex flex-col space-y-space-xs relative z-10">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-secondary uppercase tracking-wider">Acoustic Consumption</span>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-[#34C759]">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span class="font-label-sm text-label-sm font-semibold">+18% vs last week</span>
+</div>
+</div>
+<div class="flex items-baseline gap-space-xs pt-1">
+<span class="text-[48px] leading-[48px] font-bold tracking-tight text-on-surface">2h 45m</span>
+</div>
+<p class="font-body-md text-body-md text-secondary">Daily Average Listening Time</p>
+</div>
+</div>
+<!-- Weekly Activity Visualizer Bar Chart -->
+<div class="rounded-[20px] bg-surface-container p-space-lg flex flex-col space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Daily Breakdown</span>
+<span class="font-label-md text-label-md text-secondary">Peak Session: Thursday at 3h 15m</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">equalizer</span>
+</div>
+</div>
+<!-- Minimal Modern Visualizer Chart -->
+<div class="flex flex-col space-y-space-xs pt-2">
+<!-- Gridlines & Bars container -->
+<div class="relative h-36 flex items-end justify-between px-2 pb-1">
+<!-- Subtle Reference Guidelines -->
+<div class="absolute inset-x-0 top-0 h-px bg-surface-variant/40"></div>
+<div class="absolute inset-x-0 top-1/2 h-px bg-surface-variant/20"></div>
+<!-- Mon -->
+<div class="flex flex-col items-center gap-space-xs z-10 w-8">
+<div class="w-4 bg-surface-container-high rounded-full h-16 transition-all"></div>
+</div>
+<!-- Tue -->
+<div class="flex flex-col items-center gap-space-xs z-10 w-8">
+<div class="w-4 bg-surface-container-high rounded-full h-20 transition-all"></div>
+</div>
+<!-- Wed -->
+<div class="flex flex-col items-center gap-space-xs z-10 w-8">
+<div class="w-4 bg-surface-container-high rounded-full h-24 transition-all"></div>
+</div>
+<!-- Thu (Active Today Highlight) -->
+<div class="flex flex-col items-center gap-space-xs z-10 w-8 relative">
+<!-- Active floating badge -->
+<div class="absolute -top-7 px-1.5 py-0.5 rounded-full bg-primary-container text-on-primary-container text-[10px] font-bold tracking-tight whitespace-nowrap shadow-sm">
+            3h 15m
+          </div>
+<div class="w-4 bg-primary-container rounded-full h-28 shadow-sm"></div>
+</div>
+<!-- Fri -->
+<div class="flex flex-col items-center gap-space-xs z-10 w-8">
+<div class="w-4 bg-surface-container-high rounded-full h-14 transition-all"></div>
+</div>
+<!-- Sat -->
+<div class="flex flex-col items-center gap-space-xs z-10 w-8">
+<div class="w-4 bg-surface-container-high rounded-full h-20 transition-all"></div>
+</div>
+<!-- Sun -->
+<div class="flex flex-col items-center gap-space-xs z-10 w-8">
+<div class="w-4 bg-surface-container-high rounded-full h-10 transition-all"></div>
+</div>
+</div>
+<!-- X-Axis Labels -->
+<div class="flex justify-between px-2 font-label-sm text-label-sm text-secondary">
+<span class="w-8 text-center">Mon</span>
+<span class="w-8 text-center">Tue</span>
+<span class="w-8 text-center">Wed</span>
+<span class="w-8 text-center text-primary-container font-bold">Thu</span>
+<span class="w-8 text-center">Fri</span>
+<span class="w-8 text-center">Sat</span>
+<span class="w-8 text-center">Sun</span>
+</div>
+</div>
+</div>
+<!-- Fleet Usage Distribution Card -->
+<div class="rounded-[20px] bg-surface-container p-space-lg flex flex-col space-y-space-md">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface">Fleet Usage Distribution</span>
+<span class="font-label-sm text-label-sm text-secondary font-medium">23h 05m Total</span>
+</div>
+<!-- Stacked Hardware Device Allocation -->
+<div class="flex flex-col space-y-space-md">
+<!-- Device 1: Studio Pro Matte -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[18px] text-primary">headphones</span>
+<span class="font-body-lg text-body-lg text-on-surface truncate">Studio Pro Matte</span>
+<span class="font-label-sm text-label-sm text-secondary shrink-0">(Over-Ear)</span>
+</div>
+<div class="flex items-baseline gap-1 text-right shrink-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface">62%</span>
+<span class="font-label-sm text-label-sm text-secondary">14h 20m</span>
+</div>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full rounded-full bg-primary-container" style="width: 62%"></div>
+</div>
+</div>
+<!-- Device 2: AirBuds Aero -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[18px] text-secondary">earbuds</span>
+<span class="font-body-lg text-body-lg text-on-surface truncate">AirBuds Aero</span>
+<span class="font-label-sm text-label-sm text-secondary shrink-0">(TWS)</span>
+</div>
+<div class="flex items-baseline gap-1 text-right shrink-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface">28%</span>
+<span class="font-label-sm text-label-sm text-secondary">6h 30m</span>
+</div>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full rounded-full bg-secondary" style="width: 28%"></div>
+</div>
+</div>
+<!-- Device 3: Gym Pods Sport -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-[18px] text-tertiary">fitness_center</span>
+<span class="font-body-lg text-body-lg text-on-surface truncate">Gym Pods Sport</span>
+<span class="font-label-sm text-label-sm text-secondary shrink-0">(Sweatproof)</span>
+</div>
+<div class="flex items-baseline gap-1 text-right shrink-0">
+<span class="font-body-lg text-body-lg font-bold text-on-surface">10%</span>
+<span class="font-label-sm text-label-sm text-secondary">2h 15m</span>
+</div>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full rounded-full bg-surface-variant" style="width: 10%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Audio Codec Spectrum & Hi-Res Fidelity Card -->
+<div class="rounded-[20px] bg-surface-container p-space-lg flex flex-col space-y-space-md">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Codec &amp; Fidelity Quality</span>
+<span class="font-label-md text-label-md text-secondary">Active Bluetooth transmission profiles</span>
+</div>
+<span class="material-symbols-outlined text-[20px] text-secondary">graphic_eq</span>
+</div>
+<!-- Codec Usage Distribution Bar -->
+<div class="flex flex-col space-y-1.5">
+<div class="flex justify-between items-center text-label-sm font-label-sm">
+<span class="text-primary-container font-semibold">LDAC Hi-Res (78%)</span>
+<span class="text-secondary">AAC (16%) • SBC (6%)</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high flex overflow-hidden">
+<div class="h-full bg-primary-container" style="width: 78%"></div>
+<div class="h-full bg-secondary" style="width: 16%"></div>
+<div class="h-full bg-surface-variant" style="width: 6%"></div>
+</div>
+</div>
+<!-- Codec Itemized Tier List -->
+<div class="flex flex-col space-y-space-sm pt-1">
+<!-- LDAC -->
+<div class="p-space-sm rounded-xl bg-surface-container-high flex items-center justify-between">
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-body-lg text-body-lg text-on-surface">Sony LDAC</span>
+<span class="px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] text-[10px] font-bold tracking-tight">HI-RES AUDIO</span>
+</div>
+<span class="font-label-md text-label-md text-secondary">990 kbps • 24-bit / 96kHz Studio Master</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<!-- AAC -->
+<div class="p-space-sm rounded-xl bg-surface-container-high flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-on-surface">AAC HD</span>
+<span class="font-label-md text-label-md text-secondary">256 kbps • Optimized iOS/Android Lossy</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-medium">Auto-Switch</span>
+</div>
+<!-- SBC -->
+<div class="p-space-sm rounded-xl bg-surface-container-high flex items-center justify-between opacity-75">
+<div class="flex flex-col">
+<span class="font-body-lg text-body-lg text-on-surface">SBC Standard</span>
+<span class="font-label-md text-label-md text-secondary">328 kbps • Backward Compatibility</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary font-medium">Idle</span>
+</div>
+</div>
+</div>
+<!-- Hearing Health & Safe Exposure Metric -->
+<div class="rounded-[20px] bg-surface-container p-space-lg flex flex-col space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-full bg-[#34C759]/15 flex items-center justify-center text-[#34C759]">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface">Hearing Health Safety</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-[#34C759] font-label-sm text-label-sm font-semibold">Optimal</span>
+</div>
+<!-- Decibel Meter Gauge Display -->
+<div class="flex flex-col space-y-space-xs pt-1">
+<div class="flex items-baseline justify-between">
+<div class="flex items-baseline gap-1">
+<span class="text-[28px] font-bold text-on-surface">72</span>
+<span class="font-body-md text-body-md text-secondary">dB Average</span>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">WHO Threshold: 85 dB</span>
+</div>
+<!-- Segmented Decibel Meter Bar -->
+<div class="w-full h-3 rounded-full bg-surface-container-high p-0.5 flex gap-1">
+<!-- Safe Zone Active Fill -->
+<div class="h-full rounded-full bg-[#34C759] flex-1"></div>
+<div class="h-full rounded-full bg-[#34C759] flex-1"></div>
+<div class="h-full rounded-full bg-[#34C759] flex-1"></div>
+<div class="h-full rounded-full bg-[#34C759]/40 flex-1"></div>
+<!-- Caution Zone -->
+<div class="h-full rounded-full bg-surface-variant flex-1"></div>
+<!-- Risk Zone -->
+<div class="h-full rounded-full bg-surface-variant flex-1"></div>
+</div>
+<p class="font-label-md text-label-md text-secondary pt-1">
+        Your current listening levels protect high-frequency cochlear sensitivity and align with daily international wellness standards.
+      </p>
+</div>
+</div>
+</div></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/80 backdrop-blur-xl border-t border-surface-container-highest/20" data-active-classes="text-primary-container [&amp;_span.indicator]:opacity-100"><div class="flex justify-around items-center h-16 px-gutter-mobile"><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] text-secondary transition-all hover:text-on-surface" data-path="home" href="#"><span class="material-symbols-outlined text-[22px]">home</span><span class="font-label-sm text-label-sm mt-space-xs">Home</span><span class="indicator w-1 h-1 rounded-full bg-primary-container mt-0.5 opacity-0 transition-opacity"></span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] text-primary transition-all" data-path="devices" href="#"><span class="material-symbols-outlined text-[22px]">headphones</span><span class="font-label-sm text-label-sm mt-space-xs font-semibold">Devices</span><span class="indicator w-1 h-1 rounded-full bg-primary-container mt-0.5 opacity-100 transition-opacity"></span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] text-secondary transition-all hover:text-on-surface" data-path="auto" href="#"><span class="material-symbols-outlined text-[22px]">bolt</span><span class="font-label-sm text-label-sm mt-space-xs">Auto</span><span class="indicator w-1 h-1 rounded-full bg-primary-container mt-0.5 opacity-0 transition-opacity"></span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] text-secondary transition-all hover:text-on-surface" data-path="tools" href="#"><span class="material-symbols-outlined text-[22px]">tune</span><span class="font-label-sm text-label-sm mt-space-xs">Tools</span><span class="indicator w-1 h-1 rounded-full bg-primary-container mt-0.5 opacity-0 transition-opacity"></span></a><a class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] text-secondary transition-all hover:text-on-surface" data-path="settings" href="#"><span class="material-symbols-outlined text-[22px]">settings</span><span class="font-label-sm text-label-sm mt-space-xs">Settings</span><span class="indicator w-1 h-1 rounded-full bg-primary-container mt-0.5 opacity-0 transition-opacity"></span></a></div></nav>
+
+</body></html>

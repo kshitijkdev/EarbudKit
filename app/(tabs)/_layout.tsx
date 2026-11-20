@@ -4,14 +4,13 @@ import { StyleSheet } from 'react-native';
 import { FloatingPillNav, TabItem } from '../../src/components/ui/FloatingPillNav';
 
 const TABS: TabItem[] = [
-  { key: 'index', label: 'Home', icon: '🎧' },
-  { key: 'devices', label: 'Devices', icon: '📱' },
-  { key: 'auto', label: 'Auto', icon: '⚡' },
-  { key: 'tools', label: 'Tools', icon: '🎛️' },
-  { key: 'settings', label: 'Settings', icon: '⚙️' },
+  { key: 'index', label: 'Home' },
+  { key: 'devices', label: 'Devices' },
+  { key: 'auto', label: 'Auto' },
+  { key: 'tools', label: 'Tools' },
+  { key: 'settings', label: 'Settings' },
 ];
 
-// React Navigation 7 / Expo Router custom tab bar props
 interface CustomTabBarProps {
   state: {
     index: number;

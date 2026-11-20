@@ -45,7 +45,8 @@ export function PillButton({
   const { colors, fonts, borderRadius } = theme;
 
   const getContainerStyle = (): ViewStyle => {
-    const minHeight = size === 'sm' ? 38 : size === 'lg' ? 54 : 48;
+    // Soft Studio heights: md = 50px, sm = 36px, lg = 54px
+    const minHeight = size === 'sm' ? 36 : size === 'lg' ? 54 : 50;
     const paddingHorizontal = size === 'sm' ? 14 : size === 'lg' ? 24 : 20;
 
     let bg = colors.primary;
@@ -54,22 +55,22 @@ export function PillButton({
 
     switch (variant) {
       case 'primary':
-        bg = colors.electricViolet;
-        border = colors.electricViolet;
+        bg = colors.primary;
+        border = colors.primary;
         break;
       case 'secondary':
-        bg = theme.dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(94, 57, 224, 0.08)';
-        border = theme.dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(94, 57, 224, 0.20)';
-        borderWidth = 1;
+        bg = colors.surfaceContainerHigh;
+        border = colors.hairline;
+        borderWidth = 0.5;
         break;
       case 'ghost':
         bg = 'transparent';
         border = 'transparent';
         break;
       case 'danger':
-        bg = theme.dark ? 'rgba(255, 79, 216, 0.10)' : 'rgba(186, 26, 26, 0.10)';
-        border = theme.dark ? colors.error : colors.error;
-        borderWidth = 1;
+        bg = colors.errorContainer;
+        border = colors.error;
+        borderWidth = 0.5;
         break;
     }
 
@@ -85,18 +86,18 @@ export function PillButton({
   };
 
   const getLabelStyle = (): TextStyle => {
-    let color = colors.onPrimary;
-    const fontSize = size === 'sm' ? 12 : size === 'lg' ? 16 : 14;
+    let color = '#FFFFFF';
+    const fontSize = size === 'sm' ? 13 : 16;
 
     switch (variant) {
       case 'primary':
-        color = '#FFFFFF';
+        color = colors.onPrimary;
         break;
       case 'secondary':
         color = colors.onSurface;
         break;
       case 'ghost':
-        color = colors.limeNeon;
+        color = colors.primary;
         break;
       case 'danger':
         color = colors.error;
@@ -108,7 +109,7 @@ export function PillButton({
       fontSize,
       fontFamily: fonts.label,
       fontWeight: '600',
-      letterSpacing: 0.3,
+      letterSpacing: -0.2,
     };
   };
 
@@ -117,13 +118,13 @@ export function PillButton({
       testID={testID}
       onPress={onPress}
       disabled={disabled || loading}
-      activeOpacity={0.75}
+      activeOpacity={0.85}
       style={[styles.base, getContainerStyle(), style]}
     >
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? '#FFFFFF' : colors.primary}
+          color={variant === 'primary' ? colors.onPrimary : colors.primary}
         />
       ) : (
         <View style={styles.contentRow}>

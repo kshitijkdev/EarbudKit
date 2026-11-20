@@ -4,6 +4,7 @@ import { useTheme } from '../../theme';
 
 export interface SectionHeaderProps {
   title: string;
+  category?: string;
   subtitle?: string;
   actionText?: string;
   onActionPress?: () => void;
@@ -14,6 +15,7 @@ export interface SectionHeaderProps {
 
 export function SectionHeader({
   title,
+  category,
   subtitle,
   actionText,
   onActionPress,
@@ -27,6 +29,19 @@ export function SectionHeader({
   return (
     <View testID={testID} style={[styles.container, style]}>
       <View style={styles.textContainer}>
+        {category ? (
+          <Text
+            style={[
+              styles.category,
+              {
+                color: colors.primary,
+                fontFamily: fonts.label,
+              },
+            ]}
+          >
+            {category}
+          </Text>
+        ) : null}
         <Text
           style={[
             styles.title,
@@ -65,7 +80,7 @@ export function SectionHeader({
             style={[
               styles.actionText,
               {
-                color: colors.electricViolet,
+                color: colors.primary,
                 fontFamily: fonts.label,
               },
             ]}
@@ -83,22 +98,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 6,
     marginBottom: 6,
   },
   textContainer: {
     flex: 1,
     marginRight: 12,
   },
+  category: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    letterSpacing: -0.2,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 2,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   actionText: {
     fontSize: 13,

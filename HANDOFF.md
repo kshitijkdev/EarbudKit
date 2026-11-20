@@ -171,16 +171,27 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 - Gradle debug APK assembled and verified (`android/app/build/outputs/apk/debug/app-debug.apk`).
 - App installed and actively running on emulator (`emulator-5554`) and Samsung tablet (`R52N713R7MY`).
 
-## Upcoming Roadmap (Queued - Do Not Build Yet)
-- [ ] **Personal Hearing Calibration (Audiogram & Auto-EQ)**:
-  - Interactive frequency tone hearing test (standard Android AudioTrack, 250Hz to 8kHz tones).
-  - Automatically calculates hearing/driver compensation curve and maps it to the 5-band AudioFX Equalizer.
-  - Saved per-device MAC address in `equalizerStore`.
-  - Works with 100% of Bluetooth audio devices on Android (no vendor chip required).
-  - *Note*: Pending UI changes and design specifications before implementation begins.
-- [ ] **Smart Habit Predictor (Adaptive Context Engine / Smart Handshake)**:
-  - Zero-bloat Bayesian/Markov frequency matrix stored in local AsyncStorage (`@earbudkit/habit-matrix`, < 5KB).
-  - Learns time-of-day listening habits: Morning commute (podcasts), evening workout (high volume + DND), late night (low volume + sleep timer).
-  - Surfaces a glowing Sonic Neo-Glass "Smart Handshake" capsule on Home with match confidence and 3s auto-apply countdown.
-  - 100% on-device, zero background battery drain, air-gapped privacy.
-  - *Note*: Queued on roadmap. Pending UI changes and design specifications.
+## Soft Studio UI Redesign & New Features (Stages S1–S7)
+- [x] **Stage S1: "Soft Studio" Design Tokens, ThemeProvider Accent System & Base UI Components**
+  - Updated `src/theme/theme.ts`: Soft Studio design language (pitch black `#000000` OLED dark, pure white `#FFFFFF` / `#F2F2F7` light, 4 studio accents: Crimson `#FA2D48`, Cool Sky Blue `#74D1FF`, Warm Amber `#FBBF24`, Emerald `#34D399`).
+  - Updated `src/theme/ThemeProvider.tsx`: Multi-accent engine with persistence (`@earbudkit/accent-color`), dynamic theme generator.
+  - Refactored UI components in `src/components/ui/`:
+    - `GlassCard.tsx`: 20px card radius, flat solid acoustic plates with 0.5px hairline border and dynamic ambient back-glow.
+    - `PillButton.tsx`: 50px pill button with active accent fill, `#2C2C2E` / `#E5E5EA` secondary with hairline.
+    - `Toggle.tsx`: Sleek pill switch flooding with active accent.
+    - `NeonSlider.tsx`: 8px recessed inset groove with active accent fill and 28px white circular thumb.
+    - `FloatingPillNav.tsx`: Apple Music frosted translucent bottom dock with vector icons (zero emojis) and accent highlight.
+    - `StatusChip.tsx`: 28px pill chip with inset surface and status dot / vector icon.
+    - `BatteryRing.tsx`: Clean vector icon center mode (`flash` icon, zero emojis).
+    - `SectionHeader.tsx`: Apple Music typographic hierarchy (20px bold title, uppercase 11px category, accent action text).
+  - TypeScript type check (`npx tsc --noEmit`) passing with 0 errors; all 6 unit tests passing.
+- [ ] **Stage S2: Home Screen Reskin + Smart Habit Predictor Engine**
+- [ ] **Stage S3: Devices Screen & Edit Modal**
+- [ ] **Stage S4: Auto-Actions Screen**
+- [ ] **Stage S5: Tools Screen + Personal Hearing Calibration (HearID)**
+- [ ] **Stage S6: Settings Screen (Theme & Accent Switching) & Stats Dashboard**
+- [ ] **Stage S7: Light Theme Polish, Verification, APK Build & Docs
+
+## Upcoming Roadmap
+- [ ] **Personal Hearing Calibration (Audiogram & Auto-EQ)**: Interactive hearing test (250Hz–8kHz) generating per-MAC EQ curves.
+- [ ] **Smart Habit Predictor (Adaptive Context Engine / Smart Handshake)**: Lightweight on-device pattern learner (<5KB).

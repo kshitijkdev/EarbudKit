@@ -10,12 +10,13 @@ import {
 } from 'react-native';
 import { useTheme } from '../../theme';
 
-export type StatusDotColor = 'lime' | 'violet' | 'pink' | 'grey';
+export type StatusDotColor = 'lime' | 'violet' | 'pink' | 'grey' | 'accent';
 
 export interface StatusChipProps {
   label: string;
   dotColor?: StatusDotColor;
   pulse?: boolean;
+  active?: boolean;
   style?: StyleProp<ViewStyle>;
   labelStyle?: StyleProp<TextStyle>;
   icon?: React.ReactNode;
@@ -25,6 +26,7 @@ export function StatusChip({
   label,
   dotColor = 'lime',
   pulse = false,
+  active = false,
   style,
   labelStyle,
   icon,
@@ -59,11 +61,11 @@ export function StatusChip({
   const resolveDotColor = (): string => {
     switch (dotColor) {
       case 'lime':
-        return colors.limeNeon;
+        return colors.limeNeon; // #34C759
       case 'violet':
-        return colors.electricViolet;
       case 'pink':
-        return colors.hotPink;
+      case 'accent':
+        return colors.primary;
       case 'grey':
       default:
         return colors.outline;
@@ -78,12 +80,12 @@ export function StatusChip({
         styles.chip,
         {
           borderRadius: borderRadius.full,
-          backgroundColor: theme.dark
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(94, 57, 224, 0.06)',
-          borderColor: theme.dark
-            ? 'rgba(255, 255, 255, 0.10)'
-            : 'rgba(94, 57, 224, 0.12)',
+          backgroundColor: active
+            ? colors.primaryContainer
+            : colors.surfaceContainerHigh,
+          borderColor: active
+            ? colors.primary
+            : colors.hairline,
         },
         style,
       ]}
@@ -105,7 +107,7 @@ export function StatusChip({
         style={[
           styles.label,
           {
-            color: colors.onSurface,
+            color: active ? colors.primary : colors.onSurface,
             fontFamily: fonts.label,
           },
           labelStyle,
@@ -123,7 +125,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderWidth: 1,
+    height: 28,
+    borderWidth: 0.5,
     alignSelf: 'flex-start',
   },
   dot: {
@@ -137,8 +140,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.8,
+    fontWeight: '600',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
 });

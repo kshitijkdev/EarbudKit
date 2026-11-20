@@ -34,20 +34,20 @@ export function GlassCard({
   style,
   contentStyle,
   onPress,
-  activeOpacity = 0.8,
+  activeOpacity = 0.85,
   testID,
 }: GlassCardProps) {
   const { theme } = useTheme();
   const { colors, borderRadius } = theme;
 
-  const resolvedGlowColor = glowColor ?? colors.electricViolet;
+  const resolvedGlowColor = glowColor ?? colors.primary;
   const isGlowing = glow || active;
 
   const cardStyle: ViewStyle = {
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
+    borderRadius: borderRadius.lg, // 20px Soft Studio standard
+    borderWidth: 0.5,
     borderColor: active
-      ? colors.glassActiveBorder
+      ? colors.primary
       : colors.glassBorder,
     backgroundColor: active
       ? colors.glassActiveFill
@@ -57,12 +57,12 @@ export function GlassCard({
       ? Platform.select({
           ios: {
             shadowColor: resolvedGlowColor,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.35,
-            shadowRadius: 12,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: theme.dark ? 0.35 : 0.15,
+            shadowRadius: 16,
           },
           android: {
-            elevation: active ? 4 : 2,
+            elevation: active ? 3 : 1,
           },
         })
       : null),

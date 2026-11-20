@@ -9,12 +9,15 @@ import {
   StyleProp,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../theme';
 
 export interface TabItem {
   key: string;
   label: string;
-  icon: string;
+  icon?: string;
+  iconName?: keyof typeof Ionicons.glyphMap;
+  renderIcon?: (isActive: boolean, color: string) => React.ReactNode;
 }
 
 export interface FloatingPillNavProps {
@@ -24,6 +27,14 @@ export interface FloatingPillNavProps {
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
+
+const DEFAULT_ICON_MAP: Record<string, { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }> = {
+  index: { active: 'home', inactive: 'home-outline' },
+  devices: { active: 'headset', inactive: 'headset-outline' },
+  auto: { active: 'flash', inactive: 'flash-outline' },
+  tools: { active: 'options', inactive: 'options-outline' },
+  settings: { active: 'settings', inactive: 'settings-outline' },
+};
 
 export function FloatingPillNav({
   tabs,
@@ -56,20 +67,30 @@ export function FloatingPillNav({
           {
             borderRadius: borderRadius.full,
             backgroundColor: theme.dark
-              ? 'rgba(18, 18, 24, 0.88)'
-              : 'rgba(255, 255, 255, 0.92)',
-            borderColor: theme.dark
-              ? 'rgba(255, 255, 255, 0.12)'
-              : 'rgba(94, 57, 224, 0.15)',
-            shadowColor: theme.dark ? colors.electricViolet : '#000000',
-            shadowOpacity: theme.dark ? 0.3 : 0.1,
+              ? 'rgba(28, 28, 30, 0.94)'
+              : 'rgba(255, 255, 255, 0.96)',
+            borderColor: colors.hairline,
+            borderWidth: 0.5,
+            shadowColor: '#000000',
+            shadowOpacity: theme.dark ? 0.35 : 0.1,
             shadowRadius: 16,
             shadowOffset: { width: 0, height: 4 },
+            elevation: 8,
           },
         ]}
       >
         {tabs.map((tab) => {
           const isActive = tab.key === activeTab;
+          const activeColor = colors.primary;
+          const inactiveColor = colors.onSurfaceVariant;
+          const iconColor = isActive ? activeColor : inactiveColor;
+
+          const defaultMapping = DEFAULT_ICON_MAP[tab.key];
+          const iconGlyph = tab.iconName
+            ? tab.iconName
+            : defaultMapping
+            ? (isActive ? defaultMapping.active : defaultMapping.inactive)
+            : 'ellipse-outline';
 
           return (
             <TouchableOpacity
@@ -83,33 +104,28 @@ export function FloatingPillNav({
                   borderRadius: borderRadius.full,
                   backgroundColor: isActive
                     ? theme.dark
-                      ? 'rgba(124, 92, 255, 0.18)'
-                      : 'rgba(94, 57, 224, 0.12)'
+                      ? colors.primaryContainer
+                      : colors.primaryContainer
                     : 'transparent',
-                  borderColor: isActive
-                    ? colors.electricViolet
-                    : 'transparent',
-                  borderWidth: isActive ? 1 : 0,
                 },
               ]}
             >
-              <Text
-                style={[
-                  styles.tabIcon,
-                  {
-                    opacity: isActive ? 1 : 0.65,
-                    transform: [{ scale: isActive ? 1.05 : 0.95 }],
-                  },
-                ]}
-              >
-                {tab.icon}
-              </Text>
+              {tab.renderIcon ? (
+                tab.renderIcon(isActive, iconColor)
+              ) : (
+                <Ionicons
+                  name={iconGlyph}
+                  size={20}
+                  color={iconColor}
+                  style={styles.tabIcon}
+                />
+              )}
               <Text
                 numberOfLines={1}
                 style={[
                   styles.tabLabel,
                   {
-                    color: isActive ? colors.onSurface : colors.outline,
+                    color: isActive ? activeColor : inactiveColor,
                     fontFamily: fonts.label,
                     fontWeight: isActive ? '700' : '500',
                   },
@@ -117,16 +133,6 @@ export function FloatingPillNav({
               >
                 {tab.label}
               </Text>
-              {isActive && (
-                <View
-                  style={[
-                    styles.activeDot,
-                    {
-                      backgroundColor: colors.hotPink,
-                    },
-                  ]}
-                />
-              )}
             </TouchableOpacity>
           );
         })}
@@ -138,45 +144,34 @@ export function FloatingPillNav({
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 100,
+    zIndex: 1000,
   },
   dock: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 6,
     paddingHorizontal: 8,
-    borderWidth: 1,
-    maxWidth: 520,
-    width: '100%',
-    elevation: 8,
+    paddingVertical: 6,
+    width: '94%',
+    maxWidth: 440,
+    height: 60,
   },
   tabItem: {
     flex: 1,
-    minHeight: 48,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 4,
-    paddingHorizontal: 2,
-    position: 'relative',
+    marginHorizontal: 2,
   },
   tabIcon: {
-    fontSize: 18,
     marginBottom: 2,
   },
   tabLabel: {
-    fontSize: 10,
-    letterSpacing: 0.2,
-  },
-  activeDot: {
-    position: 'absolute',
-    bottom: 2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    fontSize: 11,
+    letterSpacing: 0.1,
   },
 });

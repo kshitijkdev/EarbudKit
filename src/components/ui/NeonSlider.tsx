@@ -9,7 +9,6 @@ import {
   StyleProp,
   LayoutChangeEvent,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../theme';
 
 export interface NeonSliderProps {
@@ -122,7 +121,7 @@ export function NeonSlider({
             style={[
               styles.valueText,
               {
-                color: colors.limeNeon,
+                color: colors.primary,
                 fontFamily: fonts.headline,
               },
             ]}
@@ -142,12 +141,8 @@ export function NeonSlider({
             style={[
               styles.stepBtn,
               {
-                backgroundColor: theme.dark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(94, 57, 224, 0.08)',
-                borderColor: theme.dark
-                  ? 'rgba(255, 255, 255, 0.15)'
-                  : 'rgba(94, 57, 224, 0.15)',
+                backgroundColor: colors.surfaceContainerHigh,
+                borderColor: colors.hairline,
                 opacity: disabled || clampedValue <= min ? 0.35 : 1,
               },
             ]}
@@ -163,30 +158,30 @@ export function NeonSlider({
           {...panResponder.panHandlers}
           style={styles.touchArea}
         >
-          {/* Background track: 4px */}
+          {/* Background track: 8px Soft Studio pill */}
           <View
             style={[
               styles.trackBg,
               {
-                backgroundColor: theme.dark ? '#1C1C26' : '#E4E1EE',
+                backgroundColor: colors.surfaceContainerHigh,
+                borderColor: colors.hairline,
+                borderWidth: 0.5,
               },
             ]}
           >
-            {/* Active filled track with gradient */}
-            <LinearGradient
-              colors={[colors.electricViolet, colors.hotPink]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
+            {/* Active filled track with active accent */}
+            <View
               style={[
                 styles.trackFill,
                 {
+                  backgroundColor: colors.primary,
                   width: `${Math.max(percentage * 100, 0)}%`,
                 },
               ]}
             />
           </View>
 
-          {/* White thumb with Lime glow */}
+          {/* 28px circular thumb with pure #FFFFFF and 0.5px hairline */}
           {trackWidth > 0 && (
             <View
               style={[
@@ -194,15 +189,15 @@ export function NeonSlider({
                 {
                   left: Math.max(
                     0,
-                    Math.min(percentage * trackWidth - 10, trackWidth - 20)
+                    Math.min(percentage * trackWidth - 14, trackWidth - 28)
                   ),
                   borderColor: isInteracting
-                    ? colors.limeNeon
-                    : 'rgba(255, 255, 255, 0.9)',
-                  borderWidth: isInteracting ? 2.5 : 2,
-                  shadowColor: isInteracting ? colors.limeNeon : '#000000',
-                  shadowOpacity: isInteracting ? 0.6 : 0.25,
-                  shadowRadius: isInteracting ? 8 : 3,
+                    ? colors.primary
+                    : 'rgba(0, 0, 0, 0.15)',
+                  borderWidth: 0.5,
+                  shadowColor: '#000000',
+                  shadowOpacity: isInteracting ? 0.35 : 0.2,
+                  shadowRadius: isInteracting ? 6 : 3,
                 },
               ]}
             />
@@ -218,12 +213,8 @@ export function NeonSlider({
             style={[
               styles.stepBtn,
               {
-                backgroundColor: theme.dark
-                  ? 'rgba(255, 255, 255, 0.08)'
-                  : 'rgba(94, 57, 224, 0.08)',
-                borderColor: theme.dark
-                  ? 'rgba(255, 255, 255, 0.15)'
-                  : 'rgba(94, 57, 224, 0.15)',
+                backgroundColor: colors.surfaceContainerHigh,
+                borderColor: colors.hairline,
                 opacity: disabled || clampedValue >= max ? 0.35 : 1,
               },
             ]}
@@ -253,28 +244,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   sublabel: {
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 2,
   },
   valueText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     marginLeft: 12,
   },
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
+    height: 48,
   },
   stepBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -285,27 +276,27 @@ const styles = StyleSheet.create({
   },
   touchArea: {
     flex: 1,
-    height: 40,
+    height: 48,
     justifyContent: 'center',
     marginHorizontal: 10,
     position: 'relative',
   },
   trackBg: {
-    height: 4,
-    borderRadius: 2,
+    height: 8,
+    borderRadius: 9999,
     width: '100%',
     overflow: 'hidden',
   },
   trackFill: {
-    height: 4,
-    borderRadius: 2,
+    height: 8,
+    borderRadius: 9999,
   },
   thumb: {
     position: 'absolute',
     top: 10,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
     elevation: 3,
   },

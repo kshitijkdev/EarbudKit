@@ -37,8 +37,8 @@ export function Toggle({
   useEffect(() => {
     Animated.spring(anim, {
       toValue: value ? 1 : 0,
-      friction: 7,
-      tension: 60,
+      friction: 8,
+      tension: 70,
       useNativeDriver: false,
     }).start();
   }, [value, anim]);
@@ -51,23 +51,15 @@ export function Toggle({
   const trackBg = anim.interpolate({
     inputRange: [0, 1],
     outputRange: [
-      theme.dark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.12)',
-      colors.limeNeon,
-    ],
-  });
-
-  const thumbBg = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [
-      theme.dark ? '#A5A2B0' : '#FFFFFF',
-      theme.dark ? '#0B0B10' : '#FFFFFF',
+      colors.surfaceContainerHigh,
+      colors.primary,
     ],
   });
 
   return (
     <TouchableOpacity
       testID={testID}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       disabled={disabled}
       onPress={() => onValueChange(!value)}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -79,12 +71,8 @@ export function Toggle({
           {
             borderRadius: borderRadius.full,
             backgroundColor: trackBg,
-            borderColor: value
-              ? colors.limeNeon
-              : theme.dark
-              ? 'rgba(255, 255, 255, 0.15)'
-              : 'rgba(0, 0, 0, 0.15)',
-            opacity: disabled ? 0.45 : 1,
+            borderColor: colors.hairline,
+            borderWidth: 0.5,
           },
         ]}
       >
@@ -92,8 +80,14 @@ export function Toggle({
           style={[
             styles.thumb,
             {
+              borderRadius: borderRadius.full,
+              backgroundColor: '#FFFFFF',
               transform: [{ translateX: thumbTranslateX }],
-              backgroundColor: thumbBg,
+              shadowColor: '#000000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.25,
+              shadowRadius: 2,
+              elevation: 2,
             },
           ]}
         />
@@ -112,18 +106,10 @@ const styles = StyleSheet.create({
   track: {
     width: TRACK_WIDTH,
     height: TRACK_HEIGHT,
-    borderRadius: 9999,
-    borderWidth: 1,
     justifyContent: 'center',
   },
   thumb: {
     width: THUMB_SIZE,
     height: THUMB_SIZE,
-    borderRadius: THUMB_SIZE / 2,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
   },
 });

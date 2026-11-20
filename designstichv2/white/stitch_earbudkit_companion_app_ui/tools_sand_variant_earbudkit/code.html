@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-surface": "#e4e2e4", "secondary-fixed-dim": "#c6c6cb", "surface-container-lowest": "#0e0e10", "surface-container-highest": "#353437", "on-secondary-fixed": "#1a1b1f", "inverse-surface": "#e4e2e4", "primary": "#ffb3b2", "on-secondary-container": "#b5b4ba", "secondary-fixed": "#e3e2e7", "on-tertiary": "#303032", "inverse-primary": "#bf002c", "on-tertiary-container": "#29292b", "surface-container": "#1f1f21", "surface-container-high": "#2a2a2c", "primary-container": "#ff525e", "on-error-container": "#ffdad6", "on-tertiary-fixed": "#1b1b1d", "background": "#131315", "tertiary-fixed-dim": "#c8c6c8", "secondary-container": "#46464b", "surface": "#131315", "surface-bright": "#39393b", "tertiary-container": "#919092", "inverse-on-surface": "#303032", "on-secondary": "#2f3034", "on-secondary-fixed-variant": "#46464b", "outline-variant": "#5d3f3f", "on-background": "#e4e2e4", "outline": "#ad8887", "primary-fixed": "#ffdad9", "on-primary-fixed-variant": "#92001f", "surface-container-low": "#1b1b1d", "on-primary-fixed": "#410008", "error-container": "#93000a", "surface-tint": "#ffb3b2", "surface-variant": "#353437", "on-primary-container": "#5b0010", "on-primary": "#680013", "on-error": "#690005", "surface-dim": "#131315", "error": "#ffb4ab", "on-tertiary-fixed-variant": "#474649", "secondary": "#c6c6cb", "tertiary": "#c8c6c8", "primary-fixed-dim": "#ffb3b2", "tertiary-fixed": "#e4e2e4", "on-surface-variant": "#e6bdbc" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter-mobile": "0.75rem", "space-md": "1rem", "space-lg": "1.25rem", "margin": "1.5rem", "gutter": "1rem", "space-xl": "1.5rem", "margin-mobile": "1rem" }, fontFamily: { "label-md": ["Inter"], "headline-sm": ["Inter"], "body-lg": ["Inter"], "label-sm": ["Inter"], "headline-lg": ["Inter"], "headline-lg-mobile": ["Inter"], "body-md": ["Inter"] }, fontSize: { "label-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "25px", "fontWeight": "700" }], "body-lg": ["17px", { "lineHeight": "22px", "fontWeight": "600" }], "label-sm": ["11px", { "lineHeight": "13px", "fontWeight": "600" }], "headline-lg": ["34px", { "lineHeight": "41px", "fontWeight": "700" }], "headline-lg-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }], "body-md": ["15px", { "lineHeight": "20px", "fontWeight": "400" }] } } } };</script><style>@layer base { html, body { width: 100vw; margin: 0; padding: 0; } body { overscroll-behavior: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; }</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl pt-safe shadow-[0_1px_12px_rgba(0,0,0,0.25)]"><div class="h-16 px-space-md flex items-center justify-between"><h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Tools</h1><div class="flex items-center gap-space-xs"><button aria-label="Toggle Theme" class="w-11 h-11 flex items-center justify-center rounded-full text-secondary hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[22px]">dark_mode</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface"><div class="flex flex-col w-full px-space-md py-space-sm space-y-space-md">
+<!-- Subheader -->
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed-dim">Hardware DSP &amp; BLE</span>
+<span class="inline-flex items-center gap-space-xs px-space-sm py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-[#E8D8C8] animate-pulse"></span>
+      2.4GHz Live
+    </span>
+</div>
+<!-- Segmented Control Pills -->
+<div class="grid grid-cols-3 gap-space-xs p-1 rounded-full bg-surface-container-high">
+<button class="h-9 rounded-full bg-[#E8D8C8] text-[#2A2118] font-body-md text-body-md font-bold shadow-sm transition-all flex items-center justify-center gap-1.5" id="pill-find">
+<span class="material-symbols-outlined text-[18px]">near_me</span>
+      Find
+    </button>
+<button class="h-9 rounded-full bg-transparent text-secondary hover:text-on-surface font-body-md text-body-md transition-all flex items-center justify-center gap-1.5" id="pill-sleep">
+<span class="material-symbols-outlined text-[18px]">bedtime</span>
+      Sleep
+    </button>
+<button class="h-9 rounded-full bg-transparent text-secondary hover:text-on-surface font-body-md text-body-md transition-all flex items-center justify-center gap-1.5" id="pill-eq">
+<span class="material-symbols-outlined text-[18px]">graphic_eq</span>
+      Equalizer
+    </button>
+</div>
+<!-- BLE 2.4GHz Radar Card -->
+<div class="rounded-xl bg-surface-container p-space-lg flex flex-col space-y-space-md relative overflow-hidden shadow-md">
+<!-- Header row -->
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface">BLE 2.4GHz Radar</span>
+</div>
+<p class="font-label-md text-label-md text-secondary">Acoustic precision tracking</p>
+</div>
+<span class="px-space-sm py-1 rounded-full bg-[#E8D8C8]/15 text-[#E8D8C8] font-label-sm text-label-sm uppercase tracking-wider font-bold">
+        Nearby
+      </span>
+</div>
+<!-- Circular Radar Display -->
+<div class="relative w-full aspect-square max-w-[280px] mx-auto flex items-center justify-center my-space-xs">
+<!-- Ambient Back-Glow -->
+<div class="absolute inset-4 rounded-full bg-[#E8D8C8]/10 blur-2xl"></div>
+<!-- Concentric Radar Rings -->
+<div class="absolute inset-0 rounded-full bg-surface-container-high/40"></div>
+<div class="absolute inset-6 rounded-full bg-surface-container-high/70"></div>
+<div class="absolute inset-14 rounded-full bg-surface-container-highest/60"></div>
+<div class="absolute inset-24 rounded-full bg-surface-container-lowest"></div>
+<!-- Radar Hairline Crosshairs (no borders, using thin colored spans) -->
+<span class="absolute w-full h-[1px] bg-[#E8D8C8]/15"></span>
+<span class="absolute h-full w-[1px] bg-[#E8D8C8]/15"></span>
+<!-- Sweeping Gradient Arc (CSS keyframe) -->
+<div class="absolute inset-0 rounded-full pointer-events-none animate-[spin_3.5s_linear_infinite]" style="background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(232, 216, 200, 0.28) 360deg);">
+</div>
+<!-- Glowing Blip Dot (Left Earbud) -->
+<div class="absolute top-[34%] right-[32%] flex items-center justify-center z-10">
+<span class="absolute w-6 h-6 rounded-full bg-[#E8D8C8]/30 animate-ping"></span>
+<span class="relative w-3.5 h-3.5 rounded-full bg-[#E8D8C8] shadow-[0_0_12px_#E8D8C8]"></span>
+</div>
+<!-- Center RSSI Badge -->
+<div class="relative z-10 flex flex-col items-center justify-center w-20 h-20 rounded-full bg-surface-container-lowest text-center shadow-lg">
+<span class="font-label-sm text-label-sm text-secondary">RSSI</span>
+<span class="font-body-lg text-body-lg text-on-surface font-bold text-[#E8D8C8]">-62</span>
+<span class="font-label-sm text-label-sm text-secondary">dBm</span>
+</div>
+</div>
+<!-- Proximity Status & Signal Strength -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-full bg-[#E8D8C8]/15 flex items-center justify-center text-[#E8D8C8] shrink-0">
+<span class="material-symbols-outlined text-[20px]">sensors</span>
+</div>
+<div class="min-w-0">
+<p class="font-body-md text-body-md text-on-surface font-semibold truncate">Getting Warmer</p>
+<p class="font-label-md text-label-md text-secondary truncate">Approx. 2.1m away</p>
+</div>
+</div>
+<!-- 5-bar Signal Strength Indicator -->
+<div class="flex items-end gap-1 h-6 shrink-0 pl-space-sm">
+<span class="w-1.5 h-2 rounded-full bg-[#E8D8C8]"></span>
+<span class="w-1.5 h-3 rounded-full bg-[#E8D8C8]"></span>
+<span class="w-1.5 h-4.5 rounded-full bg-[#E8D8C8]"></span>
+<span class="w-1.5 h-6 rounded-full bg-[#E8D8C8]"></span>
+<span class="w-1.5 h-6 rounded-full bg-surface-container-highest"></span>
+</div>
+</div>
+<!-- Chirp Left Earbud Button -->
+<button class="w-full h-12 rounded-full bg-[#E8D8C8] text-[#2A2118] font-body-lg text-body-lg font-bold flex items-center justify-center gap-space-xs shadow-[0_4px_20px_rgba(232,216,200,0.25)] active:scale-[0.98] transition-all" id="chirp-btn">
+<span class="material-symbols-outlined text-[22px]">volume_up</span>
+<span id="chirp-label">Chirp Left Earbud</span>
+</button>
+</div>
+<!-- GPS Location Card -->
+<div class="rounded-xl bg-surface-container p-space-md flex flex-col space-y-space-md shadow-md">
+<!-- Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[20px]">headphones</span>
+</div>
+<div>
+<h2 class="font-body-lg text-body-lg text-on-surface font-semibold leading-tight">Studio Pro Wireless</h2>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-error-container"></span>
+<span class="font-label-sm text-label-sm text-secondary">GPS Synced • Last ping 2m ago</span>
+</div>
+</div>
+</div>
+<!-- Battery Indicator -->
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high font-label-sm text-label-sm text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-[#34C759]">battery_5_bar</span>
+<span>82%</span>
+</div>
+</div>
+<!-- Map View Snapshot with Location Target -->
+<div class="relative w-full h-36 rounded-lg bg-surface-container-lowest bg-cover bg-center overflow-hidden flex items-center justify-center" data-location="San Francisco, CA" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBdLfIq8sSLjAP-m-ILw_WuuB2qv0U0jS2inOnbapGzQLWjZU0q7OKMc47DL18UQAabHV-BkS2KOMqnxCUDg9rpd-DBs3sTNIYjd6M-OuTV0owpuN9HLBGLeglfo705vUWB_Zd9ViNFig-OmN-2XSI6LcLTwr4kw88meD8bG9xAZidL7TK5lRpX-Xks1hJdVj-SgWuU6zHYOzhH08NUkOvBmZra37RluRfYMzM2LD2P');">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/90 via-surface-container-lowest/30 to-transparent"></div>
+<!-- San Francisco Pin -->
+<div class="relative z-10 flex flex-col items-center">
+<div class="px-2.5 py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface font-label-sm text-label-sm font-semibold shadow-md mb-1 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#E8D8C8]"></span>
+          Market St &amp; 4th Ave
+        </div>
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-[20px]">location_on</span>
+</div>
+</div>
+<!-- Distance Tag Floating at bottom -->
+<div class="absolute bottom-2 left-3 right-3 flex items-center justify-between text-on-surface z-10">
+<span class="font-label-sm text-label-sm bg-surface-container/80 backdrop-blur-md px-2 py-0.5 rounded-md text-secondary-fixed-dim">Within 4 meters</span>
+<span class="font-label-sm text-label-sm text-[#E8D8C8] font-bold">Accuracy High</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full h-11 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface font-body-md text-body-md font-semibold flex items-center justify-center gap-space-xs transition-colors">
+<span class="material-symbols-outlined text-[20px] text-[#E8D8C8]">directions</span>
+      Navigate via Google Maps
+    </button>
+</div>
+<!-- Disconnect Drop Alert Card -->
+<div class="rounded-xl bg-surface-container p-space-md flex flex-col space-y-space-sm shadow-md">
+<div class="flex items-center justify-between">
+<div class="flex items-start gap-space-sm pr-space-sm">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-[#E8D8C8] shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]">phonelink_ring</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface font-semibold leading-tight">Disconnect Drop Alert</h3>
+<p class="font-label-md text-label-md text-secondary leading-snug pt-0.5">Notify immediately if Bluetooth link drops unexpectedly.</p>
+</div>
+</div>
+<!-- Active Toggle in #E8D8C8 -->
+<button aria-checked="true" class="relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full bg-[#E8D8C8] transition-colors p-0.5 focus:outline-none" id="drop-toggle" role="switch">
+<span class="pointer-events-none inline-block h-6 w-6 translate-x-5 transform rounded-full bg-[#2A2118] shadow-md transition-transform" id="toggle-knob"></span>
+</button>
+</div>
+<!-- Bottom Action Row -->
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-secondary">Triggers audio pulse &amp; haptic</span>
+<button class="px-space-md py-1.5 rounded-full bg-surface-container-high hover:bg-surface-bright text-[#E8D8C8] font-label-md text-label-md font-bold transition-colors flex items-center gap-1" id="test-alert-btn">
+<span class="material-symbols-outlined text-[16px]">play_circle</span>
+        Test Alert
+      </button>
+</div>
+</div>
+<!-- Contextual Hardware Helper Banner -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-full bg-[#E8D8C8]/10 flex items-center justify-center text-[#E8D8C8] shrink-0">
+<span class="material-symbols-outlined text-[22px]">spatial_audio</span>
+</div>
+<div class="min-w-0 flex-1">
+<p class="font-body-md text-body-md text-on-surface font-semibold truncate">Ultra-Wideband Precision</p>
+<p class="font-label-sm text-label-sm text-secondary">Keep phone unobstructed for fastest millimeter convergence.</p>
+</div>
+</div>
+</div>
+<script>
+  // Chirp Toggle Interaction
+  const chirpBtn = document.getElementById('chirp-btn');
+  const chirpLabel = document.getElementById('chirp-label');
+  let isChirping = false;
+
+  chirpBtn.addEventListener('click', () => {
+    isChirping = !isChirping;
+    if (isChirping) {
+      chirpLabel.textContent = "Chirping... (Tap to Stop)";
+      chirpBtn.classList.add('animate-pulse');
+    } else {
+      chirpLabel.textContent = "Chirp Left Earbud";
+      chirpBtn.classList.remove('animate-pulse');
+    }
+  });
+
+  // Toggle Switch Interaction
+  const toggleBtn = document.getElementById('drop-toggle');
+  const toggleKnob = document.getElementById('toggle-knob');
+  let isChecked = true;
+
+  toggleBtn.addEventListener('click', () => {
+    isChecked = !isChecked;
+    toggleBtn.setAttribute('aria-checked', isChecked.toString());
+    if (isChecked) {
+      toggleBtn.className = "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full bg-[#E8D8C8] transition-colors p-0.5 focus:outline-none";
+      toggleKnob.className = "pointer-events-none inline-block h-6 w-6 translate-x-5 transform rounded-full bg-[#2A2118] shadow-md transition-transform";
+    } else {
+      toggleBtn.className = "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full bg-surface-container-highest transition-colors p-0.5 focus:outline-none";
+      toggleKnob.className = "pointer-events-none inline-block h-6 w-6 translate-x-0 transform rounded-full bg-secondary shadow-md transition-transform";
+    }
+  });
+
+  // Test Alert Feedback
+  const testAlertBtn = document.getElementById('test-alert-btn');
+  testAlertBtn.addEventListener('click', () => {
+    const originalText = testAlertBtn.innerHTML;
+    testAlertBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span> Pulsing...';
+    testAlertBtn.classList.add('text-on-surface');
+    setTimeout(() => {
+      testAlertBtn.innerHTML = originalText;
+      testAlertBtn.classList.remove('text-on-surface');
+    }, 1800);
+  });
+
+  // Pill Selection Interaction
+  const pills = [
+    document.getElementById('pill-find'),
+    document.getElementById('pill-sleep'),
+    document.getElementById('pill-eq')
+  ];
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => {
+        p.className = "h-9 rounded-full bg-transparent text-secondary hover:text-on-surface font-body-md text-body-md transition-all flex items-center justify-center gap-1.5";
+      });
+      pill.className = "h-9 rounded-full bg-[#E8D8C8] text-[#2A2118] font-body-md text-body-md font-bold shadow-sm transition-all flex items-center justify-center gap-1.5";
+    });
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_-2px_16px_rgba(0,0,0,0.35)]" data-active-classes="text-tertiary-fixed [&amp;&gt;span.material-symbols-outlined]:text-tertiary-fixed [&amp;_.active-dot]:opacity-100"><div class="flex justify-around items-center h-20 px-space-xs"><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="home" href="#"><span class="material-symbols-outlined text-[24px]">home</span><span class="font-label-sm text-label-sm">Home</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="devices" href="#"><span class="material-symbols-outlined text-[24px]">headphones</span><span class="font-label-sm text-label-sm">Devices</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="auto" href="#"><span class="material-symbols-outlined text-[24px]">auto_mode</span><span class="font-label-sm text-label-sm">Auto</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 transition-all duration-200 group relative text-tertiary-fixed [&amp;&gt;span.material-symbols-outlined]:text-tertiary-fixed [&amp;_.active-dot]:opacity-100" data-path="tools" href="#"><span class="material-symbols-outlined text-[24px]">tune</span><span class="font-label-sm text-label-sm">Tools</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a><a class="flex flex-col items-center justify-center gap-space-xs min-w-[56px] h-12 text-secondary hover:text-on-surface transition-all duration-200 group relative" data-path="settings" href="#"><span class="material-symbols-outlined text-[24px]">settings</span><span class="font-label-sm text-label-sm">Settings</span><span class="active-dot w-1.5 h-1.5 rounded-full bg-tertiary-fixed shadow-[0_0_8px_#E8D8C8] opacity-0 transition-opacity duration-200 mt-[-2px]"></span></a></div></nav></body></html>
