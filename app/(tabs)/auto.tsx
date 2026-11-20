@@ -5,11 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Platform,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme';
 import {
   useDeviceStore,
@@ -22,11 +22,20 @@ import {
   openDndSettings,
 } from '../../modules/earbud-native';
 import { FeedbackToast } from '../../src/components/FeedbackToast';
+import {
+  GlassCard,
+  PillButton,
+  StatusChip,
+  Toggle,
+  NeonSlider,
+  SectionHeader,
+} from '../../src/components/ui';
 
 export default function AutoScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { colors, borderRadius } = theme;
+  const { colors, fonts, borderRadius } = theme;
 
   const trackedDevicesMap = useDeviceStore((s) => s.trackedDevices);
   const activeDeviceAddress = useDeviceStore((s) => s.activeDeviceAddress);
@@ -63,7 +72,7 @@ export default function AutoScreen() {
     ? trackedDevicesMap[selectedAddress]
     : undefined;
 
-  // Reactively subscribe to profiles so button highlights and toggle changes re-render immediately!
+  // Reactively subscribe to profiles from store
   const profiles = useAutoStore((s) => s.profiles);
   const getProfile = useAutoStore((s) => s.getProfile);
   const updateConnectAction = useAutoStore((s) => s.updateConnectAction);
@@ -86,7 +95,7 @@ export default function AutoScreen() {
     if (res.dndSet) msgs.push('Enabled DND');
     const summary = msgs.length > 0 ? msgs.join(' • ') : 'Connect actions executed';
     setTestResult(`✓ Connect Profile Executed: ${summary}`);
-    showToast(`✓ Tested Connect Profile: ${summary}`);
+    showToast(`✓ Tested Connect: ${summary}`);
     setTimeout(() => setTestResult(null), 4000);
   };
 
@@ -100,7 +109,7 @@ export default function AutoScreen() {
     if (res.dndReset) msgs.push('Disabled DND');
     const summary = msgs.length > 0 ? msgs.join(' • ') : 'Disconnect actions executed';
     setTestResult(`✓ Disconnect Profile Executed: ${summary}`);
-    showToast(`✓ Tested Disconnect Profile: ${summary}`);
+    showToast(`✓ Tested Disconnect: ${summary}`);
     setTimeout(() => setTestResult(null), 4000);
   };
 
@@ -125,183 +134,167 @@ export default function AutoScreen() {
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.emptyCard, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24 }]}>
+        <GlassCard style={styles.platformCard}>
           <Text style={styles.largeEmoji}>🍎</Text>
-          <Text style={[styles.title, { color: colors.onSurface }]}>iOS Not Supported</Text>
-          <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>iOS Not Supported</Text>
+          <Text style={[styles.bodyText, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }]}>
             Auto-actions (app launching, volume adjustments, and media pausing) require Android system APIs.
           </Text>
-        </View>
+        </GlassCard>
       </View>
     );
   }
 
   if (trackedDevices.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={[styles.emptyCard, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24 }]}>
+        <GlassCard style={styles.platformCard}>
           <Text style={styles.largeEmoji}>⚡</Text>
-          <Text style={[styles.title, { color: colors.onSurface }]}>No Devices Tracked</Text>
-          <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>No Devices Tracked</Text>
+          <Text style={[styles.bodyText, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }]}>
             Add a device first to set up auto-launching apps, volume presets, and disconnect pausing.
           </Text>
-          <TouchableOpacity
-            style={[styles.primaryBtn, { backgroundColor: colors.primary, borderRadius: borderRadius.sm }]}
-            onPress={() => router.push('/devices')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>
-              Go to Devices Screen
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <View style={{ marginTop: 20 }}>
+            <PillButton
+              variant="primary"
+              size="md"
+              label="Go to Devices Screen"
+              onPress={() => router.push('/devices')}
+            />
+          </View>
+        </GlassCard>
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.scrollContent}
-    >
-      {/* Universal Instant Feedback Toast */}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FeedbackToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
 
-      {/* Device Selector Pill Bar */}
-      <Text style={[styles.sectionLabel, { color: colors.onSurfaceVariant }]}>
-        Configure Profile For:
-      </Text>
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.devicePillsRow}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 100,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
       >
-        {trackedDevices.map((dev) => {
-          const isSelected = dev.address === selectedAddress;
-          return (
-            <TouchableOpacity
-              key={dev.address}
-              style={[
-                styles.devicePill,
-                {
-                  backgroundColor: isSelected
-                    ? colors.primaryContainer
-                    : colors.surfaceContainer,
-                  borderColor: isSelected ? colors.primary : colors.outlineVariant,
-                  borderWidth: isSelected ? 2 : 1.5,
-                  borderRadius: borderRadius.full,
-                },
-              ]}
-              onPress={() => {
-                setSelectedAddress(dev.address);
-                showToast(`✓ Selected: ${dev.nickname}`);
-              }}
-              activeOpacity={0.6}
-            >
-              <Text style={styles.pillEmoji}>
-                {dev.icon === 'earbuds' ? '🎧' : '🎧'}
-              </Text>
-              <Text
-                style={[
-                  styles.pillText,
-                  {
-                    color: isSelected
-                      ? colors.onPrimaryContainer
-                      : colors.onSurface,
-                    fontWeight: isSelected ? '700' : '500',
-                  },
-                ]}
-              >
-                {isSelected ? '✓ ' : ''}{dev.nickname}
-              </Text>
-              {dev.isConnected && (
-                <View
-                  style={[
-                    styles.onlineDot,
-                    { backgroundColor: colors.primary },
-                  ]}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+        {/* Title / Context Framing */}
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Auto Actions</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.onSurfaceVariant }]}>
+              Context triggers executed on hardware handshake.
+            </Text>
+          </View>
 
-      {/* Test Execution Result Banner */}
-      {testResult && (
-        <View
-          style={[
-            styles.resultBanner,
-            {
-              backgroundColor: colors.primaryContainer,
-              borderRadius: borderRadius.md,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.resultText,
-              { color: colors.onPrimaryContainer },
-            ]}
-          >
-            {testResult}
-          </Text>
+          <StatusChip
+            label="ENGINE LIVE"
+            dotColor="lime"
+            pulse
+          />
         </View>
-      )}
 
-      {currentProfile && (
-        <>
-          {/* CARD 1: ON-CONNECT PROFILE */}
-          <View
-            style={[
-              styles.profileCard,
-              {
-                backgroundColor: colors.surfaceContainer,
-                borderRadius: borderRadius.xl,
-                borderColor: currentProfile.onConnect.enabled ? colors.primary : colors.outlineVariant,
-                borderWidth: currentProfile.onConnect.enabled ? 2 : 1,
-              },
-            ]}
+        {/* Device Selector Pill Tabs */}
+        <View style={styles.selectorSection}>
+          <Text style={[styles.sectionLabel, { color: colors.outline }]}>
+            CONFIGURE PROFILE FOR:
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.devicePillsRow}
           >
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderTitleGroup}>
-                <Text style={styles.headerEmoji}>⚡</Text>
-                <View>
-                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                    On Connect
+            {trackedDevices.map((dev) => {
+              const isSelected = dev.address === selectedAddress;
+              return (
+                <TouchableOpacity
+                  key={dev.address}
+                  style={[
+                    styles.devicePill,
+                    {
+                      backgroundColor: isSelected
+                        ? colors.primary
+                        : colors.surfaceContainerHigh,
+                      borderColor: isSelected ? colors.primary : 'transparent',
+                    },
+                  ]}
+                  onPress={() => {
+                    setSelectedAddress(dev.address);
+                    showToast(`✓ Selected: ${dev.nickname}`);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontSize: 16 }}>
+                    {dev.icon === 'headphones' ? '🎧' : '🎧'}
                   </Text>
                   <Text
                     style={[
-                      styles.cardDesc,
-                      { color: colors.onSurfaceVariant },
+                      styles.devicePillText,
+                      {
+                        color: isSelected ? colors.onPrimary : colors.onSurface,
+                        fontWeight: isSelected ? '700' : '500',
+                      },
                     ]}
                   >
-                    Triggered when {selectedDevice?.nickname} connects
+                    {dev.nickname}
                   </Text>
-                </View>
-              </View>
+                  {dev.isConnected && (
+                    <View
+                      style={[
+                        styles.onlineDot,
+                        { backgroundColor: isSelected ? colors.tertiary : colors.tertiary },
+                      ]}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
 
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View
-                  style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: borderRadius.full,
-                    backgroundColor: currentProfile.onConnect.enabled ? '#10b981' : colors.surfaceVariant,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: '800',
-                      color: currentProfile.onConnect.enabled ? '#ffffff' : colors.onSurfaceVariant,
-                    }}
-                  >
-                    {currentProfile.onConnect.enabled ? 'ON' : 'OFF'}
-                  </Text>
+        {/* Test Result Execution Banner */}
+        {testResult && (
+          <GlassCard style={styles.testResultCard} glow>
+            <Text style={[styles.testResultText, { color: colors.tertiary }]}>
+              {testResult}
+            </Text>
+          </GlassCard>
+        )}
+
+        {currentProfile && (
+          <>
+            {/* CARD 1: WHEN IT CONNECTS CARD */}
+            <GlassCard
+              glow={currentProfile.onConnect.enabled}
+              style={[
+                styles.profileCard,
+                currentProfile.onConnect.enabled && {
+                  borderColor: colors.primary,
+                  borderWidth: 1.5,
+                },
+              ]}
+            >
+              {/* Card Header */}
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleGroup}>
+                  <View style={[styles.iconCircle, { backgroundColor: colors.primary + '25' }]}>
+                    <Text style={{ fontSize: 20 }}>⚡</Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
+                      When Hardware Links
+                    </Text>
+                    <Text style={[styles.cardSublabel, { color: colors.tertiary }]}>
+                      HANDSHAKE SEQUENCE
+                    </Text>
+                  </View>
                 </View>
-                <Switch
+
+                <Toggle
                   value={currentProfile.onConnect.enabled}
                   onValueChange={(val) => {
                     if (selectedAddress) {
@@ -309,500 +302,412 @@ export default function AutoScreen() {
                       showToast(val ? '✓ Auto-actions enabled on connect' : 'Auto-actions disabled on connect');
                     }
                   }}
-                  thumbColor={
-                    currentProfile.onConnect.enabled
-                      ? colors.primary
-                      : colors.outline
-                  }
-                  trackColor={{
-                    false: colors.surfaceVariant,
-                    true: colors.primaryContainer,
-                  }}
                 />
               </View>
-            </View>
 
-            {currentProfile.onConnect.enabled && (
-              <View style={styles.cardBody}>
-                {/* 1. App Launch Selection */}
-                <Text
-                  style={[styles.inputHeading, { color: colors.onSurface }]}
-                >
-                  🚀 Launch App on Connect
-                </Text>
-                <View style={styles.appGrid}>
-                  {MEDIA_APP_OPTIONS.map((app) => {
-                    const isPicked =
-                      currentProfile.onConnect.launchAppPackage ===
-                      app.packageName;
-                    return (
-                      <TouchableOpacity
-                        key={app.packageName}
-                        style={[
-                          styles.appChip,
-                          {
-                            backgroundColor: isPicked
-                              ? colors.primaryContainer
-                              : colors.surface,
-                            borderColor: isPicked
-                              ? colors.primary
-                              : colors.outlineVariant,
-                            borderWidth: isPicked ? 2 : 1,
-                            borderRadius: borderRadius.md,
-                          },
-                        ]}
-                        onPress={() => {
-                          if (selectedAddress) {
-                            const newPackage = isPicked ? null : app.packageName;
-                            const newLabel = isPicked ? null : app.label;
-                            updateConnectAction(selectedAddress, {
-                              launchAppPackage: newPackage,
-                              launchAppLabel: newLabel,
-                            });
-                            showToast(isPicked ? 'Auto-launch removed' : `✓ Auto-launch set to: ${app.label}`);
-                          }
-                        }}
-                        activeOpacity={0.6}
-                      >
-                        <Text style={styles.appChipEmoji}>{app.icon}</Text>
-                        <Text
-                          style={[
-                            styles.appChipText,
-                            {
-                              color: isPicked
-                                ? colors.onPrimaryContainer
-                                : colors.onSurface,
-                              fontWeight: isPicked ? '700' : '500',
-                            },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {isPicked ? '✓ ' : ''}{app.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* 2. Media Volume Preset */}
-                <Text
-                  style={[
-                    styles.inputHeading,
-                    { color: colors.onSurface, marginTop: 16 },
-                  ]}
-                >
-                  🔊 Set Media Volume
-                </Text>
-                <View style={styles.volumeRow}>
-                  {[null, 30, 50, 70, 85, 100].map((vol) => {
-                    const isPicked =
-                      currentProfile.onConnect.setVolume === vol;
-                    return (
-                      <TouchableOpacity
-                        key={String(vol)}
-                        style={[
-                          styles.volumeBtn,
-                          {
-                            backgroundColor: isPicked
-                              ? colors.primaryContainer
-                              : colors.surface,
-                            borderColor: isPicked
-                              ? colors.primary
-                              : colors.outlineVariant,
-                            borderWidth: isPicked ? 2 : 1,
-                            borderRadius: borderRadius.sm,
-                          },
-                        ]}
-                        onPress={() => {
-                          if (selectedAddress) {
-                            updateConnectAction(selectedAddress, {
-                              setVolume: vol,
-                            });
-                            showToast(vol === null ? 'Volume control disabled' : `✓ On-connect volume: ${vol}%`);
-                          }
-                        }}
-                        activeOpacity={0.6}
-                      >
-                        <Text
-                          style={[
-                            styles.volumeBtnText,
-                            {
-                              color: isPicked
-                                ? colors.onPrimaryContainer
-                                : colors.onSurface,
-                              fontWeight: isPicked ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          {isPicked && vol !== null ? '✓ ' : ''}{vol === null ? 'None' : `${vol}%`}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* 3. Do Not Disturb Option */}
-                <View
-                  style={[
-                    styles.dndRow,
-                    { borderTopColor: colors.outlineVariant },
-                  ]}
-                >
-                  <View style={styles.dndTextGroup}>
-                    <Text style={[styles.dndTitle, { color: colors.onSurface }]}>
-                      🌙 Turn on Do Not Disturb
-                    </Text>
-                    <Text
-                      style={[
-                        styles.dndSubtitle,
-                        { color: colors.onSurfaceVariant },
-                      ]}
-                    >
-                      Mute calls & notifications while listening
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View
-                      style={{
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
-                        borderRadius: borderRadius.full,
-                        backgroundColor: currentProfile.onConnect.enableDnd ? '#10b981' : colors.surfaceVariant,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: '800',
-                          color: currentProfile.onConnect.enableDnd ? '#ffffff' : colors.onSurfaceVariant,
-                        }}
-                      >
-                        {currentProfile.onConnect.enableDnd ? 'ON' : 'OFF'}
+              {currentProfile.onConnect.enabled && (
+                <View style={styles.cardContent}>
+                  {/* Sub-section 1: Auto-Launch Target */}
+                  <View style={styles.subSection}>
+                    <View style={styles.subSectionHeader}>
+                      <Text style={[styles.subSectionTitle, { color: colors.onSurface }]}>
+                        🚀 Auto-Launch Target
+                      </Text>
+                      <Text style={[styles.subSectionMeta, { color: colors.outline }]}>
+                        SELECT ONE
                       </Text>
                     </View>
-                    <Switch
+
+                    {/* App Grid */}
+                    <View style={styles.appGrid}>
+                      {MEDIA_APP_OPTIONS.map((app) => {
+                        const isPicked =
+                          currentProfile.onConnect.launchAppPackage ===
+                          app.packageName;
+                        return (
+                          <TouchableOpacity
+                            key={app.packageName}
+                            style={[
+                              styles.appTile,
+                              {
+                                backgroundColor: isPicked
+                                  ? colors.primary + '25'
+                                  : colors.surfaceContainerLowest,
+                                borderColor: isPicked
+                                  ? colors.primary
+                                  : colors.outlineVariant,
+                                borderWidth: isPicked ? 2 : 1,
+                              },
+                            ]}
+                            onPress={() => {
+                              if (selectedAddress) {
+                                const newPackage = isPicked ? null : app.packageName;
+                                const newLabel = isPicked ? null : app.label;
+                                updateConnectAction(selectedAddress, {
+                                  launchAppPackage: newPackage,
+                                  launchAppLabel: newLabel,
+                                });
+                                showToast(
+                                  isPicked
+                                    ? 'Auto-launch removed'
+                                    : `✓ Auto-launch: ${app.label}`
+                                );
+                              }
+                            }}
+                            activeOpacity={0.8}
+                          >
+                            {isPicked && (
+                              <View style={[styles.pickedCheckBadge, { backgroundColor: colors.tertiary }]}>
+                                <Text style={styles.pickedCheckText}>✓</Text>
+                              </View>
+                            )}
+                            <Text style={styles.appIconEmoji}>{app.icon}</Text>
+                            <Text
+                              style={[
+                                styles.appLabel,
+                                {
+                                  color: isPicked ? colors.primary : colors.onSurface,
+                                  fontWeight: isPicked ? '700' : '500',
+                                },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {app.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Sub-section 2: Auto-Set Media Gain */}
+                  <View style={[styles.volumeSection, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
+                    <View style={styles.volumeHeader}>
+                      <View>
+                        <Text style={[styles.subSectionTitle, { color: colors.onSurface }]}>
+                          🔊 Auto-Set Media Gain
+                        </Text>
+                        <Text style={[styles.volumeSubtitle, { color: colors.onSurfaceVariant }]}>
+                          Smooth gain preset upon driver init
+                        </Text>
+                      </View>
+                      <Text style={[styles.volumeHeroNumber, { color: colors.secondary }]}>
+                        {currentProfile.onConnect.setVolume !== null
+                          ? `${currentProfile.onConnect.setVolume}%`
+                          : 'Off'}
+                      </Text>
+                    </View>
+
+                    {/* Volume NeonSlider */}
+                    {currentProfile.onConnect.setVolume !== null && (
+                      <View style={{ marginVertical: 8 }}>
+                        <NeonSlider
+                          value={currentProfile.onConnect.setVolume}
+                          min={0}
+                          max={100}
+                          step={5}
+                          onValueChange={(val) => {
+                            if (selectedAddress) {
+                              updateConnectAction(selectedAddress, { setVolume: val });
+                            }
+                          }}
+                          formatValue={(v) => `${v}%`}
+                          showSteppers={false}
+                        />
+                      </View>
+                    )}
+
+                    {/* Quick Preset Volume Pills */}
+                    <View style={styles.volumePresetsRow}>
+                      {[null, 30, 50, 75, 85, 100].map((vol) => {
+                        const isPicked =
+                          currentProfile.onConnect.setVolume === vol;
+                        return (
+                          <TouchableOpacity
+                            key={String(vol)}
+                            style={[
+                              styles.volumePresetPill,
+                              {
+                                backgroundColor: isPicked
+                                  ? colors.secondary + '30'
+                                  : colors.surfaceContainerHigh,
+                                borderColor: isPicked
+                                  ? colors.secondary
+                                  : 'transparent',
+                              },
+                            ]}
+                            onPress={() => {
+                              if (selectedAddress) {
+                                updateConnectAction(selectedAddress, { setVolume: vol });
+                                showToast(
+                                  vol === null
+                                    ? 'Volume automation disabled'
+                                    : `✓ On-connect volume: ${vol}%`
+                                );
+                              }
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.volumePresetText,
+                                {
+                                  color: isPicked
+                                    ? colors.secondary
+                                    : colors.onSurface,
+                                  fontWeight: isPicked ? '700' : '500',
+                                },
+                              ]}
+                            >
+                              {vol === null ? 'Off' : `${vol}%`}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Sub-section 3: Do Not Disturb Mode */}
+                  <View style={[styles.dndSection, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
+                    <View style={styles.dndInfoGroup}>
+                      <View style={[styles.iconBoxSmall, { backgroundColor: colors.secondary + '20' }]}>
+                        <Text style={{ fontSize: 16 }}>🌙</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.dndTitle, { color: colors.onSurface }]}>
+                          Enable Do Not Disturb
+                        </Text>
+                        <Text style={[styles.dndSubtitle, { color: colors.onSurfaceVariant }]}>
+                          Silence calls & alerts during active session
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Toggle
                       value={currentProfile.onConnect.enableDnd}
                       onValueChange={(val) => {
                         if (val && !hasDndPermission) {
                           handleRequestDnd();
                         } else if (selectedAddress) {
                           updateConnectAction(selectedAddress, { enableDnd: val });
-                          showToast(val ? '✓ Do Not Disturb enabled on connect' : 'Do Not Disturb disabled');
+                          showToast(
+                            val
+                              ? '✓ Do Not Disturb enabled on connect'
+                              : 'Do Not Disturb disabled'
+                          );
                         }
-                      }}
-                      thumbColor={
-                        currentProfile.onConnect.enableDnd
-                          ? colors.primary
-                          : colors.outline
-                      }
-                      trackColor={{
-                        false: colors.surfaceVariant,
-                        true: colors.primaryContainer,
                       }}
                     />
                   </View>
+
+                  {/* Test Connect Profile Button */}
+                  <View style={styles.testButtonWrapper}>
+                    <PillButton
+                      variant="ghost"
+                      size="sm"
+                      label="▶ Test Connect Profile"
+                      onPress={() => { handleTestConnect(); }}
+                    />
+                  </View>
+                </View>
+              )}
+            </GlassCard>
+
+            {/* CARD 2: WHEN DISCONNECTED CARD */}
+            <GlassCard
+              glow={currentProfile.onDisconnect.enabled}
+              style={[
+                styles.profileCard,
+                currentProfile.onDisconnect.enabled && {
+                  borderColor: colors.tertiary,
+                  borderWidth: 1.5,
+                },
+              ]}
+            >
+              {/* Card Header */}
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleGroup}>
+                  <View style={[styles.iconCircle, { backgroundColor: colors.tertiary + '25' }]}>
+                    <Text style={{ fontSize: 20 }}>⏹️</Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
+                      When Disconnected
+                    </Text>
+                    <Text style={[styles.cardSublabel, { color: colors.outline }]}>
+                      FAILSAFE ROUTINES
+                    </Text>
+                  </View>
                 </View>
 
-                {/* Test Connect Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.testActionBtn,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.outlineVariant,
-                      borderRadius: borderRadius.sm,
-                    },
-                  ]}
-                  onPress={handleTestConnect}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[styles.testActionText, { color: colors.primary }]}
-                  >
-                    ▶ Test Connect Profile
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          {/* CARD 2: ON-DISCONNECT PROFILE */}
-          <View
-            style={[
-              styles.profileCard,
-              {
-                backgroundColor: colors.surfaceContainer,
-                borderRadius: borderRadius.xl,
-                borderColor: currentProfile.onDisconnect.enabled ? colors.primary : colors.outlineVariant,
-                borderWidth: currentProfile.onDisconnect.enabled ? 2 : 1,
-              },
-            ]}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.cardHeaderTitleGroup}>
-                <Text style={styles.headerEmoji}>⏹️</Text>
-                <View>
-                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                    On Disconnect
-                  </Text>
-                  <Text
-                    style={[
-                      styles.cardDesc,
-                      { color: colors.onSurfaceVariant },
-                    ]}
-                  >
-                    Triggered when {selectedDevice?.nickname} disconnects
-                  </Text>
-                </View>
-              </View>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View
-                  style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: borderRadius.full,
-                    backgroundColor: currentProfile.onDisconnect.enabled ? '#10b981' : colors.surfaceVariant,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: '800',
-                      color: currentProfile.onDisconnect.enabled ? '#ffffff' : colors.onSurfaceVariant,
-                    }}
-                  >
-                    {currentProfile.onDisconnect.enabled ? 'ON' : 'OFF'}
-                  </Text>
-                </View>
-                <Switch
+                <Toggle
                   value={currentProfile.onDisconnect.enabled}
                   onValueChange={(val) => {
                     if (selectedAddress) {
                       updateDisconnectAction(selectedAddress, { enabled: val });
-                      showToast(val ? '✓ Auto-actions enabled on disconnect' : 'Auto-actions disabled on disconnect');
+                      showToast(
+                        val
+                          ? '✓ Auto-actions enabled on disconnect'
+                          : 'Auto-actions disabled on disconnect'
+                      );
                     }
-                  }}
-                  thumbColor={
-                    currentProfile.onDisconnect.enabled
-                      ? colors.primary
-                      : colors.outline
-                  }
-                  trackColor={{
-                    false: colors.surfaceVariant,
-                    true: colors.primaryContainer,
                   }}
                 />
               </View>
-            </View>
 
-            {currentProfile.onDisconnect.enabled && (
-              <View style={styles.cardBody}>
-                {/* 1. Pause Media Switch */}
-                <View style={styles.switchRow}>
-                  <View style={styles.dndTextGroup}>
-                    <Text
-                      style={[styles.dndTitle, { color: colors.onSurface }]}
-                    >
-                      ⏸️ Pause Media Playback
-                    </Text>
-                    <Text
-                      style={[
-                        styles.dndSubtitle,
-                        { color: colors.onSurfaceVariant },
-                      ]}
-                    >
-                      Immediately pause Spotify, podcasts, YouTube, or music
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View
-                      style={{
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
-                        borderRadius: borderRadius.full,
-                        backgroundColor: currentProfile.onDisconnect.pauseMedia ? '#10b981' : colors.surfaceVariant,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: '800',
-                          color: currentProfile.onDisconnect.pauseMedia ? '#ffffff' : colors.onSurfaceVariant,
-                        }}
-                      >
-                        {currentProfile.onDisconnect.pauseMedia ? 'ON' : 'OFF'}
-                      </Text>
+              {currentProfile.onDisconnect.enabled && (
+                <View style={styles.cardContent}>
+                  {/* Failsafe 1: Pause Media Playback */}
+                  <View style={[styles.failsafeRow, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
+                    <View style={styles.failsafeInfo}>
+                      <View style={[styles.iconBoxSmall, { backgroundColor: colors.tertiary + '20' }]}>
+                        <Text style={{ fontSize: 16 }}>⏸️</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.dndTitle, { color: colors.onSurface }]}>
+                          Halt media playback instantly
+                        </Text>
+                        <Text style={[styles.dndSubtitle, { color: colors.onSurfaceVariant }]}>
+                          Prevents accidental phone speaker broadcast
+                        </Text>
+                      </View>
                     </View>
-                    <Switch
+
+                    <Toggle
                       value={currentProfile.onDisconnect.pauseMedia}
                       onValueChange={(val) => {
                         if (selectedAddress) {
-                          updateDisconnectAction(selectedAddress, {
-                            pauseMedia: val,
-                          });
-                          showToast(val ? '✓ Auto-pause playback enabled' : 'Auto-pause playback disabled');
+                          updateDisconnectAction(selectedAddress, { pauseMedia: val });
+                          showToast(
+                            val
+                              ? '✓ Auto-pause playback enabled'
+                              : 'Auto-pause playback disabled'
+                          );
                         }
-                      }}
-                      thumbColor={
-                        currentProfile.onDisconnect.pauseMedia
-                          ? colors.primary
-                          : colors.outline
-                      }
-                      trackColor={{
-                        false: colors.surfaceVariant,
-                        true: colors.primaryContainer,
                       }}
                     />
                   </View>
-                </View>
 
-                {/* 2. Reset Volume Option */}
-                <Text
-                  style={[
-                    styles.inputHeading,
-                    { color: colors.onSurface, marginTop: 16 },
-                  ]}
-                >
-                  🔉 Reset Media Volume on Disconnect
-                </Text>
-                <View style={styles.volumeRow}>
-                  {[null, 15, 30, 50].map((vol) => {
-                    const isPicked =
-                      currentProfile.onDisconnect.setVolume === vol;
-                    return (
-                      <TouchableOpacity
-                        key={String(vol)}
-                        style={[
-                          styles.volumeBtn,
-                          {
-                            backgroundColor: isPicked
-                              ? colors.primaryContainer
-                              : colors.surface,
-                            borderColor: isPicked
-                              ? colors.primary
-                              : colors.outlineVariant,
-                            borderWidth: isPicked ? 2 : 1,
-                            borderRadius: borderRadius.sm,
-                          },
-                        ]}
-                        onPress={() => {
-                          if (selectedAddress) {
-                            updateDisconnectAction(selectedAddress, {
-                              setVolume: vol,
-                            });
-                            showToast(vol === null ? 'Reset volume disabled' : `✓ On-disconnect volume: ${vol}%`);
-                          }
-                        }}
-                        activeOpacity={0.6}
-                      >
-                        <Text
-                          style={[
-                            styles.volumeBtnText,
-                            {
-                              color: isPicked
-                                ? colors.onPrimaryContainer
-                                : colors.onSurface,
-                              fontWeight: isPicked ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          {isPicked && vol !== null ? '✓ ' : ''}{vol === null ? 'Keep' : `${vol}%`}
+                  {/* Failsafe 2: Reset Volume Option */}
+                  <View style={[styles.volumeSection, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
+                    <View style={styles.volumeHeader}>
+                      <View>
+                        <Text style={[styles.subSectionTitle, { color: colors.onSurface }]}>
+                          🔉 Reset Media Volume
                         </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* 3. Turn off DND Switch */}
-                <View
-                  style={[
-                    styles.switchRow,
-                    { borderTopColor: colors.outlineVariant, marginTop: 14 },
-                  ]}
-                >
-                  <View style={styles.dndTextGroup}>
-                    <Text
-                      style={[styles.dndTitle, { color: colors.onSurface }]}
-                    >
-                      ☀️ Turn off Do Not Disturb
-                    </Text>
-                    <Text
-                      style={[
-                        styles.dndSubtitle,
-                        { color: colors.onSurfaceVariant },
-                      ]}
-                    >
-                      Restore normal notification volume on disconnect
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View
-                      style={{
-                        paddingHorizontal: 8,
-                        paddingVertical: 3,
-                        borderRadius: borderRadius.full,
-                        backgroundColor: currentProfile.onDisconnect.disableDnd ? '#10b981' : colors.surfaceVariant,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: '800',
-                          color: currentProfile.onDisconnect.disableDnd ? '#ffffff' : colors.onSurfaceVariant,
-                        }}
-                      >
-                        {currentProfile.onDisconnect.disableDnd ? 'ON' : 'OFF'}
+                        <Text style={[styles.volumeSubtitle, { color: colors.onSurfaceVariant }]}>
+                          Standardized device fallback
+                        </Text>
+                      </View>
+                      <Text style={[styles.volumeHeroNumber, { color: colors.primary }]}>
+                        {currentProfile.onDisconnect.setVolume !== null
+                          ? `${currentProfile.onDisconnect.setVolume}%`
+                          : 'Keep'}
                       </Text>
                     </View>
-                    <Switch
+
+                    <View style={styles.volumePresetsRow}>
+                      {[null, 15, 30, 50].map((vol) => {
+                        const isPicked =
+                          currentProfile.onDisconnect.setVolume === vol;
+                        return (
+                          <TouchableOpacity
+                            key={String(vol)}
+                            style={[
+                              styles.volumePresetPill,
+                              {
+                                backgroundColor: isPicked
+                                  ? colors.primary + '30'
+                                  : colors.surfaceContainerHigh,
+                                borderColor: isPicked
+                                  ? colors.primary
+                                  : 'transparent',
+                              },
+                            ]}
+                            onPress={() => {
+                              if (selectedAddress) {
+                                updateDisconnectAction(selectedAddress, { setVolume: vol });
+                                showToast(
+                                  vol === null
+                                    ? 'Reset volume disabled'
+                                    : `✓ On-disconnect volume: ${vol}%`
+                                );
+                              }
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.volumePresetText,
+                                {
+                                  color: isPicked ? colors.primary : colors.onSurface,
+                                  fontWeight: isPicked ? '700' : '500',
+                                },
+                              ]}
+                            >
+                              {vol === null ? 'Keep' : `${vol}%`}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Failsafe 3: Disable DND */}
+                  <View style={[styles.failsafeRow, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
+                    <View style={styles.failsafeInfo}>
+                      <View style={[styles.iconBoxSmall, { backgroundColor: colors.secondary + '20' }]}>
+                        <Text style={{ fontSize: 16 }}>☀️</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.dndTitle, { color: colors.onSurface }]}>
+                          Turn off Do Not Disturb
+                        </Text>
+                        <Text style={[styles.dndSubtitle, { color: colors.onSurfaceVariant }]}>
+                          Restore system ringer & notifications
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Toggle
                       value={currentProfile.onDisconnect.disableDnd}
                       onValueChange={(val) => {
                         if (selectedAddress) {
-                          updateDisconnectAction(selectedAddress, {
-                            disableDnd: val,
-                          });
-                          showToast(val ? '✓ Disable DND on disconnect enabled' : 'Disable DND disabled');
+                          updateDisconnectAction(selectedAddress, { disableDnd: val });
+                          showToast(
+                            val
+                              ? '✓ Disable DND on disconnect enabled'
+                              : 'Disable DND disabled'
+                          );
                         }
-                      }}
-                      thumbColor={
-                        currentProfile.onDisconnect.disableDnd
-                          ? colors.primary
-                          : colors.outline
-                      }
-                      trackColor={{
-                        false: colors.surfaceVariant,
-                        true: colors.primaryContainer,
                       }}
                     />
                   </View>
-                </View>
 
-                {/* Test Disconnect Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.testActionBtn,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.outlineVariant,
-                      borderRadius: borderRadius.sm,
-                    },
-                  ]}
-                  onPress={handleTestDisconnect}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[styles.testActionText, { color: colors.primary }]}
-                  >
-                    ▶ Test Disconnect Profile
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </>
-      )}
-    </ScrollView>
+                  {/* Test Disconnect Profile Button */}
+                  <View style={styles.testButtonWrapper}>
+                    <PillButton
+                      variant="ghost"
+                      size="sm"
+                      label="▶ Test Disconnect Profile"
+                      onPress={() => { handleTestDisconnect(); }}
+                    />
+                  </View>
+                </View>
+              )}
+            </GlassCard>
+
+            {/* Bottom Master CTA Button */}
+            <View style={{ marginTop: 8 }}>
+              <PillButton
+                variant="primary"
+                size="lg"
+                label="⚡ Test Full Automation Flow"
+                onPress={() => { handleTestConnect(); }}
+              />
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -811,178 +716,249 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 22,
+    letterSpacing: -0.5,
+  },
+  headerSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 13,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  platformCard: {
+    padding: 24,
+    alignItems: 'center',
+    marginHorizontal: 16,
+  },
+  largeEmoji: {
+    fontSize: 44,
+    marginBottom: 8,
+  },
+  bodyText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  selectorSection: {
+    gap: 8,
   },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 11,
+    letterSpacing: 1.2,
   },
   devicePillsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
-    paddingVertical: 2,
+    gap: 8,
   },
   devicePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
     gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 9999,
+    borderWidth: 1,
   },
-  pillEmoji: {
-    fontSize: 18,
-  },
-  pillText: {
-    fontSize: 14,
+  devicePillText: {
+    fontFamily: 'SpaceGrotesk-SemiBold',
+    fontSize: 13,
   },
   onlineDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  resultBanner: {
-    padding: 12,
-    marginBottom: 14,
+  testResultCard: {
+    padding: 14,
   },
-  resultText: {
+  testResultText: {
+    fontFamily: 'SpaceGrotesk-SemiBold',
     fontSize: 13,
-    fontWeight: '600',
     textAlign: 'center',
   },
   profileCard: {
-    marginBottom: 16,
-    overflow: 'hidden',
+    padding: 18,
+    gap: 16,
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 18,
+    alignItems: 'center',
   },
-  cardHeaderTitleGroup: {
+  cardTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     flex: 1,
   },
-  headerEmoji: {
-    fontSize: 26,
+  iconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
+    fontFamily: 'SpaceGrotesk-Bold',
     fontSize: 17,
-    fontWeight: '700',
+    letterSpacing: -0.3,
   },
-  cardDesc: {
-    fontSize: 12,
+  cardSublabel: {
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 10,
+    letterSpacing: 1,
     marginTop: 1,
   },
-  cardBody: {
-    paddingHorizontal: 18,
-    paddingBottom: 18,
+  cardContent: {
+    gap: 16,
+  },
+  subSection: {
     gap: 10,
   },
-  inputHeading: {
+  subSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  subSectionTitle: {
+    fontFamily: 'SpaceGrotesk-SemiBold',
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 6,
+  },
+  subSectionMeta: {
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 10,
+    letterSpacing: 1,
   },
   appGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  appChip: {
-    flexDirection: 'row',
+  appTile: {
+    width: '31%',
+    flexGrow: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 14,
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    gap: 6,
+    justifyContent: 'center',
+    position: 'relative',
+    minHeight: 72,
   },
-  appChipEmoji: {
-    fontSize: 16,
-  },
-  appChipText: {
-    fontSize: 13,
-  },
-  volumeRow: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  volumeBtn: {
-    flex: 1,
-    paddingVertical: 8,
+  pickedCheckBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  volumeBtnText: {
+  pickedCheckText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#000',
+  },
+  appIconEmoji: {
+    fontSize: 22,
+    marginBottom: 4,
+  },
+  appLabel: {
+    fontFamily: 'SpaceGrotesk-Medium',
     fontSize: 12,
+    textAlign: 'center',
   },
-  dndRow: {
+  volumeSection: {
+    padding: 14,
+    borderRadius: 16,
+    gap: 10,
+  },
+  volumeHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    borderTopWidth: 0.5,
-    paddingTop: 12,
-    marginTop: 8,
-  },
-  switchRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 6,
   },
-  dndTextGroup: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  dndTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  dndSubtitle: {
+  volumeSubtitle: {
+    fontFamily: 'Inter-Regular',
     fontSize: 12,
     marginTop: 2,
   },
-  testActionBtn: {
-    marginTop: 14,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderWidth: 1,
+  volumeHeroNumber: {
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 26,
+    letterSpacing: -0.5,
   },
-  testActionText: {
+  volumePresetsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  volumePresetPill: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  volumePresetText: {
+    fontFamily: 'SpaceGrotesk-Bold',
+    fontSize: 12,
+  },
+  dndSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 16,
+  },
+  dndInfoGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  iconBoxSmall: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dndTitle: {
+    fontFamily: 'SpaceGrotesk-SemiBold',
     fontSize: 13,
-    fontWeight: '700',
   },
-  emptyCard: {
-    padding: 32,
+  dndSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  testButtonWrapper: {
+    alignItems: 'flex-end',
+    paddingTop: 4,
+  },
+  failsafeRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 30,
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 16,
   },
-  largeEmoji: {
-    fontSize: 50,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  primaryBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  primaryBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
+  failsafeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
 });

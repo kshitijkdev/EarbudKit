@@ -105,12 +105,12 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
 - [x] Stage D1: Design system foundation (theme tokens, fonts, reusable UI components: GlassCard, PillButton, StatusChip, Toggle, NeonSlider, BatteryRing, SectionHeader, FloatingPillNav)
 - [x] Stage D2: Navigation shell and Home
 - [x] Stage D3: Devices
-- [ ] Stage D4: Auto-actions
+- [x] Stage D4: Auto-actions
 - [ ] Stage D5: Tools
 - [ ] Stage D6: Settings and Stats
 - [ ] Stage D7: Light theme, polish, verify
 
-## Design Reskin Decisions & File Map (D1, D2 & D3)
+## Design Reskin Decisions & File Map (D1 to D4)
 - `src/theme/theme.ts`: Fully updated with Sonic Neo-Glass tokens for dark mode (Base Void `#0B0B10`, Electric Violet `#7C5CFF`, Hot Pink `#FF4FD8`, Lime Neon `#C6FF3D`, glass opacities) and light mode (`#FCF8FF`, `#5E39E0`, `#AF0093`, `#006947`). Space Grotesk / Inter typography scale and 24px bento / 9999px pill radii.
 - `android/app/src/main/assets/fonts/`: Stored native offline font assets for Space Grotesk and Inter for zero-latency standalone offline rendering.
 - `src/components/ui/`:
@@ -139,5 +139,11 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
   - Discovered paired Bluetooth devices list with 1-tap "+ Track" `PillButton`s.
   - Target device quick-add sticker chips (Noise Buds Vector, realme Studio H1, Generic BLE).
   - Restyled glass modal for device editing (nickname input, earbuds vs over-ear icon selector, 10-30% battery threshold pills, test notification trigger, cancel & save buttons).
+- `app/(tabs)/auto.tsx`: Rebuilt Auto-actions screen matching the Sonic Neo-Glass mockup:
+  - Header row with "Auto Actions" and pulsing "ENGINE LIVE" `StatusChip`.
+  - Device Selector pill tabs with active electric violet glow and connected dot.
+  - "When Hardware Links" (On Connect) glass card: Master Lime `Toggle`, interactive 3-column app launcher grid (Spotify, YouTube Music, Apple, Pocket Casts, Audible, VLC, Amazon, Podcast Addict) with active electric violet borders, checkmark badges and instant touch feedback; Auto-Set Media Gain with hero percentage readout and `NeonSlider` + quick volume presets; Do Not Disturb `Toggle` with system permission handling; and ghost "▶ Test Connect Profile" button.
+  - "When Disconnected" (On Disconnect) glass card: Master Lime `Toggle`, instant media halt toggle, volume fallback level preset chips, restore DND ringer toggle, and ghost "▶ Test Disconnect Profile" button.
+  - Master "⚡ Test Full Automation Flow" PillButton with live execution feedback banner.
 
-## NEXT STEP: Stage D4, first action is restyling the Auto-actions screen (`app/(tabs)/auto.tsx`) to match `designstich/Dark_theme/` with device pill selector, On-Connect & On-Disconnect glass cards, app launcher tile grid with violet glow, volume slider/stepper, DND toggles, and ghost test buttons.
+## NEXT STEP: Stage D5, first action is restyling the Tools screen (`app/(tabs)/tools.tsx`) with segmented control (Find / Sleep / EQ), BLE RSSI proximity radar with cold-to-hot glow rings, sleep countdown ring & presets, and 5-band NeonSliders for EQ.
