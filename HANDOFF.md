@@ -103,14 +103,14 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
 
 ## Design Reskin (Sonic Neo-Glass) Checklist
 - [x] Stage D1: Design system foundation (theme tokens, fonts, reusable UI components: GlassCard, PillButton, StatusChip, Toggle, NeonSlider, BatteryRing, SectionHeader, FloatingPillNav)
-- [ ] Stage D2: Navigation shell and Home
+- [x] Stage D2: Navigation shell and Home
 - [ ] Stage D3: Devices
 - [ ] Stage D4: Auto-actions
 - [ ] Stage D5: Tools
 - [ ] Stage D6: Settings and Stats
 - [ ] Stage D7: Light theme, polish, verify
 
-## Design Reskin Decisions & File Map (D1)
+## Design Reskin Decisions & File Map (D1 & D2)
 - `src/theme/theme.ts`: Fully updated with Sonic Neo-Glass tokens for dark mode (Base Void `#0B0B10`, Electric Violet `#7C5CFF`, Hot Pink `#FF4FD8`, Lime Neon `#C6FF3D`, glass opacities) and light mode (`#FCF8FF`, `#5E39E0`, `#AF0093`, `#006947`). Space Grotesk / Inter typography scale and 24px bento / 9999px pill radii.
 - `android/app/src/main/assets/fonts/`: Stored native offline font assets for Space Grotesk and Inter for zero-latency standalone offline rendering.
 - `src/components/ui/`:
@@ -122,6 +122,13 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
   - `BatteryRing.tsx`: SVG ring with percentage readout, Lime (>20%) / Error (<=20%), friendly "Unavailable" fallback state.
   - `SectionHeader.tsx`: Space Grotesk headline, Inter body, and action button support.
   - `FloatingPillNav.tsx`: Elevated dock with 5 tabs, active violet glow and hot pink micro-dot.
-- `app/showcase.tsx`: Modal screen demonstrating all 8 components in both Light and Dark themes.
+- `app/(tabs)/_layout.tsx`: Replaced tab bar with `FloatingPillNav` docked cleanly above safe area across 5 tabs (Home, Devices, Auto, Tools, Settings) with React Navigation 7 `navigateToTab` / `navigation.navigate` compatibility.
+- `app/(tabs)/index.tsx`: Completely rebuilt Home with Sonic Neo-Glass design:
+  - Header with title and real-time Background Watcher toggle chip (`WATCHER: ON/OFF`).
+  - Hero Bento Card for connected device with dynamic silhouette visualizer, daily driver tag, Connected `StatusChip`, Codec pill, battery telemetry ring with `BatteryRing`, and active audio stream info.
+  - Horizontal Registered Fleet carousel for tracked devices with live battery badges and real relative timestamp ("Seen Xm ago" / "Standby"), plus "+ Add Kit" launcher.
+  - Daily Session Load card bound to `statsStore` today listening time, animated 7-bar waveform visualizer, and navigation link to `/stats`.
+  - Diagnostics bento row: Bluetooth status chip and Fleet count (`<N> kits`, `<active> Active • <offline> Standby`).
+  - Rapid command quick launcher chips: Sleep Timer, Find Device, Equalizer, Auto Actions.
 
-## NEXT STEP: Stage D2, first action is replacing the tab bar in `app/(tabs)/_layout.tsx` with `FloatingPillNav` and rebuilding Home screen (`app/(tabs)/index.tsx`) to match the Sonic Neo-Glass mockup using real telemetry and device data.
+## NEXT STEP: Stage D3, first action is restyling the Devices screen (`app/(tabs)/devices.tsx`) to match `designstich/Dark_theme/stitch_earbudkit_bluetooth_companion_ui/devices/` with wallet-style tracked device cards, restyled edit modal, permission banner, paired devices list, and quick-add chips.

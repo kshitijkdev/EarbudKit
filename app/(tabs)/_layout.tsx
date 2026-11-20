@@ -1,98 +1,87 @@
+import React from 'react';
 import { Tabs } from 'expo-router';
-import { useTheme } from '../../src/theme';
-import { Platform, Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { FloatingPillNav, TabItem } from '../../src/components/ui/FloatingPillNav';
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    home: '🏠',
-    devices: '🎧',
-    auto: '⚡',
-    tools: '🔧',
-    settings: '⚙️',
+const TABS: TabItem[] = [
+  { key: 'index', label: 'Home', icon: '🎧' },
+  { key: 'devices', label: 'Devices', icon: '📱' },
+  { key: 'auto', label: 'Auto', icon: '⚡' },
+  { key: 'tools', label: 'Tools', icon: '🎛️' },
+  { key: 'settings', label: 'Settings', icon: '⚙️' },
+];
+
+// React Navigation 7 / Expo Router custom tab bar props
+interface CustomTabBarProps {
+  state: {
+    index: number;
+    routes: Array<{ name: string; key: string }>;
   };
+  navigation?: {
+    navigate: (name: string) => void;
+  };
+  navigateToTab?: (routeKey: string) => void;
+}
+
+function CustomTabBar(props: CustomTabBarProps) {
+  const { state, navigation, navigateToTab } = props;
+  const currentRouteName = state.routes[state.index]?.name || 'index';
 
   return (
-    <Text style={[styles.icon, { opacity: focused ? 1 : 0.6 }]}>
-      {icons[name] ?? '📱'}
-    </Text>
+    <FloatingPillNav
+      tabs={TABS}
+      activeTab={currentRouteName}
+      onTabPress={(tabKey) => {
+        if (navigation) {
+          navigation.navigate(tabKey);
+        } else if (navigateToTab) {
+          const target = state.routes.find((r) => r.name === tabKey);
+          if (target) {
+            navigateToTab(target.key);
+          }
+        }
+      }}
+    />
   );
 }
 
 export default function TabLayout() {
-  const { theme } = useTheme();
-  const { colors, borderRadius } = theme;
-
   return (
     <Tabs
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
-        headerTintColor: colors.onSurface,
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: theme.typography.titleMedium,
-        },
-        tabBarStyle: {
-          backgroundColor: colors.surfaceContainer,
-          borderTopColor: colors.outlineVariant,
-          borderTopWidth: 0.5,
-          height: Platform.OS === 'android' ? 64 : 84,
-          paddingTop: 6,
-          paddingBottom: Platform.OS === 'android' ? 10 : 28,
-          elevation: 0,
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.onSurfaceVariant,
-        tabBarLabelStyle: {
-          fontSize: theme.typography.labelSmall,
-          fontWeight: '500',
-        },
+        headerShown: false,
+        tabBarStyle: styles.tabBarHidden,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name="home" focused={focused} />
-          ),
         }}
       />
       <Tabs.Screen
         name="devices"
         options={{
           title: 'Devices',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name="devices" focused={focused} />
-          ),
         }}
       />
       <Tabs.Screen
         name="auto"
         options={{
           title: 'Auto',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name="auto" focused={focused} />
-          ),
         }}
       />
       <Tabs.Screen
         name="tools"
         options={{
           title: 'Tools',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name="tools" focused={focused} />
-          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name="settings" focused={focused} />
-          ),
         }}
       />
     </Tabs>
@@ -100,7 +89,10 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  icon: {
-    fontSize: 20,
+  tabBarHidden: {
+    position: 'absolute',
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    elevation: 0,
   },
 });
