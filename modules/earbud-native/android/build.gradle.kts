@@ -23,4 +23,5 @@ android {
 
 dependencies {
     implementation("expo:expo-modules-core")
+    implementation("androidx.core:core-ktx:1.12.0")
 }
