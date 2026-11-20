@@ -50,6 +50,11 @@ export default function DevicesScreen() {
   const [editingDevice, setEditingDevice] = useState<TrackedDevice | null>(null);
   const [editNickname, setEditNickname] = useState('');
   const [editIcon, setEditIcon] = useState<DeviceIconType>('earbuds');
+  const [editThreshold, setEditThreshold] = useState(20);
+  const [isTestingAlert, setIsTestingAlert] = useState(false);
+
+  const setLowBatteryThreshold = useDeviceStore((s) => s.setLowBatteryThreshold);
+  const triggerTestLowBatteryAlert = useDeviceStore((s) => s.triggerTestLowBatteryAlert);
 
   // Filter bonded devices that are not yet tracked
   const untrackedBonded = bondedDevices.filter(
@@ -60,13 +65,30 @@ export default function DevicesScreen() {
     setEditingDevice(dev);
     setEditNickname(dev.nickname);
     setEditIcon(dev.icon);
+    setEditThreshold(dev.lowBatteryThreshold || 20);
   };
 
   const saveEdit = () => {
     if (!editingDevice) return;
     updateNickname(editingDevice.address, editNickname);
     updateIcon(editingDevice.address, editIcon);
+    setLowBatteryThreshold(editingDevice.address, editThreshold);
     setEditingDevice(null);
+  };
+
+  const handleTestAlert = async () => {
+    if (!editingDevice) return;
+    setIsTestingAlert(true);
+    try {
+      const sent = await triggerTestLowBatteryAlert(editingDevice.address);
+      if (sent) {
+        Alert.alert('Alert Sent', `Test notification dispatched for ${editingDevice.nickname}!`);
+      } else {
+        Alert.alert('Notice', 'Ensure notification permission is granted in Android settings.');
+      }
+    } finally {
+      setIsTestingAlert(false);
+    }
   };
 
   const confirmRemove = (dev: TrackedDevice) => {
@@ -538,6 +560,65 @@ export default function DevicesScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Low Battery Alert Threshold */}
+            <Text style={[styles.inputLabel, { color: colors.onSurface, marginTop: 16 }]}>
+              Low Battery Alert Threshold ({editThreshold}%)
+            </Text>
+            <View style={styles.thresholdRow}>
+              {[10, 15, 20, 25, 30].map((val) => (
+                <TouchableOpacity
+                  key={val}
+                  style={[
+                    styles.thresholdBtn,
+                    {
+                      backgroundColor:
+                        editThreshold === val
+                          ? colors.primaryContainer
+                          : colors.surfaceContainer,
+                      borderColor:
+                        editThreshold === val
+                          ? colors.primary
+                          : colors.outlineVariant,
+                      borderRadius: borderRadius.sm,
+                    },
+                  ]}
+                  onPress={() => setEditThreshold(val)}
+                >
+                  <Text
+                    style={[
+                      styles.thresholdBtnText,
+                      {
+                        color:
+                          editThreshold === val
+                            ? colors.onPrimaryContainer
+                            : colors.onSurface,
+                      },
+                    ]}
+                  >
+                    {val}%
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Test Alert Button */}
+            <TouchableOpacity
+              style={[
+                styles.testAlertBtn,
+                {
+                  backgroundColor: colors.surfaceContainerHigh,
+                  borderColor: colors.outlineVariant,
+                  borderRadius: borderRadius.sm,
+                },
+              ]}
+              onPress={handleTestAlert}
+              disabled={isTestingAlert}
+            >
+              <Text style={[styles.testAlertText, { color: colors.primary }]}>
+                {isTestingAlert ? 'Sending Alert...' : '🔔 Test Low-Battery Notification'}
+              </Text>
+            </TouchableOpacity>
+
             {/* Modal Actions */}
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -836,6 +917,31 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 24,
     justifyContent: 'flex-end',
+  },
+  thresholdRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
+  },
+  thresholdBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  thresholdBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  testAlertBtn: {
+    marginTop: 16,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  testAlertText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   modalBtn: {
     paddingVertical: 10,

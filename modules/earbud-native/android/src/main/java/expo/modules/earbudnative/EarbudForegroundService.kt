@@ -84,6 +84,20 @@ class EarbudForegroundService : Service() {
                     updateNotification()
                 }
                 EarbudNativeModule.instance?.handleBluetoothStateEvent(isEnabled)
+            } else if (action == ACTION_BATTERY_LEVEL_CHANGED) {
+                val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                }
+                val level = intent.getIntExtra(EXTRA_BATTERY_LEVEL, -1)
+                device?.address?.let { address ->
+                    if (level in 0..100) {
+                        EarbudNativeModule.batteryCache[address.uppercase()] = level
+                        EarbudNativeModule.instance?.handleBatteryLevelEvent(address, level)
+                    }
+                }
             }
         }
     }
@@ -175,6 +189,7 @@ class EarbudForegroundService : Service() {
                 addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
                 addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
                 addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+                addAction(ACTION_BATTERY_LEVEL_CHANGED)
             }
 
             ContextCompat.registerReceiver(

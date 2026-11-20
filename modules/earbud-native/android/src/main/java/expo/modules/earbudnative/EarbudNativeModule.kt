@@ -4,6 +4,9 @@ import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.content.BroadcastReceiver
@@ -12,18 +15,35 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.core.content.ContextCompat
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.UUID
+import kotlin.coroutines.resume
 
 private const val TAG = "EarbudNative"
+
+// Standard Bluetooth SIG UUIDs
+val BATTERY_SERVICE_UUID: UUID = UUID.fromString("0000180F-0000-1000-8000-00805F9B34FB")
+val BATTERY_LEVEL_CHAR_UUID: UUID = UUID.fromString("00002A19-0000-1000-8000-00805F9B34FB")
+
+// Hidden / Standard Android Battery Level Changed Intent Action
+const val ACTION_BATTERY_LEVEL_CHANGED = "android.bluetooth.device.action.BATTERY_LEVEL_CHANGED"
+const val EXTRA_BATTERY_LEVEL = "android.bluetooth.device.extra.BATTERY_LEVEL"
 
 class EarbudNativeModule : Module() {
     companion object {
         var instance: EarbudNativeModule? = null
             private set
+        
+        // Cache battery levels from broadcasts
+        val batteryCache = mutableMapOf<String, Int>()
     }
 
     private val context: Context
@@ -85,6 +105,23 @@ class EarbudNativeModule : Module() {
                 BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
                     sendEvent("onBondStateChanged", mapOf<String, Any>())
                 }
+
+                ACTION_BATTERY_LEVEL_CHANGED -> {
+                    val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    }
+
+                    val level = intent.getIntExtra(EXTRA_BATTERY_LEVEL, -1)
+                    device?.address?.let { address ->
+                        if (level in 0..100) {
+                            batteryCache[address.uppercase()] = level
+                            handleBatteryLevelEvent(address, level)
+                        }
+                    }
+                }
             }
         }
     }
@@ -106,7 +143,7 @@ class EarbudNativeModule : Module() {
                 "connected" to isConnected
             ))
         } catch (e: Exception) {
-            Log.w(TAG, "Could not send event to JS (app may be backgrounded/suspended): ${e.message}")
+            Log.w(TAG, "Could not send connection event to JS: ${e.message}")
         }
     }
 
@@ -121,13 +158,26 @@ class EarbudNativeModule : Module() {
         }
     }
 
+    fun handleBatteryLevelEvent(address: String, level: Int?) {
+        Log.d(TAG, "Battery level update for $address: $level")
+        try {
+            sendEvent("onBatteryLevelChanged", mapOf(
+                "address" to address,
+                "batteryLevel" to level
+            ))
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not send battery event to JS: ${e.message}")
+        }
+    }
+
     override fun definition() = ModuleDefinition {
         Name("EarbudNative")
 
         Events(
             "onDeviceConnectionChanged",
             "onBluetoothStateChanged",
-            "onBondStateChanged"
+            "onBondStateChanged",
+            "onBatteryLevelChanged"
         )
 
         OnCreate {
@@ -197,6 +247,17 @@ class EarbudNativeModule : Module() {
             }
         }
 
+        /**
+         * Stage 5: Read battery level trying in order:
+         * (a) BluetoothDevice.getBatteryLevel via reflection
+         * (b) BATTERY_LEVEL_CHANGED broadcast cache
+         * (c) BLE Battery Service GATT (0x180F/0x2A19)
+         * Returns null if none work.
+         */
+        AsyncFunction("getDeviceBatteryLevel") { address: String ->
+            getDeviceBattery(address)
+        }
+
         AsyncFunction("getBondedAudioDevices") {
             val result = mutableListOf<Map<String, Any?>>()
             val adapter = bluetoothAdapter ?: return@AsyncFunction result
@@ -211,6 +272,8 @@ class EarbudNativeModule : Module() {
                 for (device in bonded) {
                     if (isAudioDevice(device)) {
                         val isConnected = checkDeviceConnected(device)
+                        val battery = getBatteryReflection(device) ?: batteryCache[device.address.uppercase()]
+
                         val deviceType = when (device.type) {
                             BluetoothDevice.DEVICE_TYPE_CLASSIC -> "classic"
                             BluetoothDevice.DEVICE_TYPE_LE -> "le"
@@ -224,6 +287,7 @@ class EarbudNativeModule : Module() {
                                 "name" to (device.name ?: "Unknown Device"),
                                 "address" to device.address,
                                 "isConnected" to isConnected,
+                                "batteryLevel" to battery,
                                 "type" to deviceType,
                                 "majorDeviceClass" to (btClass?.majorDeviceClass ?: 0),
                                 "deviceClass" to (btClass?.deviceClass ?: 0)
@@ -238,6 +302,140 @@ class EarbudNativeModule : Module() {
             }
 
             result
+        }
+    }
+
+    /**
+     * Reads battery trying (a) Reflection -> (b) Broadcast Cache -> (c) BLE GATT.
+     */
+    private suspend fun getDeviceBattery(address: String): Int? {
+        val adapter = bluetoothAdapter ?: return null
+        if (!hasConnectPermission()) return null
+
+        val device = try {
+            adapter.getRemoteDevice(address)
+        } catch (e: Exception) {
+            null
+        } ?: return null
+
+        // (a) Try BluetoothDevice.getBatteryLevel via reflection
+        val reflectionLevel = getBatteryReflection(device)
+        if (reflectionLevel != null && reflectionLevel in 0..100) {
+            Log.d(TAG, "Battery for $address via reflection: $reflectionLevel%")
+            batteryCache[address.uppercase()] = reflectionLevel
+            return reflectionLevel
+        }
+
+        // (b) Try broadcast cache
+        val cached = batteryCache[address.uppercase()]
+        if (cached != null && cached in 0..100) {
+            Log.d(TAG, "Battery for $address via broadcast cache: $cached%")
+            return cached
+        }
+
+        // (c) Try BLE Battery Service GATT (0x180F/0x2A19)
+        val gattLevel = readBleGattBattery(device)
+        if (gattLevel != null && gattLevel in 0..100) {
+            Log.d(TAG, "Battery for $address via BLE GATT: $gattLevel%")
+            batteryCache[address.uppercase()] = gattLevel
+            return gattLevel
+        }
+
+        Log.d(TAG, "Battery for $address unavailable")
+        return null
+    }
+
+    private fun getBatteryReflection(device: BluetoothDevice): Int? {
+        return try {
+            val method = device.javaClass.getMethod("getBatteryLevel")
+            val level = method.invoke(device) as? Int
+            if (level != null && level >= 0) level else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private suspend fun readBleGattBattery(device: BluetoothDevice): Int? {
+        return withTimeoutOrNull(3000L) {
+            suspendCancellableCoroutine { continuation ->
+                var gattInstance: BluetoothGatt? = null
+
+                val gattCallback = object : BluetoothGattCallback() {
+                    override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+                        if (newState == BluetoothProfile.STATE_CONNECTED) {
+                            try {
+                                if (hasConnectPermission()) {
+                                    gatt.discoverServices()
+                                } else {
+                                    if (continuation.isActive) continuation.resume(null)
+                                    gatt.close()
+                                }
+                            } catch (_: SecurityException) {
+                                if (continuation.isActive) continuation.resume(null)
+                                gatt.close()
+                            }
+                        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                            if (continuation.isActive) continuation.resume(null)
+                            gatt.close()
+                        }
+                    }
+
+                    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+                        if (status == BluetoothGatt.GATT_SUCCESS) {
+                            val batteryService = gatt.getService(BATTERY_SERVICE_UUID)
+                            val batteryChar = batteryService?.getCharacteristic(BATTERY_LEVEL_CHAR_UUID)
+                            if (batteryChar != null && hasConnectPermission()) {
+                                try {
+                                    gatt.readCharacteristic(batteryChar)
+                                    return
+                                } catch (_: SecurityException) {}
+                            }
+                        }
+                        if (continuation.isActive) continuation.resume(null)
+                        gatt.close()
+                    }
+
+                    @Deprecated("Deprecated in Java")
+                    override fun onCharacteristicRead(
+                        gatt: BluetoothGatt,
+                        characteristic: BluetoothGattCharacteristic,
+                        status: Int
+                    ) {
+                        if (status == BluetoothGatt.GATT_SUCCESS && characteristic.uuid == BATTERY_LEVEL_CHAR_UUID) {
+                            val value = characteristic.value
+                            val level = if (value != null && value.isNotEmpty()) {
+                                value[0].toInt() and 0xFF
+                            } else null
+
+                            if (continuation.isActive) continuation.resume(level)
+                        } else {
+                            if (continuation.isActive) continuation.resume(null)
+                        }
+                        gatt.close()
+                    }
+                }
+
+                try {
+                    if (hasConnectPermission()) {
+                        gattInstance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+                        } else {
+                            device.connectGatt(context, false, gattCallback)
+                        }
+
+                        continuation.invokeOnCancellation {
+                            try {
+                                gattInstance?.close()
+                            } catch (_: Exception) {}
+                        }
+                    } else {
+                        continuation.resume(null)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "GATT connection exception: ${e.message}")
+                    continuation.resume(null)
+                }
+            }
         }
     }
 
@@ -260,7 +458,7 @@ class EarbudNativeModule : Module() {
             if (hasConnectPermission()) device.bluetoothClass else null
         } catch (e: SecurityException) {
             null
-        } ?: return true // If permission missing or null, don't filter out
+        } ?: return true
 
         val major = btClass.majorDeviceClass
         if (major == BluetoothClass.Device.Major.AUDIO_VIDEO) {
@@ -280,7 +478,6 @@ class EarbudNativeModule : Module() {
     }
 
     private fun checkDeviceConnected(device: BluetoothDevice): Boolean {
-        // 1. Check A2DP profile connection
         try {
             a2dpProfile?.let { a2dp ->
                 if (hasConnectPermission()) {
@@ -292,7 +489,6 @@ class EarbudNativeModule : Module() {
             }
         } catch (_: Exception) {}
 
-        // 2. Check Headset profile connection
         try {
             headsetProfile?.let { headset ->
                 if (hasConnectPermission()) {
@@ -304,7 +500,6 @@ class EarbudNativeModule : Module() {
             }
         } catch (_: Exception) {}
 
-        // 3. Fallback: BluetoothDevice.isConnected() reflection (API 21+)
         try {
             val method = device.javaClass.getMethod("isConnected")
             val isConnected = method.invoke(device) as? Boolean
@@ -345,6 +540,7 @@ class EarbudNativeModule : Module() {
                 addAction(BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED)
                 addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
                 addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+                addAction(ACTION_BATTERY_LEVEL_CHANGED)
             }
 
             ContextCompat.registerReceiver(
@@ -354,7 +550,7 @@ class EarbudNativeModule : Module() {
                 ContextCompat.RECEIVER_EXPORTED
             )
             isReceiverRegistered = true
-            Log.d(TAG, "Bluetooth receiver registered in module")
+            Log.d(TAG, "Bluetooth receiver registered in module with battery monitoring")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to register Bluetooth receiver", e)
         }

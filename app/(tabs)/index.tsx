@@ -72,7 +72,8 @@ export default function HomeScreen() {
         address: '20:74:CF:89:12:01',
         nickname: 'Noise Buds Vector',
         icon: 'earbuds',
-        isConnected: true, // test connected
+        isConnected: true,
+        batteryLevel: 85, // 85% battery
       });
     } else {
       addTrackedDevice({
@@ -80,12 +81,16 @@ export default function HomeScreen() {
         address: 'D8:55:75:A4:77:88',
         nickname: 'realme Studio H1',
         icon: 'headphones',
-        isConnected: true, // test both connected at once!
+        isConnected: true,
+        batteryLevel: null, // Shows "Unavailable" to verify null handling
       });
     }
   };
 
   const connectedCount = trackedDevices.filter((d) => d.isConnected).length;
+  const lowBatteryDevices = trackedDevices.filter(
+    (d) => d.batteryLevel !== null && d.batteryLevel <= d.lowBatteryThreshold
+  );
 
   return (
     <ScrollView
@@ -148,6 +153,23 @@ export default function HomeScreen() {
           />
         </View>
       </View>
+
+      {/* Low Battery Warning Banner */}
+      {lowBatteryDevices.length > 0 && (
+        <View
+          style={[
+            styles.eventBanner,
+            {
+              backgroundColor: colors.errorContainer,
+              borderRadius: borderRadius.md,
+            },
+          ]}
+        >
+          <Text style={[styles.eventBannerText, { color: colors.onError }]}>
+            🪫 Low Battery Alert: {lowBatteryDevices.map((d) => `${d.nickname} (${d.batteryLevel}%)`).join(', ')}. Please charge soon!
+          </Text>
+        </View>
+      )}
 
       {/* Live Event Indicator */}
       {lastEvent && (
@@ -279,7 +301,7 @@ export default function HomeScreen() {
               onPress={() => handleAddPreset('noise')}
             >
               <Text style={[styles.presetBtnText, { color: colors.onPrimaryContainer }]}>
-                + Noise Buds Vector
+                + Noise Buds Vector (85%)
               </Text>
             </TouchableOpacity>
 
@@ -294,7 +316,7 @@ export default function HomeScreen() {
               onPress={() => handleAddPreset('realme')}
             >
               <Text style={[styles.presetBtnText, { color: colors.onSecondaryContainer }]}>
-                + realme Studio H1
+                + realme Studio H1 (Unavailable)
               </Text>
             </TouchableOpacity>
           </View>
@@ -302,6 +324,9 @@ export default function HomeScreen() {
       ) : (
         trackedDevices.map((dev: TrackedDevice) => {
           const isActive = dev.address === activeDeviceAddress;
+          const isLowBattery =
+            dev.batteryLevel !== null && dev.batteryLevel <= dev.lowBatteryThreshold;
+
           return (
             <View
               key={dev.address}
@@ -405,28 +430,53 @@ export default function HomeScreen() {
               >
                 {/* Battery Status */}
                 <View style={styles.metricItem}>
-                  <Text style={styles.metricEmoji}>🔋</Text>
+                  <Text style={styles.metricEmoji}>
+                    {isLowBattery
+                      ? '🪫'
+                      : dev.batteryLevel !== null
+                      ? '🔋'
+                      : '❓'}
+                  </Text>
                   <View>
                     <Text
                       style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}
                     >
                       Battery
                     </Text>
-                    <Text
-                      style={[
-                        styles.metricValue,
-                        {
-                          color:
-                            dev.batteryLevel !== null
-                              ? colors.onSurface
-                              : colors.onSurfaceVariant,
-                        },
-                      ]}
-                    >
-                      {dev.batteryLevel !== null
-                        ? `${dev.batteryLevel}%`
-                        : 'Unavailable'}
-                    </Text>
+                    {dev.batteryLevel !== null ? (
+                      <View style={styles.batteryValueRow}>
+                        <Text
+                          style={[
+                            styles.metricValue,
+                            {
+                              color: isLowBattery
+                                ? colors.error
+                                : colors.onSurface,
+                              fontWeight: '700',
+                            },
+                          ]}
+                        >
+                          {dev.batteryLevel}%
+                        </Text>
+                        {isLowBattery && (
+                          <Text style={[styles.lowBatteryWarn, { color: colors.error }]}>
+                            Low
+                          </Text>
+                        )}
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.metricValue,
+                          {
+                            color: colors.onSurfaceVariant,
+                            fontStyle: 'italic',
+                          },
+                        ]}
+                      >
+                        Unavailable
+                      </Text>
+                    )}
                   </View>
                 </View>
 
@@ -677,9 +727,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
+  batteryValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   metricValue: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  lowBatteryWarn: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   cardActionBtn: {
     paddingVertical: 6,

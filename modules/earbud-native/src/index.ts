@@ -5,6 +5,7 @@ export interface BondedDevice {
   name: string;
   address: string;
   isConnected: boolean;
+  batteryLevel?: number | null;
   type: string;
   majorDeviceClass?: number;
   deviceClass?: number;
@@ -20,10 +21,16 @@ export interface BluetoothStateEvent {
   enabled: boolean;
 }
 
+export interface BatteryChangeEvent {
+  address: string;
+  batteryLevel: number | null;
+}
+
 export type EarbudNativeEvents = {
   onDeviceConnectionChanged: (event: ConnectionChangeEvent) => void;
   onBluetoothStateChanged: (event: BluetoothStateEvent) => void;
   onBondStateChanged: () => void;
+  onBatteryLevelChanged: (event: BatteryChangeEvent) => void;
 };
 
 // Safely load the native module
@@ -99,7 +106,7 @@ export async function requestBluetoothPermissions(): Promise<boolean> {
 }
 
 /**
- * Request notification permission (required on Android 13+ / API 33+ for foreground service).
+ * Request notification permission (required on Android 13+ / API 33+ for foreground service and battery alerts).
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   if (Platform.OS !== 'android') return false;
@@ -141,7 +148,6 @@ export async function startDeviceWatcherService(): Promise<boolean> {
   }
 
   try {
-    // Ensure notification permission on Android 13+
     await requestNotificationPermission();
     return (await NativeModule?.startWatcherService()) ?? false;
   } catch (e) {
@@ -160,6 +166,30 @@ export async function stopDeviceWatcherService(): Promise<boolean> {
   } catch (e) {
     console.error('[EarbudNative] Failed to stop device watcher service:', e);
     return false;
+  }
+}
+
+/**
+ * Reads native battery level for a device address, trying in order:
+ * (a) BluetoothDevice.getBatteryLevel reflection
+ * (b) BATTERY_LEVEL_CHANGED broadcast cache
+ * (c) BLE Battery Service GATT (0x180F/0x2A19)
+ * Returns null if none work.
+ */
+export async function getDeviceBatteryLevel(
+  address: string
+): Promise<number | null> {
+  if (Platform.OS !== 'android') return null;
+
+  try {
+    const level = await NativeModule?.getDeviceBatteryLevel(address);
+    if (typeof level === 'number' && level >= 0 && level <= 100) {
+      return level;
+    }
+    return null;
+  } catch (e) {
+    console.warn(`[EarbudNative] Error fetching battery for ${address}:`, e);
+    return null;
   }
 }
 
@@ -255,6 +285,28 @@ export function addBondStateListener(
 
   const subscription: EventSubscription = emitter.addListener(
     'onBondStateChanged',
+    callback
+  );
+
+  return {
+    remove: () => {
+      subscription.remove();
+    },
+  };
+}
+
+/**
+ * Listen for battery level update broadcasts.
+ */
+export function addBatteryListener(
+  callback: (event: BatteryChangeEvent) => void
+): { remove: () => void } {
+  if (!emitter) {
+    return { remove: () => {} };
+  }
+
+  const subscription: EventSubscription = emitter.addListener(
+    'onBatteryLevelChanged',
     callback
   );
 

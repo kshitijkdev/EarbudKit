@@ -10,6 +10,8 @@ import {
   addConnectionListener,
   addBluetoothStateListener,
   addBondStateListener,
+  addBatteryListener,
+  getDeviceBatteryLevel,
   openBluetoothSettings,
 } from '../../../modules/earbud-native';
 import { useDeviceStore } from '../../store';
@@ -23,6 +25,7 @@ export function useBluetoothDevices() {
 
   const syncWithBondedDevices = useDeviceStore((s) => s.syncWithBondedDevices);
   const setConnectionState = useDeviceStore((s) => s.setConnectionState);
+  const setBatteryLevel = useDeviceStore((s) => s.setBatteryLevel);
 
   const checkAndRefresh = useCallback(async () => {
     if (Platform.OS !== 'android') {
@@ -46,12 +49,23 @@ export function useBluetoothDevices() {
       console.log(`[EarbudKit] Fetched ${devices.length} bonded audio device(s):`, devices);
       setBondedDevices(devices);
       syncWithBondedDevices(devices);
+
+      // Fetch battery for connected devices
+      for (const dev of devices) {
+        if (dev.isConnected) {
+          getDeviceBatteryLevel(dev.address).then((lvl) => {
+            if (lvl !== null) {
+              setBatteryLevel(dev.address, lvl);
+            }
+          });
+        }
+      }
     } catch (err) {
       console.error('[EarbudKit] Error fetching bonded audio devices:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [syncWithBondedDevices]);
+  }, [syncWithBondedDevices, setBatteryLevel]);
 
   const requestPermission = useCallback(async () => {
     const granted = await requestBluetoothPermissions();
@@ -82,6 +96,21 @@ export function useBluetoothDevices() {
 
       // Update Zustand persisted store
       setConnectionState(event.address, event.connected);
+
+      // If connected, query battery immediately
+      if (event.connected) {
+        getDeviceBatteryLevel(event.address).then((lvl) => {
+          if (lvl !== null) {
+            setBatteryLevel(event.address, lvl);
+          }
+        });
+      }
+    });
+
+    // Listen for live battery level updates
+    const batterySub = addBatteryListener((event) => {
+      console.log(`[EarbudKit LIVE BATTERY] ${event.address} battery is now ${event.batteryLevel}%`);
+      setBatteryLevel(event.address, event.batteryLevel);
     });
 
     // Listen for Bluetooth state changes (on/off)
@@ -101,10 +130,11 @@ export function useBluetoothDevices() {
 
     return () => {
       connSub.remove();
+      batterySub.remove();
       btStateSub.remove();
       bondSub.remove();
     };
-  }, [checkAndRefresh, setConnectionState]);
+  }, [checkAndRefresh, setConnectionState, setBatteryLevel]);
 
   return {
     bondedDevices,

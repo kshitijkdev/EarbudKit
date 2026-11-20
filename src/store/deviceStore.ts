@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BondedDevice } from '../../modules/earbud-native';
+import { sendLowBatteryNotification } from '../services/notifications';
 
 export type DeviceIconType = 'earbuds' | 'headphones';
 
@@ -13,6 +14,8 @@ export interface TrackedDevice {
   isActive: boolean; // Marked as currently active target device
   isConnected: boolean; // Current connection status
   batteryLevel: number | null; // Battery percentage (0-100) or null
+  lowBatteryThreshold: number; // Alert threshold % (default 20)
+  batteryAlertSent: boolean; // Prevent repeating alert until recharged
   addedAt: number; // Timestamp when added
   lastConnectedAt: number | null; // Timestamp of last connect
   lastDisconnectedAt: number | null; // Timestamp of last disconnect
@@ -29,13 +32,17 @@ interface DeviceState {
     nickname?: string;
     icon?: DeviceIconType;
     isConnected?: boolean;
+    batteryLevel?: number | null;
+    lowBatteryThreshold?: number;
   }) => void;
   removeTrackedDevice: (address: string) => void;
   updateNickname: (address: string, nickname: string) => void;
   updateIcon: (address: string, icon: DeviceIconType) => void;
+  setLowBatteryThreshold: (address: string, threshold: number) => void;
   setActiveDevice: (address: string | null) => void;
   setConnectionState: (address: string, isConnected: boolean) => void;
   setBatteryLevel: (address: string, batteryLevel: number | null) => void;
+  triggerTestLowBatteryAlert: (address: string) => Promise<boolean>;
   syncWithBondedDevices: (bonded: BondedDevice[]) => void;
   getTrackedDeviceList: () => TrackedDevice[];
   getTrackedDevice: (address: string) => TrackedDevice | undefined;
@@ -77,7 +84,10 @@ export const useDeviceStore = create<DeviceState>()(
           icon,
           isActive: existing?.isActive ?? (get().activeDeviceAddress === null),
           isConnected: device.isConnected ?? existing?.isConnected ?? false,
-          batteryLevel: existing?.batteryLevel ?? null,
+          batteryLevel: device.batteryLevel ?? existing?.batteryLevel ?? null,
+          lowBatteryThreshold:
+            device.lowBatteryThreshold ?? existing?.lowBatteryThreshold ?? 20,
+          batteryAlertSent: existing?.batteryAlertSent ?? false,
           addedAt: existing?.addedAt ?? Date.now(),
           lastConnectedAt: existing?.lastConnectedAt ?? null,
           lastDisconnectedAt: existing?.lastDisconnectedAt ?? null,
@@ -153,6 +163,24 @@ export const useDeviceStore = create<DeviceState>()(
         });
       },
 
+      setLowBatteryThreshold: (address, threshold) => {
+        const addr = address.toUpperCase();
+        set((state) => {
+          const device = state.trackedDevices[addr];
+          if (!device) return state;
+
+          return {
+            trackedDevices: {
+              ...state.trackedDevices,
+              [addr]: {
+                ...device,
+                lowBatteryThreshold: threshold,
+              },
+            },
+          };
+        });
+      },
+
       setActiveDevice: (address) => {
         const addr = address ? address.toUpperCase() : null;
         set((state) => {
@@ -194,20 +222,53 @@ export const useDeviceStore = create<DeviceState>()(
 
       setBatteryLevel: (address, batteryLevel) => {
         const addr = address.toUpperCase();
-        set((state) => {
-          const device = state.trackedDevices[addr];
-          if (!device) return state;
+        const current = get().trackedDevices[addr];
+        if (!current) return;
 
-          return {
-            trackedDevices: {
-              ...state.trackedDevices,
-              [addr]: {
-                ...device,
-                batteryLevel,
-              },
+        let shouldAlert = false;
+        let nextAlertSent = current.batteryAlertSent;
+
+        if (batteryLevel !== null) {
+          if (batteryLevel <= current.lowBatteryThreshold && !current.batteryAlertSent) {
+            shouldAlert = true;
+            nextAlertSent = true;
+          } else if (batteryLevel > current.lowBatteryThreshold + 5) {
+            // Recharged, re-arm alert
+            nextAlertSent = false;
+          }
+        }
+
+        set((state) => ({
+          trackedDevices: {
+            ...state.trackedDevices,
+            [addr]: {
+              ...state.trackedDevices[addr],
+              batteryLevel,
+              batteryAlertSent: nextAlertSent,
             },
-          };
-        });
+          },
+        }));
+
+        if (shouldAlert && batteryLevel !== null) {
+          sendLowBatteryNotification(
+            current.nickname,
+            batteryLevel,
+            current.lowBatteryThreshold
+          );
+        }
+      },
+
+      triggerTestLowBatteryAlert: async (address) => {
+        const addr = address.toUpperCase();
+        const device = get().trackedDevices[addr];
+        if (!device) return false;
+
+        const testLevel = Math.min(device.lowBatteryThreshold, 15);
+        return await sendLowBatteryNotification(
+          device.nickname,
+          testLevel,
+          device.lowBatteryThreshold
+        );
       },
 
       syncWithBondedDevices: (bonded) => {
@@ -219,15 +280,22 @@ export const useDeviceStore = create<DeviceState>()(
             const addr = item.address.toUpperCase();
             if (next[addr]) {
               const current = next[addr];
+              const newBattery =
+                item.batteryLevel !== undefined
+                  ? item.batteryLevel
+                  : current.batteryLevel;
+
               if (
                 current.isConnected !== item.isConnected ||
-                current.name !== item.name
+                current.name !== item.name ||
+                current.batteryLevel !== newBattery
               ) {
                 hasChanges = true;
                 next[addr] = {
                   ...current,
                   name: item.name,
                   isConnected: item.isConnected,
+                  batteryLevel: newBattery,
                 };
               }
             }
