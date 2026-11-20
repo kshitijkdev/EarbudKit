@@ -104,13 +104,13 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
 ## Design Reskin (Sonic Neo-Glass) Checklist
 - [x] Stage D1: Design system foundation (theme tokens, fonts, reusable UI components: GlassCard, PillButton, StatusChip, Toggle, NeonSlider, BatteryRing, SectionHeader, FloatingPillNav)
 - [x] Stage D2: Navigation shell and Home
-- [ ] Stage D3: Devices
+- [x] Stage D3: Devices
 - [ ] Stage D4: Auto-actions
 - [ ] Stage D5: Tools
 - [ ] Stage D6: Settings and Stats
 - [ ] Stage D7: Light theme, polish, verify
 
-## Design Reskin Decisions & File Map (D1 & D2)
+## Design Reskin Decisions & File Map (D1, D2 & D3)
 - `src/theme/theme.ts`: Fully updated with Sonic Neo-Glass tokens for dark mode (Base Void `#0B0B10`, Electric Violet `#7C5CFF`, Hot Pink `#FF4FD8`, Lime Neon `#C6FF3D`, glass opacities) and light mode (`#FCF8FF`, `#5E39E0`, `#AF0093`, `#006947`). Space Grotesk / Inter typography scale and 24px bento / 9999px pill radii.
 - `android/app/src/main/assets/fonts/`: Stored native offline font assets for Space Grotesk and Inter for zero-latency standalone offline rendering.
 - `src/components/ui/`:
@@ -130,5 +130,14 @@ All 11 Core Stages Complete! Ready for Sonic Neo-Glass Design Reskin.
   - Daily Session Load card bound to `statsStore` today listening time, animated 7-bar waveform visualizer, and navigation link to `/stats`.
   - Diagnostics bento row: Bluetooth status chip and Fleet count (`<N> kits`, `<active> Active • <offline> Standby`).
   - Rapid command quick launcher chips: Sleep Timer, Find Device, Equalizer, Auto Actions.
+- `app/(tabs)/devices.tsx`: Rebuilt Devices screen to match Sonic Neo-Glass mockup:
+  - Header row with "Tracked Devices", live saved count badge, and pulsing "RADIO ACTIVE" / "RADIO OFF" `StatusChip`.
+  - Friendly permission banners (nearby Bluetooth and disabled Bluetooth) with gradient `PillButton` triggers (no red-on-red).
+  - Background Access Active telemetry glass banner.
+  - Wallet-style tracked device cards with active target violet glow, device avatar, nickname, MAC, connection status dot, live battery bar (or friendly driver restriction fallback), alert threshold pill, codec tag, and Set Active / Edit / Remove actions.
+  - "Pair New Bluetooth Device" interactive Bento tile with radar ripple indicator, "+ Scan Paired Devices" loader, and system BT settings shortcut.
+  - Discovered paired Bluetooth devices list with 1-tap "+ Track" `PillButton`s.
+  - Target device quick-add sticker chips (Noise Buds Vector, realme Studio H1, Generic BLE).
+  - Restyled glass modal for device editing (nickname input, earbuds vs over-ear icon selector, 10-30% battery threshold pills, test notification trigger, cancel & save buttons).
 
-## NEXT STEP: Stage D3, first action is restyling the Devices screen (`app/(tabs)/devices.tsx`) to match `designstich/Dark_theme/stitch_earbudkit_bluetooth_companion_ui/devices/` with wallet-style tracked device cards, restyled edit modal, permission banner, paired devices list, and quick-add chips.
+## NEXT STEP: Stage D4, first action is restyling the Auto-actions screen (`app/(tabs)/auto.tsx`) to match `designstich/Dark_theme/` with device pill selector, On-Connect & On-Disconnect glass cards, app launcher tile grid with violet glow, volume slider/stepper, DND toggles, and ghost test buttons.
