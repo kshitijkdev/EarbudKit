@@ -178,3 +178,9 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
   - Saved per-device MAC address in `equalizerStore`.
   - Works with 100% of Bluetooth audio devices on Android (no vendor chip required).
   - *Note*: Pending UI changes and design specifications before implementation begins.
+- [ ] **Smart Habit Predictor (Adaptive Context Engine / Smart Handshake)**:
+  - Zero-bloat Bayesian/Markov frequency matrix stored in local AsyncStorage (`@earbudkit/habit-matrix`, < 5KB).
+  - Learns time-of-day listening habits: Morning commute (podcasts), evening workout (high volume + DND), late night (low volume + sleep timer).
+  - Surfaces a glowing Sonic Neo-Glass "Smart Handshake" capsule on Home with match confidence and 3s auto-apply countdown.
+  - 100% on-device, zero background battery drain, air-gapped privacy.
+  - *Note*: Queued on roadmap. Pending UI changes and design specifications.
