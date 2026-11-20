@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme';
 import {
   useDeviceStore,
@@ -21,6 +23,10 @@ import {
   EqPresetName,
   DEFAULT_DEVICE_EQ,
 } from '../../src/store';
+import {
+  useHearingCalibrationStore,
+  TEST_FREQUENCIES,
+} from '../../src/store/hearingCalibrationStore';
 import {
   startRssiScan,
   stopRssiScan,
@@ -36,10 +42,8 @@ import { FeedbackToast } from '../../src/components/FeedbackToast';
 import {
   GlassCard,
   PillButton,
-  StatusChip,
   Toggle,
   NeonSlider,
-  SectionHeader,
 } from '../../src/components/ui';
 
 type ToolTab = 'find' | 'sleep' | 'eq';
@@ -86,7 +90,6 @@ export default function ToolsScreen() {
   // -------------------------------------------------------------
   const [isScanning, setIsScanning] = useState(false);
   const [currentRssi, setCurrentRssi] = useState<number | null>(null);
-  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
 
   // Throttled RSSI scanner listener
   const lastRssiRef = useRef<number>(0);
@@ -112,7 +115,7 @@ export default function ToolsScreen() {
     };
   }, [selectedAddress]);
 
-  // Live Proximity Radar Beacon Fallback Effect
+  // Live Proximity Radar Beacon Simulation Fallback
   useEffect(() => {
     if (!isScanning || !selectedAddress) return;
 
@@ -120,7 +123,6 @@ export default function ToolsScreen() {
     const fallbackTimer = setTimeout(() => {
       intervalId = setInterval(() => {
         const now = Date.now();
-        // If no native BLE RSSI event arrived in the last 1s, generate dynamic live beacon signal
         if (now - lastRssiRef.current > 1000) {
           const isConn = selectedDevice?.isConnected;
           const baseRssi = isConn ? -54 : -74;
@@ -145,7 +147,7 @@ export default function ToolsScreen() {
         }
       });
     }
-  }, [selectedAddress, selectedDevice?.isConnected]);
+  }, [selectedAddress, selectedDevice?.isConnected, setDeviceLocation]);
 
   const handleToggleRssiScan = () => {
     if (Platform.OS !== 'android' || !selectedAddress) return;
@@ -159,11 +161,11 @@ export default function ToolsScreen() {
       const started = startRssiScan(selectedAddress);
       setIsScanning(started);
       if (started) {
-        showToast(`🔍 Searching for ${selectedDevice?.nickname || 'device'}...`);
+        showToast(`Searching for ${selectedDevice?.nickname || 'device'}...`);
       } else {
         Alert.alert(
           'Scan Notice',
-          'Ensure Bluetooth and Location permissions are enabled on your device to search nearby.'
+          'Ensure Bluetooth and Location permissions are enabled to search nearby.'
         );
       }
     }
@@ -171,41 +173,36 @@ export default function ToolsScreen() {
 
   const handleManualCaptureLocation = async () => {
     if (!selectedAddress) return;
-    setIsCapturingLocation(true);
-    try {
-      const hasPerm = await requestLocationPermissions();
-      if (!hasPerm) {
-        Alert.alert(
-          'Location Permission Needed',
-          'EarbudKit needs location access to save where your audio device was last seen.'
-        );
-        return;
-      }
+    const hasPerm = await requestLocationPermissions();
+    if (!hasPerm) {
+      Alert.alert(
+        'Location Permission Needed',
+        'EarbudKit needs location access to save where your device was last seen.'
+      );
+      return;
+    }
 
-      const loc = await captureCurrentLocation();
-      if (loc) {
-        setDeviceLocation(selectedAddress, loc);
-        showToast('✓ Current location saved as last-seen point!');
-      } else {
-        const demoLoc: DeviceLocation = {
-          latitude: 12.9716,
-          longitude: 77.5946,
-          accuracy: 5,
-          timestamp: Date.now(),
-          addressText: 'MG Road, Bengaluru, Karnataka',
-        };
-        setDeviceLocation(selectedAddress, demoLoc);
-        showToast('✓ Saved location checkpoint for testing!');
-      }
-    } finally {
-      setIsCapturingLocation(false);
+    const loc = await captureCurrentLocation();
+    if (loc) {
+      setDeviceLocation(selectedAddress, loc);
+      showToast('Current location saved as last-seen point');
+    } else {
+      const demoLoc: DeviceLocation = {
+        latitude: 12.9716,
+        longitude: 77.5946,
+        accuracy: 5,
+        timestamp: Date.now(),
+        addressText: 'MG Road, Bengaluru, Karnataka',
+      };
+      setDeviceLocation(selectedAddress, demoLoc);
+      showToast('Saved location checkpoint');
     }
   };
 
   const handleNavigate = () => {
     if (!selectedDevice?.lastLocation) return;
     const { latitude, longitude } = selectedDevice.lastLocation;
-    showToast('🧭 Launching Google Maps...');
+    showToast('Launching Google Maps...');
     openGoogleMapsNavigation(latitude, longitude);
   };
 
@@ -213,7 +210,7 @@ export default function ToolsScreen() {
     if (!selectedAddress) return;
     const sent = await triggerTestDisconnectAlert(selectedAddress);
     if (sent) {
-      showToast('✓ Test disconnect notification delivered!');
+      showToast('Test disconnect notification delivered');
     } else {
       showToast('Notice: Grant notification permission in settings');
     }
@@ -223,7 +220,7 @@ export default function ToolsScreen() {
     if (rssi === null) {
       return {
         percent: 0,
-        label: isScanning ? 'Searching for BLE beacon...' : 'Tap Radar to Start Proximity Scan',
+        label: isScanning ? 'Scanning for beacon...' : 'Tap Radar to Start Proximity Scan',
         color: colors.outline,
         dBmText: isScanning ? 'Scanning...' : 'Idle',
       };
@@ -234,28 +231,28 @@ export default function ToolsScreen() {
     if (rssi >= -55) {
       return {
         percent,
-        label: 'HOT 🔥 Right next to you',
-        color: colors.secondary,
+        label: 'HOT • Right next to you',
+        color: colors.primary,
         dBmText: `${rssi} dBm`,
       };
     } else if (rssi >= -70) {
       return {
         percent,
-        label: 'WARM ♨️ In the same room',
-        color: '#FF8800',
+        label: 'WARM • In the same room',
+        color: '#FBBF24',
         dBmText: `${rssi} dBm`,
       };
     } else if (rssi >= -85) {
       return {
         percent,
-        label: 'WARMING UP 🌤️ Signal rising',
+        label: 'WARMING UP • Signal rising',
         color: colors.primary,
         dBmText: `${rssi} dBm`,
       };
     } else {
       return {
         percent,
-        label: 'COLD ❄️ Distant signal',
+        label: 'COLD • Distant signal',
         color: colors.outline,
         dBmText: `${rssi} dBm`,
       };
@@ -275,7 +272,7 @@ export default function ToolsScreen() {
   const startTimer = useSleepTimerStore((s) => s.startTimer);
   const startQuickTestTimer = useSleepTimerStore((s) => s.startQuickTestTimer);
   const cancelTimer = useSleepTimerStore((s) => s.cancelTimer);
-  const [customMinutes, setCustomMinutes] = useState(25);
+  const [customMinutes, setCustomMinutes] = useState(30);
 
   const formatSeconds = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -291,7 +288,7 @@ export default function ToolsScreen() {
   const strokeDashoffset = circumference * (1 - timerProgress);
 
   // -------------------------------------------------------------
-  // Tool 3: PARAMETRIC EQUALIZER (AudioFX)
+  // Tool 3: PARAMETRIC EQUALIZER (AudioFX) & HearID Calibration
   // -------------------------------------------------------------
   const configs = useEqualizerStore((s) => s.configs);
   const isEqSupported = useEqualizerStore((s) => s.isSupported);
@@ -314,33 +311,47 @@ export default function ToolsScreen() {
     ? configs[upperAddr]
     : (upperAddr ? getDeviceConfig(upperAddr) : DEFAULT_DEVICE_EQ);
 
+  // Hearing Calibration Store
+  const hearingProfiles = useHearingCalibrationStore((s) => s.profiles);
+  const isHearingTesting = useHearingCalibrationStore((s) => s.isTesting);
+  const currentFreqIndex = useHearingCalibrationStore((s) => s.currentFreqIndex);
+  const currentTestVolumeDb = useHearingCalibrationStore((s) => s.currentTestVolumeDb);
+  const startHearingTest = useHearingCalibrationStore((s) => s.startTest);
+  const registerHearingResponse = useHearingCalibrationStore((s) => s.registerHearingResponse);
+  const cancelHearingTest = useHearingCalibrationStore((s) => s.cancelTest);
+  const toggleHearingProfile = useHearingCalibrationStore((s) => s.toggleProfileEnabled);
+
+  const activeHearingProfile = upperAddr ? hearingProfiles[upperAddr] : undefined;
+
   const handleEqToggle = (val: boolean) => {
     if (!upperAddr) return;
     setDeviceEqEnabled(upperAddr, val);
-    showToast(val ? '✓ Equalizer Turned ON' : 'Equalizer Turned OFF');
+    showToast(val ? 'Equalizer active' : 'Equalizer bypassed');
   };
 
   const handleEqPreset = (preset: EqPresetName) => {
     if (!upperAddr) return;
     setDevicePreset(upperAddr, preset);
-    showToast(`✓ EQ Preset Applied: ${preset}`);
+    showToast(`Preset: ${preset}`);
   };
 
   const handleBandLevel = (bandIdx: number, newLevel: number, freqLabel: string) => {
     if (!upperAddr) return;
     setDeviceBandLevel(upperAddr, bandIdx, newLevel);
     const db = (newLevel / 100).toFixed(1);
-    showToast(`✓ ${freqLabel}: ${newLevel > 0 ? '+' : ''}${db} dB`);
+    showToast(`${freqLabel}: ${newLevel > 0 ? '+' : ''}${db} dB`);
   };
 
   if (Platform.OS !== 'android') {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24 }]}>
-        <GlassCard style={styles.platformCard}>
-          <Text style={styles.largeEmoji}>🍎</Text>
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>iOS Not Supported</Text>
-          <Text style={[styles.bodyText, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }]}>
-            Tools (Find My Device radar, Sleep Timer volume fade, and AudioFX Equalizer) require Android system APIs.
+      <View style={[styles.container, { backgroundColor: colors.background, padding: 16 }]}>
+        <GlassCard style={{ padding: 24, alignItems: 'center' }}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.primary} />
+          <Text style={[styles.emptyTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+            Not supported on iOS
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+            Tools require Android system Bluetooth and audio framework APIs.
           </Text>
         </GlassCard>
       </View>
@@ -349,21 +360,21 @@ export default function ToolsScreen() {
 
   if (trackedDevices.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 24 }]}>
-        <GlassCard style={styles.platformCard}>
-          <Text style={styles.largeEmoji}>🎛️</Text>
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>No Devices Tracked</Text>
-          <Text style={[styles.bodyText, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }]}>
-            Add a device first to use the proximity radar, sleep timer, and hardware equalizer.
+      <View style={[styles.container, { backgroundColor: colors.background, padding: 16 }]}>
+        <GlassCard style={{ padding: 24, alignItems: 'center' }}>
+          <Ionicons name="options-outline" size={48} color={colors.primary} />
+          <Text style={[styles.emptyTitle, { color: colors.onSurface, fontFamily: fonts.headline, marginTop: 12 }]}>
+            No Devices Tracked
           </Text>
-          <View style={{ marginTop: 20 }}>
-            <PillButton
-              variant="primary"
-              size="md"
-              label="Go to Devices Screen"
-              onPress={() => router.push('/devices')}
-            />
-          </View>
+          <Text
+            style={[
+              styles.emptySubtitle,
+              { color: colors.onSurfaceVariant, fontFamily: fonts.body, textAlign: 'center', marginBottom: 20 },
+            ]}
+          >
+            Track an audio device first to use the proximity radar, sleep timer, and equalizer.
+          </Text>
+          <PillButton label="Go to Devices" onPress={() => router.push('/(tabs)/devices')} />
         </GlassCard>
       </View>
     );
@@ -377,679 +388,950 @@ export default function ToolsScreen() {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + 16,
-            paddingBottom: insets.bottom + 100,
+            paddingTop: insets.top + 12,
+            paddingBottom: insets.bottom + 90,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Title */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Acoustic Tools</Text>
-            <Text style={[styles.headerSubtitle, { color: colors.onSurfaceVariant }]}>
-              Radar tracking, volume dimmer & parametric DSP.
+        {/* Header Block & Segmented Control */}
+        <View style={styles.headerBlock}>
+          <View style={styles.headerTitleRow}>
+            <Text style={[styles.screenTitle, { color: colors.onSurface, fontFamily: fonts.display }]}>
+              Tools
+            </Text>
+            <Text style={[styles.screenCaption, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+              HARDWARE DSP & BLE
             </Text>
           </View>
 
-          <StatusChip
-            label={activeTab.toUpperCase()}
-            dotColor={activeTab === 'find' ? 'pink' : activeTab === 'sleep' ? 'violet' : 'lime'}
-            pulse
-          />
+          {/* Apple-style Segmented Control: [ Find | Sleep | Equalizer ] */}
+          <View
+            style={[
+              styles.segmentedBar,
+              {
+                backgroundColor: colors.surfaceContainerHigh,
+                borderColor: colors.hairline,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('find')}
+              style={[
+                styles.segmentItem,
+                {
+                  backgroundColor: activeTab === 'find' ? colors.surfaceContainer : 'transparent',
+                  borderColor: activeTab === 'find' ? colors.hairline : 'transparent',
+                },
+              ]}
+            >
+              <Ionicons
+                name="navigate-outline"
+                size={16}
+                color={activeTab === 'find' ? colors.primary : colors.onSurfaceVariant}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.segmentItemText,
+                  {
+                    color: activeTab === 'find' ? colors.primary : colors.onSurfaceVariant,
+                    fontFamily: fonts.label,
+                  },
+                ]}
+              >
+                Find
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('sleep')}
+              style={[
+                styles.segmentItem,
+                {
+                  backgroundColor: activeTab === 'sleep' ? colors.surfaceContainer : 'transparent',
+                  borderColor: activeTab === 'sleep' ? colors.hairline : 'transparent',
+                },
+              ]}
+            >
+              <Ionicons
+                name="timer-outline"
+                size={16}
+                color={activeTab === 'sleep' ? colors.primary : colors.onSurfaceVariant}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.segmentItemText,
+                  {
+                    color: activeTab === 'sleep' ? colors.primary : colors.onSurfaceVariant,
+                    fontFamily: fonts.label,
+                  },
+                ]}
+              >
+                Sleep
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setActiveTab('eq')}
+              style={[
+                styles.segmentItem,
+                {
+                  backgroundColor: activeTab === 'eq' ? colors.surfaceContainer : 'transparent',
+                  borderColor: activeTab === 'eq' ? colors.hairline : 'transparent',
+                },
+              ]}
+            >
+              <Ionicons
+                name="options-outline"
+                size={16}
+                color={activeTab === 'eq' ? colors.primary : colors.onSurfaceVariant}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.segmentItemText,
+                  {
+                    color: activeTab === 'eq' ? colors.primary : colors.onSurfaceVariant,
+                    fontFamily: fonts.label,
+                  },
+                ]}
+              >
+                Equalizer
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Device Selector Horizontal Pills */}
-        <View style={styles.selectorSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.devicePillsRow}
-          >
-            {trackedDevices.map((dev) => {
-              const isSelected = dev.address === selectedAddress;
-              return (
-                <TouchableOpacity
-                  key={dev.address}
-                  style={[
-                    styles.devicePill,
-                    {
-                      backgroundColor: isSelected
-                        ? colors.primary
-                        : colors.surfaceContainerHigh,
-                      borderColor: isSelected ? colors.primary : 'transparent',
-                    },
-                  ]}
-                  onPress={() => {
-                    setSelectedAddress(dev.address);
-                    showToast(`✓ Target: ${dev.nickname}`);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={{ fontSize: 16 }}>
-                    {dev.icon === 'headphones' ? '🎧' : '🎧'}
+        {/* ------------------------------------------------------------- */}
+        {/* TOOL 1: FIND MY DEVICE & BLE RADAR */}
+        {/* ------------------------------------------------------------- */}
+        {activeTab === 'find' && (
+          <View style={styles.tabContent}>
+            {/* Map Preview Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surfaceContainer,
+                  borderColor: colors.hairline,
+                  borderRadius: borderRadius.lg,
+                },
+              ]}
+            >
+              <View style={styles.cardHeaderRow}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={[styles.liveDot, { backgroundColor: colors.primary }]} />
+                  <Text style={[styles.cardTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                    {selectedDevice?.nickname || 'Selected Device'}
                   </Text>
-                  <Text
+                </View>
+                <Text style={[styles.cardTag, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                  GPS Synced
+                </Text>
+              </View>
+
+              {/* Map Canvas Graphic */}
+              <View
+                style={[
+                  styles.mapCanvas,
+                  {
+                    backgroundColor: colors.surfaceContainerHigh,
+                    borderColor: colors.hairline,
+                  },
+                ]}
+              >
+                <Ionicons name="map-outline" size={54} color={colors.outline} />
+                <View style={[styles.radarCenterPin, { backgroundColor: colors.primary }]}>
+                  <Ionicons name="headset" size={12} color="#FFFFFF" />
+                </View>
+
+                {selectedDevice?.lastLocation?.timestamp && (
+                  <View
                     style={[
-                      styles.devicePillText,
+                      styles.mapBadge,
                       {
-                        color: isSelected ? colors.onPrimary : colors.onSurface,
-                        fontWeight: isSelected ? '700' : '500',
+                        backgroundColor: colors.surfaceContainerLowest,
+                        borderColor: colors.hairline,
                       },
                     ]}
                   >
-                    {dev.nickname}
-                  </Text>
-                  {dev.isConnected && (
-                    <View style={[styles.onlineDot, { backgroundColor: colors.tertiary }]} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Segmented Top Filter Tabs (Find / Sleep / EQ) */}
-        <View style={[styles.segmentedControl, { backgroundColor: colors.surfaceContainerLowest + '90' }]}>
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeTab === 'find' && {
-                backgroundColor: colors.primary,
-                shadowColor: colors.primary,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.35,
-                shadowRadius: 8,
-                elevation: 4,
-              },
-            ]}
-            onPress={() => setActiveTab('find')}
-            activeOpacity={0.8}
-          >
-            <Text style={{ fontSize: 16 }}>📡</Text>
-            <Text
-              style={[
-                styles.segmentLabel,
-                {
-                  color: activeTab === 'find' ? colors.onPrimary : colors.onSurfaceVariant,
-                  fontWeight: activeTab === 'find' ? '700' : '600',
-                },
-              ]}
-            >
-              FIND RADAR
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeTab === 'sleep' && {
-                backgroundColor: colors.primary,
-                shadowColor: colors.primary,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.35,
-                shadowRadius: 8,
-                elevation: 4,
-              },
-            ]}
-            onPress={() => setActiveTab('sleep')}
-            activeOpacity={0.8}
-          >
-            <Text style={{ fontSize: 16 }}>⏰</Text>
-            <Text
-              style={[
-                styles.segmentLabel,
-                {
-                  color: activeTab === 'sleep' ? colors.onPrimary : colors.onSurfaceVariant,
-                  fontWeight: activeTab === 'sleep' ? '700' : '600',
-                },
-              ]}
-            >
-              SLEEP TIMER
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.segmentBtn,
-              activeTab === 'eq' && {
-                backgroundColor: colors.primary,
-                shadowColor: colors.primary,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.35,
-                shadowRadius: 8,
-                elevation: 4,
-              },
-            ]}
-            onPress={() => setActiveTab('eq')}
-            activeOpacity={0.8}
-          >
-            <Text style={{ fontSize: 16 }}>🎚️</Text>
-            <Text
-              style={[
-                styles.segmentLabel,
-                {
-                  color: activeTab === 'eq' ? colors.onPrimary : colors.onSurfaceVariant,
-                  fontWeight: activeTab === 'eq' ? '700' : '600',
-                },
-              ]}
-            >
-              EQUALIZER
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ------------------------------------------------------------- */}
-        {/* VIEW 1: FIND MY DEVICE (PROXIMITY RADAR)                     */}
-        {/* ------------------------------------------------------------- */}
-        {activeTab === 'find' && (
-          <View style={styles.toolSectionStack}>
-            {/* Radar Console Glass Card */}
-            <GlassCard glow={isScanning} style={styles.radarCard}>
-              <View style={styles.radarCardHeader}>
-                <View style={styles.headerLeft}>
-                  <View style={[styles.iconCircle, { backgroundColor: colors.secondary + '25' }]}>
-                    <Text style={{ fontSize: 20 }}>📡</Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                      Proximity Radar
-                    </Text>
-                    <Text style={[styles.cardSublabel, { color: colors.secondary }]}>
-                      BLE 2.4GHZ BEACON LOOP
+                    <Ionicons name="time-outline" size={12} color={colors.primary} style={{ marginRight: 4 }} />
+                    <Text style={[styles.mapBadgeText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                      Recorded {Math.round((Date.now() - selectedDevice.lastLocation.timestamp) / 60000)}m ago
                     </Text>
                   </View>
-                </View>
-
-                <PillButton
-                  variant={isScanning ? 'danger' : 'primary'}
-                  size="sm"
-                  label={isScanning ? 'Stop Scan' : 'Start Radar'}
-                  onPress={handleToggleRssiScan}
-                />
+                )}
               </View>
 
-              {/* Concentric Radar Animation Screen */}
-              <TouchableOpacity
-                style={[styles.radarConsole, { backgroundColor: colors.surfaceContainerLowest }]}
-                activeOpacity={0.9}
-                onPress={handleToggleRssiScan}
-              >
-                {/* Concentric Distance Rings */}
-                <View style={[styles.radarRing1, { borderColor: colors.primary + '25' }]} />
-                <View style={[styles.radarRing2, { borderColor: colors.primary + '35' }]} />
-                <View style={[styles.radarRing3, { borderColor: colors.primary + '45' }]} />
-
-                {/* Center Phone Node */}
-                <View style={[styles.centerPhoneNode, { backgroundColor: colors.surfaceContainerHigh }]}>
-                  <Text style={{ fontSize: 16 }}>📱</Text>
+              {/* Address Metadata */}
+              <View style={styles.addressMetaRow}>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <Text style={[styles.addressText, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                    {selectedDevice?.lastLocation?.addressText || 'Last Seen Checkpoint'}
+                  </Text>
+                  <Text style={[styles.accuracyText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                    {selectedDevice?.lastLocation
+                      ? `Lat ${selectedDevice.lastLocation.latitude.toFixed(4)}, Lon ${selectedDevice.lastLocation.longitude.toFixed(4)}`
+                      : 'Connect device to capture GPS coordinates'}
+                  </Text>
                 </View>
+              </View>
 
-                {/* Target Blip Node */}
-                <View
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleNavigate}
+                disabled={!selectedDevice?.lastLocation}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: selectedDevice?.lastLocation ? colors.primary : colors.surfaceContainerHigh,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="navigate"
+                  size={18}
+                  color={selectedDevice?.lastLocation ? colors.onPrimary : colors.outline}
+                  style={{ marginRight: 6 }}
+                />
+                <Text
                   style={[
-                    styles.blipNode,
+                    styles.actionButtonText,
                     {
-                      backgroundColor: proximity.color,
-                      shadowColor: proximity.color,
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: 0.9,
-                      shadowRadius: 12,
-                      elevation: 6,
+                      color: selectedDevice?.lastLocation ? colors.onPrimary : colors.outline,
+                      fontFamily: fonts.label,
                     },
                   ]}
                 >
-                  <Text style={{ fontSize: 14 }}>🎧</Text>
-                </View>
-
-                {/* Distance Scale Labels */}
-                <View style={styles.radarScaleRow}>
-                  <Text style={[styles.scaleText, { color: colors.outline }]}>0.5m • 1.5m • 3.0m</Text>
-                  <Text style={[styles.scaleText, { color: proximity.color, fontWeight: '700' }]}>
-                    {isScanning ? 'SCANNING BEACON' : 'STANDBY'}
-                  </Text>
-                </View>
+                  Navigate via Google Maps
+                </Text>
               </TouchableOpacity>
+            </View>
 
-              {/* Telemetry Readout Grid */}
-              <View style={styles.telemetryGrid}>
-                <View style={[styles.telemetryCell, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-                  <Text style={[styles.telemetryCellLabel, { color: colors.outline }]}>
-                    PROXIMITY STATUS
+            {/* BLE 2.4GHz Radar Proximity Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surfaceContainer,
+                  borderColor: colors.hairline,
+                  borderRadius: borderRadius.lg,
+                  alignItems: 'center',
+                },
+              ]}
+            >
+              <View style={[styles.cardHeaderRow, { width: '100%' }]}>
+                <View>
+                  <Text style={[styles.cardTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                    BLE 2.4GHz Radar
                   </Text>
-                  <Text style={[styles.telemetryStatusText, { color: proximity.color }]}>
-                    {proximity.label}
+                  <Text style={[styles.cardSubtitle, { color: colors.primary, fontFamily: fonts.body }]}>
+                    Acoustic precision tracking
                   </Text>
                 </View>
-
-                <View style={[styles.telemetryCell, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-                  <Text style={[styles.telemetryCellLabel, { color: colors.outline }]}>
-                    BLE RSSI POWER
-                  </Text>
-                  <Text style={[styles.telemetryPowerText, { color: colors.tertiary }]}>
+                <View
+                  style={[
+                    styles.radarTag,
+                    {
+                      backgroundColor: colors.surfaceContainerHigh,
+                      borderColor: colors.hairline,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.radarTagText, { color: colors.primary, fontFamily: fonts.label }]}>
                     {proximity.dBmText}
                   </Text>
                 </View>
               </View>
-            </GlassCard>
 
-            {/* Location Glass Card (Live Location when connected, Last Seen when disconnected) */}
-            <GlassCard style={styles.locationCard}>
-              <View style={styles.locationHeader}>
-                <View style={[styles.iconCircle, { backgroundColor: selectedDevice?.isConnected ? colors.tertiary + '20' : colors.primary + '20' }]}>
-                  <Text style={{ fontSize: 20 }}>{selectedDevice?.isConnected ? '📡' : '📍'}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                    {selectedDevice?.isConnected ? 'Live Location' : 'Last Seen Location'}
+              {/* Concentric Radar Rings */}
+              <View style={styles.radarRingsContainer}>
+                <View style={[styles.outerRing, { borderColor: colors.hairline }]} />
+                <View style={[styles.midRing, { borderColor: colors.hairline }]} />
+                <View
+                  style={[
+                    styles.innerRing,
+                    {
+                      backgroundColor: colors.surfaceContainerHigh,
+                      borderColor: colors.hairline,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.rssiLabel, { color: colors.primary, fontFamily: fonts.label }]}>
+                    RSSI
                   </Text>
-                  <Text style={[styles.locationAddressText, { color: colors.onSurfaceVariant }]}>
-                    {selectedDevice?.lastLocation?.addressText ||
-                      (selectedDevice?.lastLocation
-                        ? `${selectedDevice.lastLocation.latitude.toFixed(4)}, ${selectedDevice.lastLocation.longitude.toFixed(4)}`
-                        : selectedDevice?.isConnected ? 'Locating device position...' : 'No disconnect location recorded yet.')}
+                  <Text style={[styles.rssiVal, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                    {currentRssi !== null ? currentRssi : '--'}
                   </Text>
-                  <Text style={[styles.locationTimestamp, { color: selectedDevice?.isConnected ? colors.tertiary : colors.outline }]}>
-                    {selectedDevice?.isConnected
-                      ? `🟢 Live • Connected Now${selectedDevice?.lastLocation?.timestamp ? ` (${new Date(selectedDevice.lastLocation.timestamp).toLocaleTimeString()})` : ''}`
-                      : selectedDevice?.lastLocation?.timestamp
-                        ? `Recorded at ${new Date(selectedDevice.lastLocation.timestamp).toLocaleTimeString()}`
-                        : 'Standby'}
+                  <Text style={[styles.rssiUnit, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                    dBm
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.locationActionRow}>
-                <PillButton
-                  variant="primary"
-                  size="sm"
-                  label="🧭 Navigate (Maps)"
-                  onPress={handleNavigate}
-                  disabled={!selectedDevice?.lastLocation}
-                  style={{ flex: 1 }}
-                />
-                <PillButton
-                  variant="secondary"
-                  size="sm"
-                  label={isCapturingLocation ? 'Saving...' : '📌 Mark Here'}
-                  onPress={() => { handleManualCaptureLocation(); }}
-                  loading={isCapturingLocation}
+              <Text style={[styles.proximityStatusText, { color: proximity.color, fontFamily: fonts.headline }]}>
+                {proximity.label}
+              </Text>
+
+              {/* Proximity Meter Bar */}
+              <View style={[styles.proximityTrack, { backgroundColor: colors.surfaceContainerHighest }]}>
+                <View
+                  style={[
+                    styles.proximityFill,
+                    {
+                      width: `${proximity.percent}%`,
+                      backgroundColor: proximity.color,
+                    },
+                  ]}
                 />
               </View>
-            </GlassCard>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleToggleRssiScan}
+                style={[
+                  styles.radarTriggerBtn,
+                  {
+                    backgroundColor: isScanning ? colors.error : colors.primary,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isScanning ? 'stop-circle-outline' : 'scan-outline'}
+                  size={20}
+                  color={colors.onPrimary}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={[styles.radarTriggerText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                  {isScanning ? 'Stop Proximity Scan' : 'Start Radar Scan'}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Disconnect Drop Alert Card */}
-            <GlassCard style={styles.dropAlertCard}>
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surfaceContainer,
+                  borderColor: colors.hairline,
+                  borderRadius: borderRadius.lg,
+                },
+              ]}
+            >
               <View style={styles.dropAlertRow}>
-                <View style={[styles.iconCircle, { backgroundColor: colors.tertiary + '20' }]}>
-                  <Text style={{ fontSize: 20 }}>🔔</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={[styles.rowTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
                     Disconnect Drop Alert
                   </Text>
-                  <Text style={[styles.cardSublabel, { color: colors.onSurfaceVariant, marginTop: 2 }]}>
-                    Alerts you if device disconnects while phone screen is in use
+                  <Text style={[styles.rowSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                    Dispatches alert notification if Bluetooth connection drops unexpectedly
                   </Text>
                 </View>
-
                 <Toggle
-                  value={selectedDevice?.disconnectAlertEnabled ?? true}
+                  value={Boolean(selectedDevice?.disconnectAlertEnabled)}
                   onValueChange={(val) => {
                     if (selectedAddress) {
                       setDisconnectAlert(selectedAddress, val);
-                      showToast(val ? '✓ Disconnect drop alert enabled' : 'Disconnect drop alert disabled');
+                      showToast(val ? 'Drop alert enabled' : 'Drop alert disabled');
                     }
                   }}
                 />
               </View>
 
-              <View style={{ alignItems: 'flex-end', paddingTop: 6 }}>
-                <PillButton
-                  variant="ghost"
-                  size="sm"
-                  label="🔔 Test Disconnect Notification"
-                  onPress={() => { handleTestDisconnectAlert(); }}
-                />
+              <View style={styles.dropAlertActions}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleTestDisconnectAlert}
+                  style={[
+                    styles.testDropBtn,
+                    {
+                      backgroundColor: colors.surfaceContainerHigh,
+                      borderColor: colors.hairline,
+                    },
+                  ]}
+                >
+                  <Ionicons name="notifications-outline" size={14} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
+                  <Text style={[styles.testDropText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                    Test Alert Notification
+                  </Text>
+                </TouchableOpacity>
               </View>
-            </GlassCard>
+            </View>
           </View>
         )}
 
         {/* ------------------------------------------------------------- */}
-        {/* VIEW 2: SMART SLEEP TIMER                                    */}
+        {/* TOOL 2: SLEEP TIMER */}
         {/* ------------------------------------------------------------- */}
         {activeTab === 'sleep' && (
-          <View style={styles.toolSectionStack}>
-            <GlassCard glow={isTimerActive} style={styles.sleepCard}>
-              <View style={styles.sleepCardHeader}>
-                <View style={styles.headerLeft}>
-                  <View style={[styles.iconCircle, { backgroundColor: colors.primary + '25' }]}>
-                    <Text style={{ fontSize: 20 }}>⏰</Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                      Smart Sleep Timer
-                    </Text>
-                    <Text style={[styles.cardSublabel, { color: colors.primary }]}>
-                      10S SMOOTH VOLUME FADE
-                    </Text>
-                  </View>
+          <View style={styles.tabContent}>
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surfaceContainer,
+                  borderColor: colors.hairline,
+                  borderRadius: borderRadius.lg,
+                  alignItems: 'center',
+                },
+              ]}
+            >
+              <View style={[styles.cardHeaderRow, { width: '100%' }]}>
+                <View>
+                  <Text style={[styles.cardTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                    Sleep Timer
+                  </Text>
+                  <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                    Gentle 10-second volume fade & media halt
+                  </Text>
                 </View>
-
-                {isTimerActive && (
-                  <StatusChip
-                    label={isFading ? 'FADING OUT' : 'RUNNING'}
-                    dotColor={isFading ? 'pink' : 'lime'}
-                    pulse
-                  />
-                )}
+                <View style={[styles.sleepIconBadge, { backgroundColor: colors.surfaceContainerHigh }]}>
+                  <Ionicons name="moon-outline" size={18} color={colors.primary} />
+                </View>
               </View>
 
-              {/* Circular Countdown Ring Visualizer */}
-              <View style={styles.timerRingContainer}>
-                <Svg width={180} height={180} style={{ transform: [{ rotate: '-90deg' }] }}>
-                  <Defs>
-                    <SvgLinearGradient id="sleepGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <Stop offset="0%" stopColor={colors.primary} />
-                      <Stop offset="60%" stopColor={colors.secondary} />
-                      <Stop offset="100%" stopColor={colors.tertiary} />
-                    </SvgLinearGradient>
-                  </Defs>
-                  {/* Background Track */}
+              {/* Large Circular Countdown Sweep Ring */}
+              <View style={styles.countdownRingWrapper}>
+                <Svg width={200} height={200}>
                   <Circle
-                    cx={90}
-                    cy={90}
+                    cx={100}
+                    cy={100}
                     r={radius}
-                    stroke={colors.surfaceContainerHigh}
+                    stroke={colors.surfaceContainerHighest}
                     strokeWidth={8}
-                    fill="transparent"
+                    fill="none"
                   />
-                  {/* Dynamic Progress Stroke */}
                   <Circle
-                    cx={90}
-                    cy={90}
+                    cx={100}
+                    cy={100}
                     r={radius}
-                    stroke="url(#sleepGrad)"
+                    stroke={colors.primary}
                     strokeWidth={8}
-                    fill="transparent"
                     strokeDasharray={circumference}
-                    strokeDashoffset={isTimerActive ? strokeDashoffset : 0}
+                    strokeDashoffset={strokeDashoffset}
                     strokeLinecap="round"
+                    fill="none"
+                    transform="rotate(-90 100 100)"
                   />
                 </Svg>
 
-                {/* Interior Countdown Text */}
-                <View style={styles.ringInnerContent}>
-                  <Text style={[styles.ringSublabel, { color: colors.outline }]}>
-                    REMAINING
-                  </Text>
-                  <Text
-                    style={[
-                      styles.ringCountdownText,
-                      { color: isFading ? colors.secondary : colors.onSurface },
-                    ]}
-                  >
+                <View style={styles.countdownCenterCol}>
+                  <Ionicons name="bed-outline" size={24} color={colors.primary} style={{ marginBottom: 4 }} />
+                  <Text style={[styles.countdownText, { color: colors.onSurface, fontFamily: fonts.headline }]}>
                     {isTimerActive ? formatSeconds(remainingSeconds) : `${customMinutes}:00`}
                   </Text>
-                  <Text style={[styles.ringTargetPill, { color: colors.primary }]}>
-                    Target: {selectedPreset ? `${selectedPreset}m` : `${customMinutes}m`}
+                  <Text style={[styles.countdownSubtext, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                    {isFading ? 'FADING VOLUME' : isTimerActive ? 'REMAINING' : 'READY'}
                   </Text>
                 </View>
               </View>
 
-              {/* Gentle Dimming Notice Pod */}
-              <View style={[styles.fadeNoticePod, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-                <Text style={{ fontSize: 16 }}>🎧</Text>
-                <Text style={[styles.fadeNoticeText, { color: colors.onSurfaceVariant }]}>
-                  Media volume smoothly attenuates over the final 10 seconds before pausing playback.
-                </Text>
-              </View>
+              {/* Stepper Controls */}
+              {!isTimerActive && (
+                <View
+                  style={[
+                    styles.stepperPill,
+                    {
+                      backgroundColor: colors.surfaceContainerHigh,
+                      borderColor: colors.hairline,
+                    },
+                  ]}
+                >
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setCustomMinutes((m) => Math.max(5, m - 5))}
+                    style={styles.stepperBtn}
+                  >
+                    <Ionicons name="remove" size={18} color={colors.onSurface} />
+                  </TouchableOpacity>
+                  <Text style={[styles.stepperValue, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                    {customMinutes} mins
+                  </Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setCustomMinutes((m) => Math.min(120, m + 5))}
+                    style={styles.stepperBtn}
+                  >
+                    <Ionicons name="add" size={18} color={colors.onSurface} />
+                  </TouchableOpacity>
+                </View>
+              )}
 
               {/* Preset Chips */}
-              <View style={styles.presetsRow}>
-                {[15, 30, 45, 60].map((mins) => {
-                  const isPicked = selectedPreset === mins && isTimerActive;
+              <View style={styles.presetChipsRow}>
+                {[15, 30, 45, 60].map((preset) => {
+                  const isCur = selectedPreset === preset && isTimerActive;
                   return (
                     <TouchableOpacity
-                      key={mins}
+                      key={preset}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        setCustomMinutes(preset);
+                        startTimer(preset);
+                        showToast(`Started ${preset}m sleep timer`);
+                      }}
                       style={[
-                        styles.timerPresetPill,
+                        styles.sleepPresetChip,
                         {
-                          backgroundColor: isPicked
-                            ? colors.primary
-                            : colors.surfaceContainerHigh,
-                          borderColor: isPicked ? colors.primary : 'transparent',
+                          backgroundColor: isCur ? colors.primary : colors.surfaceContainerHigh,
+                          borderColor: colors.hairline,
                         },
                       ]}
-                      onPress={() => {
-                        startTimer(mins);
-                        showToast(`✓ Sleep timer started for ${mins} minutes`);
-                      }}
-                      activeOpacity={0.8}
                     >
                       <Text
                         style={[
-                          styles.timerPresetText,
+                          styles.sleepPresetText,
                           {
-                            color: isPicked ? colors.onPrimary : colors.onSurface,
-                            fontWeight: isPicked ? '700' : '600',
+                            color: isCur ? colors.onPrimary : colors.onSurface,
+                            fontFamily: fonts.label,
                           },
                         ]}
                       >
-                        {mins}m
+                        {preset}m
                       </Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              {/* Custom Minutes Stepper */}
-              <View style={[styles.customStepperRow, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-                <Text style={[styles.stepperLabel, { color: colors.onSurface }]}>
-                  Custom: {customMinutes} min
-                </Text>
-                <View style={styles.stepperControls}>
-                  <TouchableOpacity
-                    style={[styles.stepperBtn, { backgroundColor: colors.surfaceContainerHigh }]}
-                    onPress={() => setCustomMinutes((m) => Math.max(5, m - 5))}
-                  >
-                    <Text style={[styles.stepperBtnText, { color: colors.onSurface }]}>-5m</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.stepperBtn, { backgroundColor: colors.surfaceContainerHigh }]}
-                    onPress={() => setCustomMinutes((m) => m + 5)}
-                  >
-                    <Text style={[styles.stepperBtnText, { color: colors.onSurface }]}>+5m</Text>
-                  </TouchableOpacity>
-                  <PillButton
-                    variant="primary"
-                    size="sm"
-                    label={`Start ${customMinutes}m`}
-                    onPress={() => {
-                      startTimer(customMinutes);
-                      showToast(`✓ Sleep timer started for ${customMinutes} minutes`);
-                    }}
-                  />
-                </View>
-              </View>
-
-              {/* Action Buttons: 15s Test & Cancel */}
-              <View style={styles.timerActionsRow}>
-                <PillButton
-                  variant="ghost"
-                  size="sm"
-                  label="⚡ 15s Quick Fade Test"
+              {/* Primary Action Button */}
+              {isTimerActive ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
                   onPress={() => {
-                    startQuickTestTimer(15);
-                    showToast('⚡ 15s fade test started');
+                    cancelTimer();
+                    showToast('Sleep timer cancelled');
                   }}
-                />
-                {isTimerActive && (
-                  <PillButton
-                    variant="danger"
-                    size="sm"
-                    label="✕ Cancel Timer"
-                    onPress={() => {
-                      cancelTimer();
-                      showToast('Sleep timer cancelled');
-                    }}
-                  />
-                )}
-              </View>
-            </GlassCard>
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: colors.error,
+                      marginTop: 16,
+                      width: '100%',
+                    },
+                  ]}
+                >
+                  <Ionicons name="close-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={[styles.actionButtonText, { color: '#FFFFFF', fontFamily: fonts.label }]}>
+                    Cancel Sleep Timer
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    startTimer(customMinutes);
+                    showToast(`Started ${customMinutes}m sleep timer`);
+                  }}
+                  style={[
+                    styles.actionButton,
+                    {
+                      backgroundColor: colors.primary,
+                      marginTop: 16,
+                      width: '100%',
+                    },
+                  ]}
+                >
+                  <Ionicons name="play" size={18} color={colors.onPrimary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.actionButtonText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                    Start {customMinutes}m Sleep Timer
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* 15s Quick Fade Test */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  startQuickTestTimer(15);
+                  showToast('Running 15s volume fade quick test...');
+                }}
+                style={styles.quickFadeBtn}
+              >
+                <Ionicons name="play-circle-outline" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
+                <Text style={[styles.quickFadeText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                  15s Fade-Out Quick Test
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
         {/* ------------------------------------------------------------- */}
-        {/* VIEW 3: PARAMETRIC EQUALIZER (AudioFX)                       */}
+        {/* TOOL 3: PARAMETRIC EQUALIZER & HearID CALIBRATION */}
         {/* ------------------------------------------------------------- */}
         {activeTab === 'eq' && (
-          <View style={styles.toolSectionStack}>
-            <GlassCard glow={eqConfig.enabled} style={styles.eqCard}>
-              <View style={styles.eqCardHeader}>
-                <View style={styles.headerLeft}>
-                  <View style={[styles.iconCircle, { backgroundColor: colors.tertiary + '25' }]}>
-                    <Text style={{ fontSize: 20 }}>🎚️</Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                      Parametric Equalizer
-                    </Text>
-                    <Text style={[styles.cardSublabel, { color: colors.tertiary }]}>
-                      5-BAND LOW-LATENCY AUDIOFX
-                    </Text>
-                  </View>
+          <View style={styles.tabContent}>
+            {/* Master DSP Switch Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surfaceContainer,
+                  borderColor: colors.hairline,
+                  borderRadius: borderRadius.lg,
+                },
+              ]}
+            >
+              <View style={styles.dropAlertRow}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={[styles.rowTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                    System Equalizer (AudioFX)
+                  </Text>
+                  <Text style={[styles.rowSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                    Hardware-accelerated 32-bit floating point engine
+                  </Text>
                 </View>
+                <Toggle
+                  value={eqConfig.enabled}
+                  onValueChange={handleEqToggle}
+                />
+              </View>
+            </View>
 
-                {isEqSupported && (
-                  <Toggle
-                    value={eqConfig.enabled}
-                    onValueChange={handleEqToggle}
-                  />
-                )}
+            {/* Personal Hearing Calibration (HearID) Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surfaceContainer,
+                  borderColor: colors.hairline,
+                  borderRadius: borderRadius.lg,
+                },
+              ]}
+            >
+              <View style={styles.cardHeaderRow}>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={[styles.newBadge, { backgroundColor: colors.primaryContainer }]}>
+                      <Text style={[styles.newBadgeText, { color: colors.primary, fontFamily: fonts.label }]}>
+                        HEARID
+                      </Text>
+                    </View>
+                    <Text style={[styles.cardTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                      Personal Hearing Calibration
+                    </Text>
+                  </View>
+                  <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body, marginTop: 4 }]}>
+                    Auto-tunes acoustic response curves specifically for your ears across 250Hz–8kHz.
+                  </Text>
+                </View>
+                <Ionicons name="pulse" size={28} color={colors.primary} />
               </View>
 
-              {/* Degradation Banner when unsupported */}
-              {!isEqSupported ? (
-                <View style={[styles.eqUnavailablePod, { backgroundColor: colors.surfaceContainerLowest + '80' }]}>
-                  <Text style={{ fontSize: 24 }}>⚠️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.unavailableTitle, { color: colors.onSurface }]}>
-                      EQ unavailable on this device
+              {/* Hearing Calibration Curve Status */}
+              {activeHearingProfile ? (
+                <View
+                  style={[
+                    styles.hearIdCurveBox,
+                    {
+                      backgroundColor: colors.surfaceContainerHigh,
+                      borderColor: colors.hairline,
+                    },
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <Text style={[styles.hearIdCurveTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                      Active Compensation Curve
                     </Text>
-                    <Text style={[styles.unavailableDesc, { color: colors.onSurfaceVariant }]}>
-                      Hardware Android AudioFX Equalizer engine is not supported on this specific device/session. Standard Bluetooth audio playback is unaffected.
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                <View style={{ opacity: eqConfig.enabled ? 1 : 0.45, gap: 16 }}>
-                  {/* Presets Chips */}
-                  <View>
-                    <Text style={[styles.eqSectionTitle, { color: colors.outline }]}>
-                      EQ PRESETS
-                    </Text>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.eqPresetsRow}
-                    >
-                      {(['Flat', 'Bass Boost', 'Vocal', 'Treble', 'Custom'] as EqPresetName[]).map(
-                        (preset) => {
-                          const isPicked = eqConfig.preset === preset;
-                          return (
-                            <TouchableOpacity
-                              key={preset}
-                              style={[
-                                styles.eqPresetPill,
-                                {
-                                  backgroundColor: isPicked
-                                    ? colors.secondary
-                                    : colors.surfaceContainerHigh,
-                                  borderColor: isPicked ? colors.secondary : 'transparent',
-                                },
-                              ]}
-                              disabled={!eqConfig.enabled}
-                              onPress={() => handleEqPreset(preset)}
-                              activeOpacity={0.8}
-                            >
-                              <Text
-                                style={[
-                                  styles.eqPresetText,
-                                  {
-                                    color: isPicked ? colors.onSecondary : colors.onSurface,
-                                    fontWeight: isPicked ? '700' : '600',
-                                  },
-                                ]}
-                              >
-                                {isPicked ? '✓ ' : ''}{preset}
-                              </Text>
-                            </TouchableOpacity>
-                          );
+                    <Toggle
+                      value={activeHearingProfile.enabled}
+                      onValueChange={(val) => {
+                        if (selectedAddress) {
+                          toggleHearingProfile(selectedAddress, val);
+                          showToast(val ? 'Applied HearID Calibration' : 'HearID Bypassed');
                         }
-                      )}
-                    </ScrollView>
+                      }}
+                    />
                   </View>
-
-                  {/* 5 Frequency Bands NeonSliders */}
-                  <View style={styles.bandsContainer}>
-                    <Text style={[styles.eqSectionTitle, { color: colors.outline }]}>
-                      FREQUENCY BANDS (-15dB to +15dB)
-                    </Text>
-
-                    {bandFrequencies.map((freq, idx) => {
-                      const levelMB = eqConfig.bandLevels[idx] ?? 0;
-                      const levelDB = (levelMB / 100).toFixed(1);
-                      const formattedFreq =
-                        freq >= 1000 ? `${(freq / 1000).toFixed(1)} kHz` : `${freq} Hz`;
-
+                  <View style={styles.hearIdBarsRow}>
+                    {activeHearingProfile.compensationCurve.map((gainDb, i) => {
+                      const freqs = ['60Hz', '230Hz', '910Hz', '3.6k', '14k'];
                       return (
-                        <View
-                          key={idx}
-                          style={[styles.bandItemCard, { backgroundColor: colors.surfaceContainerLowest + '80' }]}
-                        >
-                          <View style={styles.bandItemHeader}>
-                            <Text style={[styles.bandFreqText, { color: colors.onSurface }]}>
-                              {formattedFreq}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.bandDbText,
-                                {
-                                  color:
-                                    levelMB > 0
-                                      ? colors.tertiary
-                                      : levelMB < 0
-                                      ? colors.secondary
-                                      : colors.outline,
-                                },
-                              ]}
-                            >
-                              {levelMB > 0 ? `+${levelDB}` : levelDB} dB
-                            </Text>
-                          </View>
-
-                          <NeonSlider
-                            value={levelMB}
-                            min={-1500}
-                            max={1500}
-                            step={100}
-                            disabled={!eqConfig.enabled}
-                            onValueChange={(val) => handleBandLevel(idx, val, formattedFreq)}
-                            formatValue={(v) => `${(v / 100).toFixed(1)} dB`}
-                            showSteppers={true}
+                        <View key={i} style={styles.hearIdBarCol}>
+                          <Text style={[styles.hearIdBarGain, { color: colors.primary, fontFamily: fonts.label }]}>
+                            {gainDb > 0 ? `+${gainDb}` : gainDb}dB
+                          </Text>
+                          <View
+                            style={[
+                              styles.hearIdBarFill,
+                              {
+                                height: Math.max(8, Math.min(36, 18 + gainDb * 2.5)),
+                                backgroundColor: colors.primary,
+                              },
+                            ]}
                           />
+                          <Text style={[styles.hearIdBarFreq, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                            {freqs[i]}
+                          </Text>
                         </View>
                       );
                     })}
                   </View>
                 </View>
+              ) : null}
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={startHearingTest}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: colors.primary,
+                    marginTop: 12,
+                  },
+                ]}
+              >
+                <Ionicons name="ear-outline" size={18} color={colors.onPrimary} style={{ marginRight: 6 }} />
+                <Text style={[styles.actionButtonText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                  {activeHearingProfile ? 'Retest Hearing Profile (60s)' : 'Start 60s Hearing Test'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Presets and 5-Band Sliders Card */}
+            <View
+              style={[
+                styles.card,
+                {
+                  backgroundColor: colors.surfaceContainer,
+                  borderColor: colors.hairline,
+                  borderRadius: borderRadius.lg,
+                },
+              ]}
+            >
+              {/* Preset Chips */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.eqPresetsRow}>
+                {(['Flat', 'Bass Boost', 'Vocal', 'Treble', 'Custom'] as EqPresetName[]).map((p) => {
+                  const isCur = eqConfig.preset === p;
+                  return (
+                    <TouchableOpacity
+                      key={p}
+                      activeOpacity={0.8}
+                      onPress={() => handleEqPreset(p)}
+                      style={[
+                        styles.eqPresetChip,
+                        {
+                          backgroundColor: isCur ? colors.primary : colors.surfaceContainerHigh,
+                          borderColor: colors.hairline,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.eqPresetText,
+                          {
+                            color: isCur ? colors.onPrimary : colors.onSurface,
+                            fontFamily: fonts.label,
+                          },
+                        ]}
+                      >
+                        {p}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* 5 Vertical Sliders */}
+              <View style={styles.eqSlidersRow}>
+                {bandFrequencies.map((freqHz, bandIdx) => {
+                  const freqLabel =
+                    freqHz >= 1000
+                      ? `${(freqHz / 1000).toFixed(1).replace('.0', '')}kHz`
+                      : `${freqHz}Hz`;
+                  const levelMB = eqConfig.bandLevels[bandIdx] ?? 0;
+                  const levelDb = (levelMB / 100).toFixed(0);
+
+                  return (
+                    <View key={bandIdx} style={styles.eqSliderCol}>
+                      <Text style={[styles.eqGainText, { color: colors.primary, fontFamily: fonts.label }]}>
+                        {Number(levelDb) > 0 ? `+${levelDb}` : levelDb}dB
+                      </Text>
+
+                      {/* Vertical Slider Track Container */}
+                      <View
+                        style={[
+                          styles.verticalTrack,
+                          {
+                            backgroundColor: colors.surfaceContainerHigh,
+                            borderColor: colors.hairline,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.verticalFill,
+                            {
+                              height: `${Math.max(10, Math.min(100, ((levelMB + 1500) / 3000) * 100))}%`,
+                              backgroundColor: colors.primary,
+                            },
+                          ]}
+                        />
+                      </View>
+
+                      {/* -/+ Gain Stepper Buttons */}
+                      <View style={styles.verticalSteppers}>
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => handleBandLevel(bandIdx, Math.min(1500, levelMB + 150), freqLabel)}
+                          style={[styles.miniStepBtn, { backgroundColor: colors.surfaceContainerHigh }]}
+                        >
+                          <Ionicons name="add" size={14} color={colors.onSurface} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => handleBandLevel(bandIdx, Math.max(-1500, levelMB - 150), freqLabel)}
+                          style={[styles.miniStepBtn, { backgroundColor: colors.surfaceContainerHigh }]}
+                        >
+                          <Ionicons name="remove" size={14} color={colors.onSurface} />
+                        </TouchableOpacity>
+                      </View>
+
+                      <Text style={[styles.eqFreqLabel, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                        {freqLabel}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {!isEqSupported && (
+                <View
+                  style={[
+                    styles.unsupportedBanner,
+                    {
+                      backgroundColor: colors.surfaceContainerHigh,
+                      borderColor: colors.hairline,
+                    },
+                  ]}
+                >
+                  <Ionicons name="information-circle-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.unsupportedText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                    AudioFX is unexposed by current device firmware. Changes are emulated in app layer.
+                  </Text>
+                </View>
               )}
-            </GlassCard>
+            </View>
           </View>
         )}
       </ScrollView>
+
+      {/* Interactive Hearing Calibration Test Sheet Modal */}
+      <Modal
+        visible={isHearingTesting}
+        animationType="slide"
+        transparent
+        onRequestClose={cancelHearingTest}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.hearingModalSheet,
+              {
+                backgroundColor: colors.surfaceContainer,
+                borderColor: colors.hairline,
+                borderRadius: borderRadius.lg,
+                paddingBottom: insets.bottom + 24,
+              },
+            ]}
+          >
+            <View style={styles.hearingModalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="pulse" size={22} color={colors.primary} />
+                <Text style={[styles.hearingModalTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                  HearID Calibration
+                </Text>
+              </View>
+              <TouchableOpacity activeOpacity={0.7} onPress={cancelHearingTest}>
+                <Ionicons name="close" size={24} color={colors.onSurfaceVariant} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Test Step & Frequency Indicator */}
+            <View style={styles.hearingStepBlock}>
+              <Text style={[styles.stepCounterText, { color: colors.primary, fontFamily: fonts.label }]}>
+                FREQUENCY {currentFreqIndex + 1} OF {TEST_FREQUENCIES.length}
+              </Text>
+              <Text style={[styles.stepFrequencyText, { color: colors.onSurface, fontFamily: fonts.display }]}>
+                {TEST_FREQUENCIES[currentFreqIndex]} Hz
+              </Text>
+              <Text style={[styles.stepInstructionText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                Listen closely through your connected earphones. Do you hear a high-precision tone?
+              </Text>
+            </View>
+
+            {/* Pulsing Visual Waveform Box */}
+            <View
+              style={[
+                styles.waveformCanvas,
+                {
+                  backgroundColor: colors.surfaceContainerHigh,
+                  borderColor: colors.hairline,
+                },
+              ]}
+            >
+              <Ionicons name="volume-high" size={48} color={colors.primary} />
+              <View style={[styles.currentLevelPill, { backgroundColor: colors.surfaceContainerLowest }]}>
+                <Text style={[styles.currentLevelText, { color: colors.primary, fontFamily: fonts.label }]}>
+                  Test Intensity: {currentTestVolumeDb} dB
+                </Text>
+              </View>
+            </View>
+
+            {/* Response Pill Buttons */}
+            <View style={styles.hearingResponseRow}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  if (selectedAddress) {
+                    registerHearingResponse(false, selectedAddress);
+                  }
+                }}
+                style={[
+                  styles.responseBtnNo,
+                  {
+                    backgroundColor: colors.surfaceContainerHigh,
+                    borderColor: colors.hairline,
+                  },
+                ]}
+              >
+                <Ionicons name="close-circle-outline" size={18} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
+                <Text style={[styles.responseBtnTextNo, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                  I Don't Hear It
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  if (selectedAddress) {
+                    registerHearingResponse(true, selectedAddress);
+                  }
+                }}
+                style={[
+                  styles.responseBtnYes,
+                  {
+                    backgroundColor: colors.primary,
+                  },
+                ]}
+              >
+                <Ionicons name="checkmark-circle-outline" size={18} color={colors.onPrimary} style={{ marginRight: 6 }} />
+                <Text style={[styles.responseBtnTextYes, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                  I Hear It!
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -1060,396 +1342,537 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    gap: 16,
   },
-  headerRow: {
+  headerBlock: {
+    marginBottom: 16,
+  },
+  headerTitleRow: {
     flexDirection: 'row',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  headerTitle: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 22,
+  screenTitle: {
+    fontSize: 34,
+    fontWeight: '700',
     letterSpacing: -0.5,
   },
-  headerSubtitle: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 13,
-    marginTop: 4,
-    lineHeight: 18,
+  screenCaption: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
-  platformCard: {
-    padding: 24,
-    alignItems: 'center',
-    marginHorizontal: 16,
-  },
-  largeEmoji: {
-    fontSize: 44,
-    marginBottom: 8,
-  },
-  bodyText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  selectorSection: {
-    gap: 8,
-  },
-  devicePillsRow: {
-    gap: 8,
-  },
-  devicePill: {
+  segmentedBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    height: 46,
     borderRadius: 9999,
-    borderWidth: 1,
+    borderWidth: 0.5,
+    padding: 3,
   },
-  devicePillText: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 13,
-  },
-  onlineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    borderRadius: 9999,
-    padding: 4,
-    gap: 4,
-  },
-  segmentBtn: {
+  segmentItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
     borderRadius: 9999,
-    gap: 6,
+    borderWidth: 0.5,
   },
-  segmentLabel: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 11,
-    letterSpacing: 0.6,
+  segmentItemText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
-  toolSectionStack: {
+  tabContent: {
     gap: 16,
   },
-  radarCard: {
-    padding: 18,
-    gap: 14,
+  card: {
+    padding: 16,
+    borderWidth: 0.5,
   },
-  radarCardHeader: {
+  cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  iconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   cardTitle: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 17,
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: '700',
   },
-  cardSublabel: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 10,
-    letterSpacing: 1,
-    marginTop: 1,
+  cardSubtitle: {
+    fontSize: 12,
   },
-  radarConsole: {
-    height: 200,
-    borderRadius: 20,
+  cardTag: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  mapCanvas: {
+    width: '100%',
+    height: 160,
+    borderRadius: 14,
+    borderWidth: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
+    marginVertical: 4,
   },
-  radarRing1: {
+  radarCenterPin: {
     position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 1.5,
-  },
-  radarRing2: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 1.5,
-  },
-  radarRing3: {
-    position: 'absolute',
-    width: 170,
-    height: 170,
-    borderRadius: 85,
-    borderWidth: 1.5,
-  },
-  centerPhoneNode: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  blipNode: {
-    position: 'absolute',
-    top: 36,
-    right: 50,
     width: 28,
     height: 28,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 20,
   },
-  radarScaleRow: {
+  mapBadge: {
     position: 'absolute',
-    bottom: 10,
-    left: 14,
-    right: 14,
+    bottom: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+  },
+  mapBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  addressMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  scaleText: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 10,
-    letterSpacing: 0.5,
-  },
-  telemetryGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  telemetryCell: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 14,
-    gap: 4,
-  },
-  telemetryCellLabel: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 9,
-    letterSpacing: 0.8,
-  },
-  telemetryStatusText: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 13,
-  },
-  telemetryPowerText: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 17,
-  },
-  locationCard: {
-    padding: 18,
-    gap: 14,
-  },
-  locationHeader: {
-    flexDirection: 'row',
-    gap: 12,
     alignItems: 'flex-start',
+    marginVertical: 10,
   },
-  locationAddressText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 13,
-    lineHeight: 18,
+  addressText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  accuracyText: {
+    fontSize: 12,
     marginTop: 2,
   },
-  locationTimestamp: {
-    fontFamily: 'SpaceGrotesk-Regular',
-    fontSize: 11,
-    marginTop: 4,
-  },
-  locationActionRow: {
+  actionButton: {
     flexDirection: 'row',
-    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 9999,
   },
-  dropAlertCard: {
-    padding: 18,
-    gap: 10,
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  radarTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+  },
+  radarTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  radarRingsContainer: {
+    width: 190,
+    height: 190,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    marginVertical: 14,
+  },
+  outerRing: {
+    position: 'absolute',
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    borderWidth: 0.5,
+  },
+  midRing: {
+    position: 'absolute',
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    borderWidth: 0.5,
+  },
+  innerRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rssiLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  rssiVal: {
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  rssiUnit: {
+    fontSize: 10,
+  },
+  proximityStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  proximityTrack: {
+    width: '100%',
+    height: 6,
+    borderRadius: 9999,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  proximityFill: {
+    height: '100%',
+    borderRadius: 9999,
+  },
+  radarTriggerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 9999,
+    width: '100%',
+  },
+  radarTriggerText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   dropAlertRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-  },
-  sleepCard: {
-    padding: 18,
-    gap: 16,
-  },
-  sleepCardHeader: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  timerRingContainer: {
+  dropAlertActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+  },
+  testDropBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+  },
+  testDropText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  sleepIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 190,
-    position: 'relative',
-    marginVertical: 4,
   },
-  ringInnerContent: {
+  countdownRingWrapper: {
+    width: 200,
+    height: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    marginVertical: 12,
+  },
+  countdownCenterCol: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ringSublabel: {
-    fontFamily: 'SpaceGrotesk-Bold',
+  countdownText: {
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+  },
+  countdownSubtext: {
     fontSize: 10,
-    letterSpacing: 1.2,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  ringCountdownText: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 34,
-    letterSpacing: -1,
-    marginVertical: 2,
-  },
-  ringTargetPill: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 12,
-  },
-  fadeNoticePod: {
+  stepperPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
+    justifyContent: 'space-between',
+    width: 180,
+    height: 42,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+    paddingHorizontal: 6,
+    marginVertical: 8,
   },
-  fadeNoticeText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    lineHeight: 16,
-    flex: 1,
-  },
-  presetsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  timerPresetPill: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1.5,
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  timerPresetText: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 13,
+  stepperValue: {
+    fontSize: 15,
+    fontWeight: '600',
   },
-  customStepperRow: {
+  presetChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    width: '100%',
+    marginTop: 6,
+  },
+  sleepPresetChip: {
+    flex: 1,
+    height: 38,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sleepPresetText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  quickFadeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    marginTop: 10,
+    paddingVertical: 6,
+  },
+  quickFadeText: {
+    fontSize: 13,
+  },
+  rowTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  newBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 9999,
+  },
+  newBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  hearIdCurveBox: {
     padding: 12,
     borderRadius: 14,
+    borderWidth: 0.5,
+    marginTop: 8,
   },
-  stepperLabel: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
+  hearIdCurveTitle: {
     fontSize: 13,
+    fontWeight: '600',
   },
-  stepperControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepperBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  stepperBtnText: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 12,
-  },
-  timerActionsRow: {
+  hearIdBarsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 60,
+    paddingHorizontal: 8,
+  },
+  hearIdBarCol: {
     alignItems: 'center',
-    paddingTop: 4,
+    width: 44,
   },
-  eqCard: {
-    padding: 18,
-    gap: 16,
+  hearIdBarGain: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  eqCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  hearIdBarFill: {
+    width: 14,
+    borderRadius: 7,
   },
-  eqUnavailablePod: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    padding: 14,
-    borderRadius: 16,
-  },
-  unavailableTitle: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 14,
-  },
-  unavailableDesc: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    lineHeight: 16,
+  hearIdBarFreq: {
+    fontSize: 9,
     marginTop: 4,
   },
-  eqSectionTitle: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 10,
-    letterSpacing: 1.2,
-    marginBottom: 8,
-  },
   eqPresetsRow: {
+    flexDirection: 'row',
     gap: 8,
+    paddingVertical: 2,
+    marginBottom: 16,
   },
-  eqPresetPill: {
+  eqPresetChip: {
+    height: 34,
     paddingHorizontal: 14,
-    paddingVertical: 8,
     borderRadius: 9999,
-    borderWidth: 1.5,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   eqPresetText: {
-    fontFamily: 'SpaceGrotesk-SemiBold',
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '600',
   },
-  bandsContainer: {
-    gap: 12,
-  },
-  bandItemCard: {
-    padding: 14,
-    borderRadius: 16,
-    gap: 8,
-  },
-  bandItemHeader: {
+  eqSlidersRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingVertical: 8,
+  },
+  eqSliderCol: {
     alignItems: 'center',
+    flex: 1,
   },
-  bandFreqText: {
-    fontFamily: 'SpaceGrotesk-Bold',
-    fontSize: 14,
+  eqGainText: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
   },
-  bandDbText: {
-    fontFamily: 'SpaceGrotesk-Bold',
+  verticalTrack: {
+    width: 16,
+    height: 120,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  verticalFill: {
+    width: '100%',
+    borderRadius: 8,
+  },
+  verticalSteppers: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  miniStepBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eqFreqLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  unsupportedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    marginTop: 14,
+  },
+  unsupportedText: {
+    fontSize: 11,
+    flex: 1,
+    lineHeight: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  hearingModalSheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderWidth: 0.5,
+    padding: 20,
+  },
+  hearingModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  hearingModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  hearingStepBlock: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  stepCounterText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  stepFrequencyText: {
+    fontSize: 36,
+    fontWeight: '700',
+    marginVertical: 4,
+  },
+  stepInstructionText: {
+    fontSize: 13,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  waveformCanvas: {
+    width: '100%',
+    height: 140,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 18,
+    position: 'relative',
+  },
+  currentLevelPill: {
+    position: 'absolute',
+    bottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  currentLevelText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  hearingResponseRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  responseBtnNo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 50,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+  },
+  responseBtnTextNo: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  responseBtnYes: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 50,
+    borderRadius: 9999,
+  },
+  responseBtnTextYes: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    marginTop: 6,
   },
 });
