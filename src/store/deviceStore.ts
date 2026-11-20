@@ -2,9 +2,20 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BondedDevice } from '../../modules/earbud-native';
-import { sendLowBatteryNotification } from '../services/notifications';
+import {
+  sendLowBatteryNotification,
+  sendDisconnectAlert,
+} from '../services/notifications';
 
 export type DeviceIconType = 'earbuds' | 'headphones';
+
+export interface DeviceLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number | null;
+  timestamp: number;
+  addressText?: string | null;
+}
 
 export interface TrackedDevice {
   address: string; // MAC address as unique key
@@ -16,6 +27,8 @@ export interface TrackedDevice {
   batteryLevel: number | null; // Battery percentage (0-100) or null
   lowBatteryThreshold: number; // Alert threshold % (default 20)
   batteryAlertSent: boolean; // Prevent repeating alert until recharged
+  disconnectAlertEnabled: boolean; // Alert when disconnected while in use
+  lastLocation: DeviceLocation | null; // Stage 7: Last known location
   addedAt: number; // Timestamp when added
   lastConnectedAt: number | null; // Timestamp of last connect
   lastDisconnectedAt: number | null; // Timestamp of last disconnect
@@ -34,15 +47,24 @@ interface DeviceState {
     isConnected?: boolean;
     batteryLevel?: number | null;
     lowBatteryThreshold?: number;
+    disconnectAlertEnabled?: boolean;
+    lastLocation?: DeviceLocation | null;
   }) => void;
   removeTrackedDevice: (address: string) => void;
   updateNickname: (address: string, nickname: string) => void;
   updateIcon: (address: string, icon: DeviceIconType) => void;
   setLowBatteryThreshold: (address: string, threshold: number) => void;
+  setDisconnectAlert: (address: string, enabled: boolean) => void;
+  setDeviceLocation: (address: string, location: DeviceLocation) => void;
   setActiveDevice: (address: string | null) => void;
-  setConnectionState: (address: string, isConnected: boolean) => void;
+  setConnectionState: (
+    address: string,
+    isConnected: boolean,
+    isScreenOn?: boolean
+  ) => void;
   setBatteryLevel: (address: string, batteryLevel: number | null) => void;
   triggerTestLowBatteryAlert: (address: string) => Promise<boolean>;
+  triggerTestDisconnectAlert: (address: string) => Promise<boolean>;
   syncWithBondedDevices: (bonded: BondedDevice[]) => void;
   getTrackedDeviceList: () => TrackedDevice[];
   getTrackedDevice: (address: string) => TrackedDevice | undefined;
@@ -88,6 +110,11 @@ export const useDeviceStore = create<DeviceState>()(
           lowBatteryThreshold:
             device.lowBatteryThreshold ?? existing?.lowBatteryThreshold ?? 20,
           batteryAlertSent: existing?.batteryAlertSent ?? false,
+          disconnectAlertEnabled:
+            device.disconnectAlertEnabled ??
+            existing?.disconnectAlertEnabled ??
+            true,
+          lastLocation: device.lastLocation ?? existing?.lastLocation ?? null,
           addedAt: existing?.addedAt ?? Date.now(),
           lastConnectedAt: existing?.lastConnectedAt ?? null,
           lastDisconnectedAt: existing?.lastDisconnectedAt ?? null,
@@ -181,6 +208,42 @@ export const useDeviceStore = create<DeviceState>()(
         });
       },
 
+      setDisconnectAlert: (address, enabled) => {
+        const addr = address.toUpperCase();
+        set((state) => {
+          const device = state.trackedDevices[addr];
+          if (!device) return state;
+
+          return {
+            trackedDevices: {
+              ...state.trackedDevices,
+              [addr]: {
+                ...device,
+                disconnectAlertEnabled: enabled,
+              },
+            },
+          };
+        });
+      },
+
+      setDeviceLocation: (address, location) => {
+        const addr = address.toUpperCase();
+        set((state) => {
+          const device = state.trackedDevices[addr];
+          if (!device) return state;
+
+          return {
+            trackedDevices: {
+              ...state.trackedDevices,
+              [addr]: {
+                ...device,
+                lastLocation: location,
+              },
+            },
+          };
+        });
+      },
+
       setActiveDevice: (address) => {
         const addr = address ? address.toUpperCase() : null;
         set((state) => {
@@ -199,25 +262,30 @@ export const useDeviceStore = create<DeviceState>()(
         });
       },
 
-      setConnectionState: (address, isConnected) => {
+      setConnectionState: (address, isConnected, isScreenOn = true) => {
         const addr = address.toUpperCase();
         const now = Date.now();
-        set((state) => {
-          const device = state.trackedDevices[addr];
-          if (!device) return state;
+        const device = get().trackedDevices[addr];
+        if (!device) return;
 
-          return {
-            trackedDevices: {
-              ...state.trackedDevices,
-              [addr]: {
-                ...device,
-                isConnected,
-                lastConnectedAt: isConnected ? now : device.lastConnectedAt,
-                lastDisconnectedAt: !isConnected ? now : device.lastDisconnectedAt,
-              },
+        const wasConnected = device.isConnected;
+
+        set((state) => ({
+          trackedDevices: {
+            ...state.trackedDevices,
+            [addr]: {
+              ...state.trackedDevices[addr],
+              isConnected,
+              lastConnectedAt: isConnected ? now : device.lastConnectedAt,
+              lastDisconnectedAt: !isConnected ? now : device.lastDisconnectedAt,
             },
-          };
-        });
+          },
+        }));
+
+        // Fire disconnect alert if device dropped while phone was in active use
+        if (wasConnected && !isConnected && device.disconnectAlertEnabled && isScreenOn) {
+          sendDisconnectAlert(device.nickname, device.lastLocation?.addressText);
+        }
       },
 
       setBatteryLevel: (address, batteryLevel) => {
@@ -233,7 +301,6 @@ export const useDeviceStore = create<DeviceState>()(
             shouldAlert = true;
             nextAlertSent = true;
           } else if (batteryLevel > current.lowBatteryThreshold + 5) {
-            // Recharged, re-arm alert
             nextAlertSent = false;
           }
         }
@@ -268,6 +335,17 @@ export const useDeviceStore = create<DeviceState>()(
           device.nickname,
           testLevel,
           device.lowBatteryThreshold
+        );
+      },
+
+      triggerTestDisconnectAlert: async (address) => {
+        const addr = address.toUpperCase();
+        const device = get().trackedDevices[addr];
+        if (!device) return false;
+
+        return await sendDisconnectAlert(
+          device.nickname,
+          device.lastLocation?.addressText ?? 'Saved Coordinates'
         );
       },
 

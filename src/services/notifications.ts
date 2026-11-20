@@ -55,3 +55,38 @@ export async function sendLowBatteryNotification(
     return false;
   }
 }
+
+/**
+ * Stage 7: Sends a disconnect alert notification when a device drops while phone is in use.
+ */
+export async function sendDisconnectAlert(
+  deviceName: string,
+  locationText?: string | null
+): Promise<boolean> {
+  if (!notificationsModule) {
+    console.log(`[Notifications TEST STUB] Disconnect Alert: ${deviceName} disconnected. Location: ${locationText ?? 'Saved'}`);
+    return true;
+  }
+
+  try {
+    const body = locationText
+      ? `${deviceName} has disconnected near ${locationText}. Tap to view on map.`
+      : `${deviceName} has disconnected. Last known location saved in Find My Device.`;
+
+    await notificationsModule.scheduleNotificationAsync({
+      content: {
+        title: `⚠️ ${deviceName} Disconnected`,
+        body,
+        sound: true,
+        priority: notificationsModule.AndroidNotificationPriority.HIGH,
+      },
+      trigger: null,
+    });
+
+    console.log(`[Notifications] Disconnect alert delivered for ${deviceName}`);
+    return true;
+  } catch (e) {
+    console.error('[Notifications] Failed to send disconnect alert:', e);
+    return false;
+  }
+}

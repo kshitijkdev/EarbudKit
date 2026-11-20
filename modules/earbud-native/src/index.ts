@@ -14,6 +14,7 @@ export interface ConnectionChangeEvent {
   address: string;
   name: string;
   connected: boolean;
+  isScreenOn?: boolean;
 }
 
 export interface BluetoothStateEvent {
@@ -25,11 +26,17 @@ export interface BatteryChangeEvent {
   batteryLevel: number | null;
 }
 
+export interface BleRssiEvent {
+  address: string;
+  rssi: number;
+}
+
 export type EarbudNativeEvents = {
   onDeviceConnectionChanged: (event: ConnectionChangeEvent) => void;
   onBluetoothStateChanged: (event: BluetoothStateEvent) => void;
   onBondStateChanged: () => void;
   onBatteryLevelChanged: (event: BatteryChangeEvent) => void;
+  onBleRssiScanned: (event: BleRssiEvent) => void;
 };
 
 // Safe runtime resolution for React Native utilities
@@ -39,6 +46,7 @@ let PermissionsAndroid: any = {
     BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
     BLUETOOTH_SCAN: 'android.permission.BLUETOOTH_SCAN',
     POST_NOTIFICATIONS: 'android.permission.POST_NOTIFICATIONS',
+    ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
   },
   RESULTS: { GRANTED: 'granted', DENIED: 'denied', NEVER_ASK_AGAIN: 'never_ask_again' },
   requestMultiple: async () => ({}),
@@ -46,7 +54,6 @@ let PermissionsAndroid: any = {
 };
 
 try {
-  // Dynamic resolution prevents static bundling analyzers from parsing Flow types in react-native
   const dynamicRequire = eval('require');
   const RN = dynamicRequire('react-native');
   if (RN?.Platform) Platform = RN.Platform;
@@ -90,6 +97,18 @@ export function isBluetoothEnabled(): boolean {
   } catch (e) {
     console.warn('[EarbudNative] Error checking bluetooth enabled:', e);
     return false;
+  }
+}
+
+/**
+ * Checks if device screen is on / interactive.
+ */
+export function isScreenInteractive(): boolean {
+  if (Platform.OS !== 'android') return true;
+  try {
+    return NativeModule?.isScreenInteractive() ?? true;
+  } catch (e) {
+    return true;
   }
 }
 
@@ -210,6 +229,44 @@ export async function getDeviceBatteryLevel(
   } catch (e) {
     console.warn(`[EarbudNative] Error fetching battery for ${address}:`, e);
     return null;
+  }
+}
+
+/**
+ * Stage 7: Start BLE RSSI Scanning for "Getting Warmer" proximity meter.
+ */
+export function startRssiScan(address: string): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.startRssiScan(address) ?? false;
+  } catch (e) {
+    console.warn('[EarbudNative] Error starting RSSI scan:', e);
+    return false;
+  }
+}
+
+/**
+ * Stage 7: Stop BLE RSSI Scanning.
+ */
+export function stopRssiScan(): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.stopRssiScan() ?? false;
+  } catch (e) {
+    console.warn('[EarbudNative] Error stopping RSSI scan:', e);
+    return false;
+  }
+}
+
+/**
+ * Stage 7: Check if RSSI scanning is currently active.
+ */
+export function isRssiScanning(): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.isRssiScanning() ?? false;
+  } catch (e) {
+    return false;
   }
 }
 
@@ -421,6 +478,28 @@ export function addBatteryListener(
 
   const subscription: EventSubscription = emitter.addListener(
     'onBatteryLevelChanged',
+    callback
+  );
+
+  return {
+    remove: () => {
+      subscription.remove();
+    },
+  };
+}
+
+/**
+ * Stage 7: Listen for BLE RSSI scan events.
+ */
+export function addRssiListener(
+  callback: (event: BleRssiEvent) => void
+): { remove: () => void } {
+  if (!emitter) {
+    return { remove: () => {} };
+  }
+
+  const subscription: EventSubscription = emitter.addListener(
+    'onBleRssiScanned',
     callback
   );
 

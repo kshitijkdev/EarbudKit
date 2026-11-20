@@ -10,6 +10,10 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -19,6 +23,7 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
@@ -61,9 +66,43 @@ class EarbudNativeModule : Module() {
     private val notificationManager: NotificationManager?
         get() = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
 
+    private val powerManager: PowerManager?
+        get() = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+
     private var a2dpProfile: BluetoothProfile? = null
     private var headsetProfile: BluetoothProfile? = null
     private var isReceiverRegistered = false
+
+    // BLE RSSI Scanning
+    private var isScanningRssi = false
+    private var targetScanAddress: String? = null
+
+    private val bleScanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+            result ?: return
+            val dev = result.device ?: return
+            val address = dev.address ?: return
+            val target = targetScanAddress ?: return
+
+            if (address.equals(target, ignoreCase = true)) {
+                val rssi = result.rssi
+                Log.d(TAG, "BLE Scan RSSI for $address: $rssi dBm")
+                try {
+                    sendEvent("onBleRssiScanned", mapOf(
+                        "address" to address,
+                        "rssi" to rssi
+                    ))
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not send RSSI event: ${e.message}")
+                }
+            }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            Log.w(TAG, "BLE Scan failed with error code: $errorCode")
+            isScanningRssi = false
+        }
+    }
 
     private val profileListener = object : BluetoothProfile.ServiceListener {
         override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
@@ -140,13 +179,15 @@ class EarbudNativeModule : Module() {
             "Unknown"
         }
 
-        Log.d(TAG, "Device connection event: $address ($name) connected=$isConnected")
+        val isScreenOn = powerManager?.isInteractive ?: true
+        Log.d(TAG, "Device connection event: $address ($name) connected=$isConnected isScreenOn=$isScreenOn")
 
         try {
             sendEvent("onDeviceConnectionChanged", mapOf(
                 "address" to address,
                 "name" to name,
-                "connected" to isConnected
+                "connected" to isConnected,
+                "isScreenOn" to isScreenOn
             ))
         } catch (e: Exception) {
             Log.w(TAG, "Could not send connection event to JS: ${e.message}")
@@ -183,7 +224,8 @@ class EarbudNativeModule : Module() {
             "onDeviceConnectionChanged",
             "onBluetoothStateChanged",
             "onBondStateChanged",
-            "onBatteryLevelChanged"
+            "onBatteryLevelChanged",
+            "onBleRssiScanned"
         )
 
         OnCreate {
@@ -196,6 +238,7 @@ class EarbudNativeModule : Module() {
             if (instance === this@EarbudNativeModule) {
                 instance = null
             }
+            stopBleRssiScan()
             unregisterBluetoothReceiver()
             closeProfileProxies()
         }
@@ -212,8 +255,16 @@ class EarbudNativeModule : Module() {
             hasConnectPermission()
         }
 
+        Function("hasScanPermission") {
+            hasScanPermissionInternal()
+        }
+
         Function("isBluetoothEnabled") {
             bluetoothAdapter?.isEnabled ?: false
+        }
+
+        Function("isScreenInteractive") {
+            powerManager?.isInteractive ?: true
         }
 
         Function("isWatcherServiceRunning") {
@@ -254,6 +305,21 @@ class EarbudNativeModule : Module() {
         }
 
         /**
+         * Stage 7: Start BLE RSSI scanning for "Getting Warmer" proximity meter
+         */
+        Function("startRssiScan") { address: String ->
+            startBleRssiScan(address)
+        }
+
+        Function("stopRssiScan") {
+            stopBleRssiScan()
+        }
+
+        Function("isRssiScanning") {
+            isScanningRssi
+        }
+
+        /**
          * Stage 6: Set Media Volume (0 - 100%)
          */
         Function("setMediaVolume") { volumePercent: Int ->
@@ -271,9 +337,6 @@ class EarbudNativeModule : Module() {
             }
         }
 
-        /**
-         * Stage 6: Get current media volume (0 - 100%)
-         */
         Function("getMediaVolume") {
             try {
                 val am = audioManager ?: return@Function 50
@@ -287,20 +350,15 @@ class EarbudNativeModule : Module() {
             }
         }
 
-        /**
-         * Stage 6: Pause media playback via standard media key event and audio focus
-         */
         Function("pauseMedia") {
             try {
                 val am = audioManager ?: return@Function false
 
-                // 1. Dispatch media key pause events
                 val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
                 val upEvent = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
                 am.dispatchMediaKeyEvent(downEvent)
                 am.dispatchMediaKeyEvent(upEvent)
 
-                // 2. Also request transient audio focus to force pause background audio players
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                         .setAudioAttributes(
@@ -327,9 +385,6 @@ class EarbudNativeModule : Module() {
             }
         }
 
-        /**
-         * Stage 6: Launch chosen app by package name
-         */
         Function("launchApp") { packageName: String ->
             try {
                 val pm = context.packageManager
@@ -349,9 +404,6 @@ class EarbudNativeModule : Module() {
             }
         }
 
-        /**
-         * Stage 6: Check if Do Not Disturb permission is granted
-         */
         Function("isDndPermissionGranted") {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 notificationManager?.isNotificationPolicyAccessGranted ?: false
@@ -360,9 +412,6 @@ class EarbudNativeModule : Module() {
             }
         }
 
-        /**
-         * Stage 6: Open system Do Not Disturb access settings
-         */
         Function("openDndSettings") {
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -380,9 +429,6 @@ class EarbudNativeModule : Module() {
             }
         }
 
-        /**
-         * Stage 6: Set Do Not Disturb filter
-         */
         Function("setDndEnabled") { enable: Boolean ->
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -409,9 +455,6 @@ class EarbudNativeModule : Module() {
             }
         }
 
-        /**
-         * Stage 5: Read battery level trying (a) Reflection -> (b) Cache -> (c) BLE GATT
-         */
         AsyncFunction("getDeviceBatteryLevel") { address: String ->
             getDeviceBattery(address)
         }
@@ -463,7 +506,58 @@ class EarbudNativeModule : Module() {
         }
     }
 
-    private suspend fun getDeviceBattery(address: String): Int? {
+    private fun startBleRssiScan(address: String): Boolean {
+        val adapter = bluetoothAdapter ?: return false
+        if (!hasScanPermissionInternal()) {
+            Log.w(TAG, "Scan permission missing for RSSI scan")
+            return false
+        }
+
+        val scanner = adapter.bluetoothLeScanner ?: return false
+        stopBleRssiScan()
+
+        targetScanAddress = address.uppercase()
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .build()
+
+        val filters = listOf(
+            ScanFilter.Builder().setDeviceAddress(address).build()
+        )
+
+        try {
+            scanner.startScan(filters, settings, bleScanCallback)
+            isScanningRssi = true
+            Log.d(TAG, "Started BLE RSSI scan for $address")
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start BLE RSSI scan", e)
+            isScanningRssi = false
+            return false
+        }
+    }
+
+    private fun stopBleRssiScan(): Boolean {
+        val adapter = bluetoothAdapter ?: return false
+        val scanner = adapter.bluetoothLeScanner ?: return false
+
+        if (isScanningRssi) {
+            try {
+                if (hasScanPermissionInternal()) {
+                    scanner.stopScan(bleScanCallback)
+                }
+                isScanningRssi = false
+                targetScanAddress = null
+                Log.d(TAG, "Stopped BLE RSSI scan")
+                return true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to stop BLE RSSI scan", e)
+            }
+        }
+        return false
+    }
+
+    private fun getDeviceBattery(address: String): Int? {
         val adapter = bluetoothAdapter ?: return null
         if (!hasConnectPermission()) return null
 
@@ -486,13 +580,6 @@ class EarbudNativeModule : Module() {
             return cached
         }
 
-        val gattLevel = readBleGattBattery(device)
-        if (gattLevel != null && gattLevel in 0..100) {
-            Log.d(TAG, "Battery for $address via BLE GATT: $gattLevel%")
-            batteryCache[address.uppercase()] = gattLevel
-            return gattLevel
-        }
-
         Log.d(TAG, "Battery for $address unavailable")
         return null
     }
@@ -507,90 +594,6 @@ class EarbudNativeModule : Module() {
         }
     }
 
-    private suspend fun readBleGattBattery(device: BluetoothDevice): Int? {
-        return withTimeoutOrNull(3000L) {
-            suspendCancellableCoroutine { continuation ->
-                var gattInstance: BluetoothGatt? = null
-
-                val gattCallback = object : BluetoothGattCallback() {
-                    override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-                        if (newState == BluetoothProfile.STATE_CONNECTED) {
-                            try {
-                                if (hasConnectPermission()) {
-                                    gatt.discoverServices()
-                                } else {
-                                    if (continuation.isActive) continuation.resume(null)
-                                    gatt.close()
-                                }
-                            } catch (_: SecurityException) {
-                                if (continuation.isActive) continuation.resume(null)
-                                gatt.close()
-                            }
-                        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                            if (continuation.isActive) continuation.resume(null)
-                            gatt.close()
-                        }
-                    }
-
-                    override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-                        if (status == BluetoothGatt.GATT_SUCCESS) {
-                            val batteryService = gatt.getService(BATTERY_SERVICE_UUID)
-                            val batteryChar = batteryService?.getCharacteristic(BATTERY_LEVEL_CHAR_UUID)
-                            if (batteryChar != null && hasConnectPermission()) {
-                                try {
-                                    gatt.readCharacteristic(batteryChar)
-                                    return
-                                } catch (_: SecurityException) {}
-                            }
-                        }
-                        if (continuation.isActive) continuation.resume(null)
-                        gatt.close()
-                    }
-
-                    @Deprecated("Deprecated in Java")
-                    override fun onCharacteristicRead(
-                        gatt: BluetoothGatt,
-                        characteristic: BluetoothGattCharacteristic,
-                        status: Int
-                    ) {
-                        if (status == BluetoothGatt.GATT_SUCCESS && characteristic.uuid == BATTERY_LEVEL_CHAR_UUID) {
-                            val value = characteristic.value
-                            val level = if (value != null && value.isNotEmpty()) {
-                                value[0].toInt() and 0xFF
-                            } else null
-
-                            if (continuation.isActive) continuation.resume(level)
-                        } else {
-                            if (continuation.isActive) continuation.resume(null)
-                        }
-                        gatt.close()
-                    }
-                }
-
-                try {
-                    if (hasConnectPermission()) {
-                        gattInstance = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                            device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
-                        } else {
-                            device.connectGatt(context, false, gattCallback)
-                        }
-
-                        continuation.invokeOnCancellation {
-                            try {
-                                gattInstance?.close()
-                            } catch (_: Exception) {}
-                        }
-                    } else {
-                        continuation.resume(null)
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "GATT connection exception: ${e.message}")
-                    continuation.resume(null)
-                }
-            }
-        }
-    }
-
     private fun hasConnectPermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             ContextCompat.checkSelfPermission(
@@ -601,6 +604,20 @@ class EarbudNativeModule : Module() {
             ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.BLUETOOTH
+            ) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun hasScanPermissionInternal(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.BLUETOOTH_SCAN
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
         }
     }
@@ -702,7 +719,7 @@ class EarbudNativeModule : Module() {
                 ContextCompat.RECEIVER_EXPORTED
             )
             isReceiverRegistered = true
-            Log.d(TAG, "Bluetooth receiver registered in module with battery monitoring")
+            Log.d(TAG, "Bluetooth receiver registered in module with battery & RSSI support")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to register Bluetooth receiver", e)
         }

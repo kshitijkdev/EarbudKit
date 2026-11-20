@@ -15,6 +15,7 @@ import {
   openBluetoothSettings,
 } from '../../../modules/earbud-native';
 import { useDeviceStore, useAutoStore } from '../../store';
+import { captureCurrentLocation } from '../../services/location';
 
 export function useBluetoothDevices() {
   const [bondedDevices, setBondedDevices] = useState<BondedDevice[]>([]);
@@ -95,7 +96,7 @@ export function useBluetoothDevices() {
       );
 
       // Update Zustand persisted store
-      setConnectionState(event.address, event.connected);
+      setConnectionState(event.address, event.connected, event.isScreenOn);
 
       // Trigger per-device auto-action profile
       if (event.connected) {
@@ -108,6 +109,13 @@ export function useBluetoothDevices() {
         });
       } else {
         useAutoStore.getState().executeDisconnectProfile(event.address);
+
+        // Stage 7: Capture last known location on disconnect
+        captureCurrentLocation().then((loc) => {
+          if (loc) {
+            useDeviceStore.getState().setDeviceLocation(event.address, loc);
+          }
+        });
       }
     });
 
