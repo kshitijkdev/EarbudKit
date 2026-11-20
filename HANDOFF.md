@@ -198,8 +198,30 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - Frosted Floating Mini-Player bar floating above bottom navigation when a device is active.
     - 100% zero emojis; Inter typography and vector icons only.
   - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
-- [ ] **Stage S3: Devices Screen & Edit Modal**
-- [ ] **Stage S3: Devices Screen & Edit Modal**
+- [x] **Stage S3: Devices Screen & Edit Modal**
+  - Rebuilt `app/(tabs)/devices.tsx`: Soft Studio editorial style:
+    - 34px bold "Devices" screen heading with live count pill badge (`3 Saved`) and sync button.
+    - Contextual Android 12+ Permission Banner: soft accent tint (`primaryContainer`), Bluetooth icon, "Nearby Devices Permission - REQUIRED", "Grant Bluetooth Access" button.
+    - Grouped 20px card list of tracked hardware: device avatar with live active dot, nickname, MAC address, active/standby status pill, dynamic battery bar, edit pencil button, and remove trash button.
+    - Radar scanning card with live pulse indicator, refresh button, and "Open System Bluetooth Settings" link.
+    - Discovered nearby hardware cards for bonded devices with 1-tap "+ Track" pill buttons.
+    - Quick-add presets shelf (Noise Buds Vector, realme Studio H1, Generic BLE Audio).
+    - Tactile Edit Modal Sheet: nickname input, segmented form factor glyph picker ([ Earbuds | Headphones ]), low-battery threshold pills ([ 10% | 20% (Default) | 30% ]), "Test Low Battery Notification" button, discard and save buttons.
+    - 100% zero emojis; Inter typography and vector icons only.
+  - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
+- [ ] **Stage S4: Auto-Actions Screen**
+- [x] **Stage S3: Devices Screen & Edit Modal**
+  - Rebuilt `app/(tabs)/devices.tsx`: Soft Studio editorial style:
+    - 34px bold "Devices" screen heading with live count pill badge (`3 Saved`) and sync button.
+    - Contextual Android 12+ Permission Banner: soft accent tint (`primaryContainer`), Bluetooth icon, "Nearby Devices Permission - REQUIRED", "Grant Bluetooth Access" button.
+    - Grouped 20px card list of tracked hardware: device avatar with live active dot, nickname, MAC address, active/standby status pill, dynamic battery bar, edit pencil button, and remove trash button.
+    - Radar scanning card with live pulse indicator, refresh button, and "Open System Bluetooth Settings" link.
+    - Discovered nearby hardware cards for bonded devices with 1-tap "+ Track" pill buttons.
+    - Quick-add presets shelf (Noise Buds Vector, realme Studio H1, Generic BLE Audio).
+    - Tactile Edit Modal Sheet: nickname input, segmented form factor glyph picker ([ Earbuds | Headphones ]), low-battery threshold pills ([ 10% | 20% (Default) | 30% ]), "Test Low Battery Notification" button, discard and save buttons.
+    - 100% zero emojis; Inter typography and vector icons only.
+  - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
+- [ ] **Stage S4: Auto-Actions Screen**
 - [ ] **Stage S4: Auto-Actions Screen**
 - [ ] **Stage S5: Tools Screen + Personal Hearing Calibration (HearID)**
 - [ ] **Stage S6: Settings Screen (Theme & Accent Switching) & Stats Dashboard**
