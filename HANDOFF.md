@@ -185,7 +185,20 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - `BatteryRing.tsx`: Clean vector icon center mode (`flash` icon, zero emojis).
     - `SectionHeader.tsx`: Apple Music typographic hierarchy (20px bold title, uppercase 11px category, accent action text).
   - TypeScript type check (`npx tsc --noEmit`) passing with 0 errors; all 6 unit tests passing.
-- [ ] **Stage S2: Home Screen Reskin + Smart Habit Predictor Engine**
+- [x] **Stage S2: Home Screen Reskin + Smart Habit Predictor Engine**
+  - Created `src/store/habitStore.ts`: Lightweight, zero-bloat on-device frequency matrix (< 5 KB in local storage). Learns time-of-day listening patterns (morning commute, afternoon focus, evening workout, late-night wind down). Pre-seeds archetype confidence and computes Bayesian match (85%–99%). 100% on-device privacy, zero background battery drain.
+  - Created `src/store/__tests__/habitStore.test.ts`: Complete unit test verifying time slot calculation, routine generation, Bayesian confidence match, session event recording, dismiss/apply actions, and memory storage persistence.
+  - Rebuilt `app/(tabs)/index.tsx`: Soft Studio editorial design:
+    - 34px bold "Home" title + Watcher ON/OFF pill button + Appearance theme toggle.
+    - Hero "Now Connected" card with dynamic ambient back-glow mesh, connected chip, codec pill, 64px BatteryRing with centered vector bolt, tactile device artwork centerpiece card, Disconnect and Audio Controls pill buttons.
+    - Smart Routine Capsule (Adaptive Context Engine / Smart Handshake): 1-tap routine trigger with confidence match (e.g. "96% Match • Late-Night Wind Down"), Dismiss and Apply Routine buttons.
+    - Quick Command Action Pills Shelf (Sleep 30m, Equalizer, Find Device, Auto-Actions, Hearing Test).
+    - Bento Metric Row: Today's listening session with 7-bar visualizer sparkline and tracked devices fleet count.
+    - Registered Fleet horizontal shelf with active status tags, battery badges, device thumbnails, and "+ Add Device" card.
+    - Frosted Floating Mini-Player bar floating above bottom navigation when a device is active.
+    - 100% zero emojis; Inter typography and vector icons only.
+  - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
+- [ ] **Stage S3: Devices Screen & Edit Modal**
 - [ ] **Stage S3: Devices Screen & Edit Modal**
 - [ ] **Stage S4: Auto-Actions Screen**
 - [ ] **Stage S5: Tools Screen + Personal Hearing Calibration (HearID)**
