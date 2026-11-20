@@ -1,7 +1,9 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/theme';
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { theme, themeMode, setThemeMode } = useTheme();
   const { colors, borderRadius, spacing } = theme;
 
@@ -12,7 +14,10 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      contentContainerStyle={styles.scrollContent}
+    >
       {/* Theme selection */}
       <View style={[styles.section, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
         <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Appearance</Text>
@@ -49,6 +54,37 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Listening Stats & Codecs */}
+      <View style={[styles.section, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Statistics</Text>
+        <Text style={[styles.bodyText, { color: colors.onSurfaceVariant, marginBottom: 12 }]}>
+          View session listening time, daily breakdown, and active Bluetooth audio codecs (LDAC, aptX, AAC, SBC) for all your paired devices.
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.statsNavButton,
+            {
+              backgroundColor: colors.primary,
+              borderRadius: borderRadius.md,
+            },
+          ]}
+          onPress={() => router.push('/stats')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.statsNavText, { color: colors.onPrimary }]}>
+            📊 View Listening Stats & Codecs
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Quick Settings Tile */}
+      <View style={[styles.section, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
+        <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Quick Settings Tile</Text>
+        <Text style={[styles.bodyText, { color: colors.onSurfaceVariant }]}>
+          ⚡ EarbudKit includes a native Android Quick Settings tile. Swipe down from the top of your screen, tap the pencil icon to edit quick tiles, and drag EarbudKit into your active tiles for 1-tap app launch and live connection monitoring.
+        </Text>
+      </View>
+
       {/* Privacy note */}
       <View style={[styles.section, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
         <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Privacy</Text>
@@ -68,14 +104,17 @@ export default function SettingsScreen() {
           Companion app for Bluetooth audio devices
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 40,
     gap: 16,
   },
   section: {
@@ -84,7 +123,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 8,
+  },
+  bodyText: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  statsNavButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  statsNavText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   themeRow: {
     flexDirection: 'row',

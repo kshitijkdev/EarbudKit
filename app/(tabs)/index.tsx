@@ -74,6 +74,7 @@ export default function HomeScreen() {
         icon: 'earbuds',
         isConnected: true,
         batteryLevel: 85, // 85% battery
+        audioCodec: 'LDAC',
       });
     } else {
       addTrackedDevice({
@@ -83,6 +84,7 @@ export default function HomeScreen() {
         icon: 'headphones',
         isConnected: true,
         batteryLevel: null, // Shows "Unavailable" to verify null handling
+        audioCodec: 'AAC',
       });
     }
   };
@@ -264,11 +266,18 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
           Your Audio Devices
         </Text>
-        <TouchableOpacity onPress={() => router.push('/devices')}>
-          <Text style={[styles.linkText, { color: colors.primary }]}>
-            Manage & Pair →
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerLinksRow}>
+          <TouchableOpacity onPress={() => router.push('/stats')}>
+            <Text style={[styles.linkText, { color: colors.primary }]}>
+              📊 Stats
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/devices')}>
+            <Text style={[styles.linkText, { color: colors.primary }]}>
+              Manage →
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {trackedDevices.length === 0 ? (
@@ -483,7 +492,7 @@ export default function HomeScreen() {
                 {/* Device Type */}
                 <View style={styles.metricItem}>
                   <Text style={styles.metricEmoji}>
-                    {dev.icon === 'earbuds' ? '🎧' : '🎧'}
+                    {dev.icon === 'earbuds' ? '👂' : '🎧'}
                   </Text>
                   <View>
                     <Text
@@ -493,6 +502,35 @@ export default function HomeScreen() {
                     </Text>
                     <Text style={[styles.metricValue, { color: colors.onSurface }]}>
                       {dev.icon === 'earbuds' ? 'TWS Earbuds' : 'Over-Ear'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Active Audio Codec */}
+                <View style={styles.metricItem}>
+                  <Text style={styles.metricEmoji}>🎵</Text>
+                  <View>
+                    <Text
+                      style={[styles.metricLabel, { color: colors.onSurfaceVariant }]}
+                    >
+                      Codec
+                    </Text>
+                    <Text
+                      style={[
+                        styles.metricValue,
+                        {
+                          color:
+                            dev.audioCodec && dev.audioCodec !== 'Unknown'
+                              ? colors.primary
+                              : colors.onSurface,
+                          fontWeight:
+                            dev.audioCodec && dev.audioCodec !== 'Unknown'
+                              ? '700'
+                              : '500',
+                        },
+                      ]}
+                    >
+                      {dev.isConnected ? (dev.audioCodec || 'Unknown') : '—'}
                     </Text>
                   </View>
                 </View>
@@ -603,6 +641,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  headerLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
   sectionTitle: {
     fontSize: 18,

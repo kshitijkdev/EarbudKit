@@ -29,6 +29,7 @@ export interface TrackedDevice {
   batteryAlertSent: boolean; // Prevent repeating alert until recharged
   disconnectAlertEnabled: boolean; // Alert when disconnected while in use
   lastLocation: DeviceLocation | null; // Stage 7: Last known location
+  audioCodec?: string | null; // Stage 10: Active audio codec (LDAC, aptX, aptX HD, AAC, SBC, or Unknown)
   addedAt: number; // Timestamp when added
   lastConnectedAt: number | null; // Timestamp of last connect
   lastDisconnectedAt: number | null; // Timestamp of last disconnect
@@ -46,6 +47,7 @@ interface DeviceState {
     icon?: DeviceIconType;
     isConnected?: boolean;
     batteryLevel?: number | null;
+    audioCodec?: string | null;
     lowBatteryThreshold?: number;
     disconnectAlertEnabled?: boolean;
     lastLocation?: DeviceLocation | null;
@@ -53,6 +55,7 @@ interface DeviceState {
   removeTrackedDevice: (address: string) => void;
   updateNickname: (address: string, nickname: string) => void;
   updateIcon: (address: string, icon: DeviceIconType) => void;
+  setAudioCodec: (address: string, codec: string | null) => void;
   setLowBatteryThreshold: (address: string, threshold: number) => void;
   setDisconnectAlert: (address: string, enabled: boolean) => void;
   setDeviceLocation: (address: string, location: DeviceLocation) => void;
@@ -115,6 +118,7 @@ export const useDeviceStore = create<DeviceState>()(
             existing?.disconnectAlertEnabled ??
             true,
           lastLocation: device.lastLocation ?? existing?.lastLocation ?? null,
+          audioCodec: device.audioCodec ?? existing?.audioCodec ?? null,
           addedAt: existing?.addedAt ?? Date.now(),
           lastConnectedAt: existing?.lastConnectedAt ?? null,
           lastDisconnectedAt: existing?.lastDisconnectedAt ?? null,
@@ -184,6 +188,24 @@ export const useDeviceStore = create<DeviceState>()(
               [addr]: {
                 ...device,
                 icon,
+              },
+            },
+          };
+        });
+      },
+
+      setAudioCodec: (address, codec) => {
+        const addr = address.toUpperCase();
+        set((state) => {
+          const device = state.trackedDevices[addr];
+          if (!device) return state;
+
+          return {
+            trackedDevices: {
+              ...state.trackedDevices,
+              [addr]: {
+                ...device,
+                audioCodec: codec,
               },
             },
           };
@@ -362,11 +384,14 @@ export const useDeviceStore = create<DeviceState>()(
                 item.batteryLevel !== undefined
                   ? item.batteryLevel
                   : current.batteryLevel;
+              const newCodec =
+                item.codec !== undefined ? item.codec : current.audioCodec;
 
               if (
                 current.isConnected !== item.isConnected ||
                 current.name !== item.name ||
-                current.batteryLevel !== newBattery
+                current.batteryLevel !== newBattery ||
+                current.audioCodec !== newCodec
               ) {
                 hasChanges = true;
                 next[addr] = {
@@ -374,6 +399,7 @@ export const useDeviceStore = create<DeviceState>()(
                   name: item.name,
                   isConnected: item.isConnected,
                   batteryLevel: newBattery,
+                  audioCodec: newCodec,
                 };
               }
             }

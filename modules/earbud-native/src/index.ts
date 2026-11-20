@@ -5,6 +5,7 @@ export interface BondedDevice {
   address: string;
   isConnected: boolean;
   batteryLevel?: number | null;
+  codec?: string;
   type: string;
   majorDeviceClass?: number;
   deviceClass?: number;
@@ -571,4 +572,17 @@ export function setEqualizerEnabled(enabled: boolean): boolean {
     return false;
   }
 }
+
+/**
+ * Stage 10: Query active Bluetooth A2DP audio codec (LDAC, aptX, aptX HD, AAC, SBC, or Unknown).
+ */
+export async function getActiveAudioCodec(address: string): Promise<string> {
+  if (Platform.OS !== 'android') return 'Unknown';
+  try {
+    return (await NativeModule?.getActiveAudioCodec(address)) ?? 'Unknown';
+  } catch (e) {
+    return 'Unknown';
+  }
+}
+
 

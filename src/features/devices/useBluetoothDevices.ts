@@ -12,9 +12,15 @@ import {
   addBondStateListener,
   addBatteryListener,
   getDeviceBatteryLevel,
+  getActiveAudioCodec,
   openBluetoothSettings,
 } from '../../../modules/earbud-native';
-import { useDeviceStore, useAutoStore, useEqualizerStore } from '../../store';
+import {
+  useDeviceStore,
+  useAutoStore,
+  useEqualizerStore,
+  useStatsStore,
+} from '../../store';
 import { captureCurrentLocation } from '../../services/location';
 
 export function useBluetoothDevices() {
@@ -51,12 +57,17 @@ export function useBluetoothDevices() {
       setBondedDevices(devices);
       syncWithBondedDevices(devices);
 
-      // Fetch battery for connected devices
+      // Fetch battery and codec for connected devices
       for (const dev of devices) {
         if (dev.isConnected) {
           getDeviceBatteryLevel(dev.address).then((lvl) => {
             if (lvl !== null) {
               setBatteryLevel(dev.address, lvl);
+            }
+          });
+          getActiveAudioCodec(dev.address).then((codec) => {
+            if (codec) {
+              useDeviceStore.getState().setAudioCodec(dev.address, codec);
             }
           });
         }
@@ -98,10 +109,19 @@ export function useBluetoothDevices() {
       // Update Zustand persisted store
       setConnectionState(event.address, event.connected, event.isScreenOn);
 
-      // Trigger per-device auto-action profile
+      // Trigger per-device auto-action profile, EQ, session stats, and codec
       if (event.connected) {
         useAutoStore.getState().executeConnectProfile(event.address);
         useEqualizerStore.getState().applyToHardware(event.address);
+        useStatsStore.getState().startListeningSession(event.address);
+
+        // Query active codec immediately
+        getActiveAudioCodec(event.address).then((codec) => {
+          if (codec) {
+            useDeviceStore.getState().setAudioCodec(event.address, codec);
+          }
+        });
+
         // If connected, query battery immediately
         getDeviceBatteryLevel(event.address).then((lvl) => {
           if (lvl !== null) {
@@ -110,6 +130,7 @@ export function useBluetoothDevices() {
         });
       } else {
         useAutoStore.getState().executeDisconnectProfile(event.address);
+        useStatsStore.getState().stopListeningSession(event.address);
 
         // Stage 7: Capture last known location on disconnect
         captureCurrentLocation().then((loc) => {

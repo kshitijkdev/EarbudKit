@@ -386,6 +386,14 @@ class EarbudNativeModule : Module() {
         }
 
         /**
+         * Stage 10: Query active Bluetooth A2DP audio codec (LDAC, aptX, aptX HD, AAC, SBC, or Unknown)
+         */
+        AsyncFunction("getActiveAudioCodec") { address: String ->
+            getAudioCodecByAddress(address)
+        }
+
+
+        /**
          * Stage 7: Start BLE RSSI scanning for "Getting Warmer" proximity meter
          */
         Function("startRssiScan") { address: String ->
@@ -570,6 +578,7 @@ class EarbudNativeModule : Module() {
                                 "address" to device.address,
                                 "isConnected" to isConnected,
                                 "batteryLevel" to battery,
+                                "codec" to (if (isConnected) getAudioCodec(device) else "Unknown"),
                                 "type" to deviceType,
                                 "majorDeviceClass" to (btClass?.majorDeviceClass ?: 0),
                                 "deviceClass" to (btClass?.deviceClass ?: 0)
@@ -675,6 +684,61 @@ class EarbudNativeModule : Module() {
             }
         }
         return false
+    }
+
+    /**
+     * Stage 10: Query active Bluetooth A2DP audio codec (LDAC, aptX, aptX HD, AAC, SBC, LC3, or Unknown)
+     */
+    private fun getAudioCodec(device: BluetoothDevice): String {
+        try {
+            val a2dp = a2dpProfile ?: return "Unknown"
+
+            // Method 1: BluetoothA2dp.getCodecStatus(device)
+            val getCodecStatusMethod = a2dp.javaClass.getMethod("getCodecStatus", BluetoothDevice::class.java)
+            val codecStatus = getCodecStatusMethod.invoke(a2dp, device) ?: return "Unknown"
+
+            // Method 2: BluetoothCodecStatus.getCodecConfig()
+            val getCodecConfigMethod = codecStatus.javaClass.getMethod("getCodecConfig")
+            val codecConfig = getCodecConfigMethod.invoke(codecStatus) ?: return "Unknown"
+
+            // Check if getCodecName() exists
+            try {
+                val getCodecNameMethod = codecConfig.javaClass.getMethod("getCodecName")
+                val name = getCodecNameMethod.invoke(codecConfig) as? String
+                if (!name.isNullOrBlank()) {
+                    return name
+                }
+            } catch (_: Exception) {}
+
+            // Fallback: getCodecType()
+            val getCodecTypeMethod = codecConfig.javaClass.getMethod("getCodecType")
+            val type = (getCodecTypeMethod.invoke(codecConfig) as? Int) ?: return "Unknown"
+
+            return when (type) {
+                0 -> "SBC"
+                1 -> "AAC"
+                2 -> "aptX"
+                3 -> "aptX HD"
+                4 -> "LDAC"
+                5 -> "LC3"
+                6 -> "Opus"
+                else -> "Unknown"
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "Audio codec detection via reflection not available: ${e.message}")
+            return "Unknown"
+        }
+    }
+
+    private fun getAudioCodecByAddress(address: String): String {
+        val adapter = bluetoothAdapter ?: return "Unknown"
+        if (!hasConnectPermission()) return "Unknown"
+        return try {
+            val device = adapter.getRemoteDevice(address) ?: return "Unknown"
+            getAudioCodec(device)
+        } catch (e: Exception) {
+            "Unknown"
+        }
     }
 
     private fun getDeviceBattery(address: String): Int? {

@@ -21,5 +21,16 @@
             android:name=".EarbudForegroundService"
             android:foregroundServiceType="connectedDevice"
             android:exported="false" />
+
+        <service
+            android:name=".EarbudQuickTileService"
+            android:label="EarbudKit"
+            android:icon="@android:drawable/stat_sys_data_bluetooth"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>
