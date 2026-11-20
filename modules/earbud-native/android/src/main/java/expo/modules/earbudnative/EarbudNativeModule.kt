@@ -1,6 +1,7 @@
 package expo.modules.earbudnative
 
 import android.Manifest
+import android.app.NotificationManager
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
@@ -14,11 +15,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.util.Log
+import android.view.KeyEvent
 import androidx.core.content.ContextCompat
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -29,11 +32,9 @@ import kotlin.coroutines.resume
 
 private const val TAG = "EarbudNative"
 
-// Standard Bluetooth SIG UUIDs
 val BATTERY_SERVICE_UUID: UUID = UUID.fromString("0000180F-0000-1000-8000-00805F9B34FB")
 val BATTERY_LEVEL_CHAR_UUID: UUID = UUID.fromString("00002A19-0000-1000-8000-00805F9B34FB")
 
-// Hidden / Standard Android Battery Level Changed Intent Action
 const val ACTION_BATTERY_LEVEL_CHANGED = "android.bluetooth.device.action.BATTERY_LEVEL_CHANGED"
 const val EXTRA_BATTERY_LEVEL = "android.bluetooth.device.extra.BATTERY_LEVEL"
 
@@ -42,7 +43,6 @@ class EarbudNativeModule : Module() {
         var instance: EarbudNativeModule? = null
             private set
         
-        // Cache battery levels from broadcasts
         val batteryCache = mutableMapOf<String, Int>()
     }
 
@@ -54,6 +54,12 @@ class EarbudNativeModule : Module() {
 
     private val bluetoothAdapter: BluetoothAdapter?
         get() = bluetoothManager?.adapter ?: BluetoothAdapter.getDefaultAdapter()
+
+    private val audioManager: AudioManager?
+        get() = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+
+    private val notificationManager: NotificationManager?
+        get() = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
 
     private var a2dpProfile: BluetoothProfile? = null
     private var headsetProfile: BluetoothProfile? = null
@@ -248,11 +254,163 @@ class EarbudNativeModule : Module() {
         }
 
         /**
-         * Stage 5: Read battery level trying in order:
-         * (a) BluetoothDevice.getBatteryLevel via reflection
-         * (b) BATTERY_LEVEL_CHANGED broadcast cache
-         * (c) BLE Battery Service GATT (0x180F/0x2A19)
-         * Returns null if none work.
+         * Stage 6: Set Media Volume (0 - 100%)
+         */
+        Function("setMediaVolume") { volumePercent: Int ->
+            try {
+                val am = audioManager ?: return@Function false
+                val maxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                val clamped = volumePercent.coerceIn(0, 100)
+                val targetIndex = (clamped * maxVolume) / 100
+                am.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
+                Log.d(TAG, "Set media volume to $clamped% (index $targetIndex / $maxVolume)")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set media volume", e)
+                false
+            }
+        }
+
+        /**
+         * Stage 6: Get current media volume (0 - 100%)
+         */
+        Function("getMediaVolume") {
+            try {
+                val am = audioManager ?: return@Function 50
+                val maxVolume = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                if (maxVolume == 0) return@Function 0
+                val current = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                (current * 100) / maxVolume
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get media volume", e)
+                50
+            }
+        }
+
+        /**
+         * Stage 6: Pause media playback via standard media key event and audio focus
+         */
+        Function("pauseMedia") {
+            try {
+                val am = audioManager ?: return@Function false
+
+                // 1. Dispatch media key pause events
+                val downEvent = KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE)
+                val upEvent = KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE)
+                am.dispatchMediaKeyEvent(downEvent)
+                am.dispatchMediaKeyEvent(upEvent)
+
+                // 2. Also request transient audio focus to force pause background audio players
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                        .setAudioAttributes(
+                            AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                .build()
+                        )
+                        .build()
+                    am.requestAudioFocus(focusRequest)
+                    am.abandonAudioFocusRequest(focusRequest)
+                } else {
+                    @Suppress("DEPRECATION")
+                    am.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    @Suppress("DEPRECATION")
+                    am.abandonAudioFocus(null)
+                }
+
+                Log.d(TAG, "Dispatched pause media events successfully")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to pause media", e)
+                false
+            }
+        }
+
+        /**
+         * Stage 6: Launch chosen app by package name
+         */
+        Function("launchApp") { packageName: String ->
+            try {
+                val pm = context.packageManager
+                val intent = pm.getLaunchIntentForPackage(packageName)
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                    Log.d(TAG, "Launched app package: $packageName")
+                    true
+                } else {
+                    Log.w(TAG, "No launch intent for package: $packageName")
+                    false
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to launch app $packageName", e)
+                false
+            }
+        }
+
+        /**
+         * Stage 6: Check if Do Not Disturb permission is granted
+         */
+        Function("isDndPermissionGranted") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notificationManager?.isNotificationPolicyAccessGranted ?: false
+            } else {
+                true
+            }
+        }
+
+        /**
+         * Stage 6: Open system Do Not Disturb access settings
+         */
+        Function("openDndSettings") {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                    true
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to open DND settings", e)
+                false
+            }
+        }
+
+        /**
+         * Stage 6: Set Do Not Disturb filter
+         */
+        Function("setDndEnabled") { enable: Boolean ->
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val nm = notificationManager ?: return@Function false
+                    if (nm.isNotificationPolicyAccessGranted) {
+                        val filter = if (enable) {
+                            NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                        } else {
+                            NotificationManager.INTERRUPTION_FILTER_ALL
+                        }
+                        nm.setInterruptionFilter(filter)
+                        Log.d(TAG, "Set DND filter: enable=$enable")
+                        true
+                    } else {
+                        Log.w(TAG, "DND permission not granted")
+                        false
+                    }
+                } else {
+                    false
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set DND filter", e)
+                false
+            }
+        }
+
+        /**
+         * Stage 5: Read battery level trying (a) Reflection -> (b) Cache -> (c) BLE GATT
          */
         AsyncFunction("getDeviceBatteryLevel") { address: String ->
             getDeviceBattery(address)
@@ -305,9 +463,6 @@ class EarbudNativeModule : Module() {
         }
     }
 
-    /**
-     * Reads battery trying (a) Reflection -> (b) Broadcast Cache -> (c) BLE GATT.
-     */
     private suspend fun getDeviceBattery(address: String): Int? {
         val adapter = bluetoothAdapter ?: return null
         if (!hasConnectPermission()) return null
@@ -318,7 +473,6 @@ class EarbudNativeModule : Module() {
             null
         } ?: return null
 
-        // (a) Try BluetoothDevice.getBatteryLevel via reflection
         val reflectionLevel = getBatteryReflection(device)
         if (reflectionLevel != null && reflectionLevel in 0..100) {
             Log.d(TAG, "Battery for $address via reflection: $reflectionLevel%")
@@ -326,14 +480,12 @@ class EarbudNativeModule : Module() {
             return reflectionLevel
         }
 
-        // (b) Try broadcast cache
         val cached = batteryCache[address.uppercase()]
         if (cached != null && cached in 0..100) {
             Log.d(TAG, "Battery for $address via broadcast cache: $cached%")
             return cached
         }
 
-        // (c) Try BLE Battery Service GATT (0x180F/0x2A19)
         val gattLevel = readBleGattBattery(device)
         if (gattLevel != null && gattLevel in 0..100) {
             Log.d(TAG, "Battery for $address via BLE GATT: $gattLevel%")

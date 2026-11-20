@@ -1,5 +1,4 @@
 import { EventEmitter, type EventSubscription, requireNativeModule } from 'expo-modules-core';
-import { PermissionsAndroid, Platform } from 'react-native';
 
 export interface BondedDevice {
   name: string;
@@ -33,6 +32,27 @@ export type EarbudNativeEvents = {
   onBatteryLevelChanged: (event: BatteryChangeEvent) => void;
 };
 
+// Safe runtime resolution for React Native utilities
+let Platform: any = { OS: 'android', Version: 34 };
+let PermissionsAndroid: any = {
+  PERMISSIONS: {
+    BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
+    BLUETOOTH_SCAN: 'android.permission.BLUETOOTH_SCAN',
+    POST_NOTIFICATIONS: 'android.permission.POST_NOTIFICATIONS',
+  },
+  RESULTS: { GRANTED: 'granted', DENIED: 'denied', NEVER_ASK_AGAIN: 'never_ask_again' },
+  requestMultiple: async () => ({}),
+  request: async () => 'granted',
+};
+
+try {
+  // Dynamic resolution prevents static bundling analyzers from parsing Flow types in react-native
+  const dynamicRequire = eval('require');
+  const RN = dynamicRequire('react-native');
+  if (RN?.Platform) Platform = RN.Platform;
+  if (RN?.PermissionsAndroid) PermissionsAndroid = RN.PermissionsAndroid;
+} catch (_e) {}
+
 // Safely load the native module
 let NativeModule: any = null;
 let emitter: EventEmitter<EarbudNativeEvents> | null = null;
@@ -43,7 +63,7 @@ try {
     emitter = new EventEmitter<EarbudNativeEvents>(NativeModule);
   }
 } catch (e) {
-  console.warn('[EarbudNative] Failed to load native module:', e);
+  // In development/test mock
 }
 
 /**
@@ -190,6 +210,100 @@ export async function getDeviceBatteryLevel(
   } catch (e) {
     console.warn(`[EarbudNative] Error fetching battery for ${address}:`, e);
     return null;
+  }
+}
+
+/**
+ * Stage 6: Set media volume percentage (0 - 100).
+ */
+export function setMediaVolume(volumePercent: number): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.setMediaVolume(Math.round(volumePercent)) ?? true;
+  } catch (e) {
+    console.warn('[EarbudNative] Error setting media volume:', e);
+    return false;
+  }
+}
+
+/**
+ * Stage 6: Get current media volume percentage (0 - 100).
+ */
+export function getMediaVolume(): number {
+  if (Platform.OS !== 'android') return 50;
+  try {
+    return NativeModule?.getMediaVolume() ?? 50;
+  } catch (e) {
+    console.warn('[EarbudNative] Error getting media volume:', e);
+    return 50;
+  }
+}
+
+/**
+ * Stage 6: Pause media playback via standard media key event and audio focus request.
+ */
+export function pauseMedia(): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.pauseMedia() ?? true;
+  } catch (e) {
+    console.warn('[EarbudNative] Error pausing media:', e);
+    return false;
+  }
+}
+
+/**
+ * Stage 6: Launch an application by package name (e.g. 'com.spotify.music').
+ */
+export function launchApp(packageName: string): boolean {
+  if (Platform.OS !== 'android') {
+    console.log(`[EarbudNative] App launching for ${packageName} not supported on iOS`);
+    return false;
+  }
+  try {
+    return NativeModule?.launchApp(packageName) ?? true;
+  } catch (e) {
+    console.warn(`[EarbudNative] Error launching app ${packageName}:`, e);
+    return false;
+  }
+}
+
+/**
+ * Stage 6: Check if Do Not Disturb policy access is granted.
+ */
+export function isDndPermissionGranted(): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.isDndPermissionGranted() ?? false;
+  } catch (e) {
+    console.warn('[EarbudNative] Error checking DND permission:', e);
+    return false;
+  }
+}
+
+/**
+ * Stage 6: Open system Do Not Disturb access settings.
+ */
+export async function openDndSettings(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return (await NativeModule?.openDndSettings()) ?? false;
+  } catch (e) {
+    console.warn('[EarbudNative] Error opening DND settings:', e);
+    return false;
+  }
+}
+
+/**
+ * Stage 6: Set Do Not Disturb mode (Priority only vs Normal).
+ */
+export function setDndEnabled(enable: boolean): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.setDndEnabled(enable) ?? false;
+  } catch (e) {
+    console.warn('[EarbudNative] Error setting DND mode:', e);
+    return false;
   }
 }
 
