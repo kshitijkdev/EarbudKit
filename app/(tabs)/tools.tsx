@@ -17,6 +17,9 @@ import {
   TrackedDevice,
   DeviceLocation,
   useSleepTimerStore,
+  useEqualizerStore,
+  EqPresetName,
+  DEFAULT_DEVICE_EQ,
 } from '../../src/store';
 import {
   startRssiScan,
@@ -79,6 +82,25 @@ export default function ToolsScreen() {
     const s = sec % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
+
+  // Equalizer hooks
+  const isEqSupported = useEqualizerStore((s) => s.isSupported);
+  const hasCheckedEq = useEqualizerStore((s) => s.hasCheckedSupport);
+  const checkEqSupport = useEqualizerStore((s) => s.checkEqualizerSupport);
+  const bandFrequencies = useEqualizerStore((s) => s.bandFrequencies);
+  const setDeviceEqEnabled = useEqualizerStore((s) => s.setDeviceEqEnabled);
+  const setDevicePreset = useEqualizerStore((s) => s.setDevicePreset);
+  const setDeviceBandLevel = useEqualizerStore((s) => s.setDeviceBandLevel);
+  const getDeviceConfig = useEqualizerStore((s) => s.getDeviceConfig);
+
+  useEffect(() => {
+    if (!hasCheckedEq) {
+      checkEqSupport();
+    }
+  }, [hasCheckedEq, checkEqSupport]);
+
+  const eqConfig = selectedAddress ? getDeviceConfig(selectedAddress) : DEFAULT_DEVICE_EQ;
+
 
   // Subscribe to live BLE RSSI scan events
   useEffect(() => {
@@ -878,6 +900,274 @@ export default function ToolsScreen() {
               )}
             </View>
           </View>
+
+          {/* EQUALIZER CARD */}
+          <View
+            style={[
+              styles.toolCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.outlineVariant,
+                borderRadius: borderRadius.md,
+              },
+            ]}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.cardEmoji}>🎚️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
+                    Equalizer (AudioFX)
+                  </Text>
+                  <Text style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}>
+                    {selectedDevice?.nickname || selectedDevice?.name || 'Device'} hardware EQ profile
+                  </Text>
+                </View>
+              </View>
+                {isEqSupported && (
+                  <Switch
+                    value={eqConfig.enabled}
+                    onValueChange={(val) => {
+                      if (selectedAddress) {
+                        setDeviceEqEnabled(selectedAddress, val);
+                      }
+                    }}
+                    thumbColor={eqConfig.enabled ? colors.primary : colors.surfaceVariant}
+                    trackColor={{
+                      false: colors.surfaceVariant,
+                      true: colors.primaryContainer,
+                    }}
+                  />
+                )}
+              </View>
+
+            <View style={styles.eqBody}>
+              {!isEqSupported ? (
+                /* Hardware Equalizer unavailable degradation banner */
+                <View
+                  style={[
+                    styles.eqUnavailableBanner,
+                    {
+                      backgroundColor: colors.surfaceVariant,
+                      borderRadius: borderRadius.sm,
+                    },
+                  ]}
+                >
+                  <Text style={styles.eqUnavailableIcon}>⚠️</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.eqUnavailableTitle,
+                        { color: colors.onSurface },
+                      ]}
+                    >
+                      EQ unavailable on this device
+                    </Text>
+                    <Text
+                      style={[
+                        styles.eqUnavailableBody,
+                        { color: colors.onSurfaceVariant },
+                      ]}
+                    >
+                      Hardware Android AudioFX Equalizer engine is not supported on this device/session. Standard audio playback is unaffected.
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                /* Equalizer Controls */
+                <View style={{ opacity: eqConfig.enabled ? 1 : 0.45 }}>
+                  {/* Presets Row */}
+                  <Text style={[styles.inputHeading, { color: colors.onSurface }]}>
+                    Presets
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.presetsRow}
+                  >
+                    {(['Flat', 'Bass Boost', 'Vocal', 'Treble', 'Custom'] as EqPresetName[]).map((preset) => {
+                      const isSelected = eqConfig.preset === preset;
+                      return (
+                        <TouchableOpacity
+                          key={preset}
+                          style={[
+                            styles.eqPresetChip,
+                            {
+                              backgroundColor: isSelected
+                                ? colors.primary
+                                : colors.surfaceVariant,
+                              borderRadius: borderRadius.full,
+                            },
+                          ]}
+                          disabled={!eqConfig.enabled}
+                          onPress={() => {
+                            if (selectedAddress) {
+                              setDevicePreset(selectedAddress, preset);
+                            }
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.eqPresetText,
+                              {
+                                color: isSelected
+                                  ? colors.onPrimary
+                                  : colors.onSurfaceVariant,
+                                fontWeight: isSelected ? '700' : '500',
+                              },
+                            ]}
+                          >
+                            {preset}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+
+                  {/* 5-Band Sliders / Steppers */}
+                  <Text
+                    style={[
+                      styles.inputHeading,
+                      { color: colors.onSurface, marginTop: 16 },
+                    ]}
+                  >
+                    Frequency Bands
+                  </Text>
+
+                  {bandFrequencies.map((freq, idx) => {
+                    const levelMB = eqConfig.bandLevels[idx] ?? 0;
+                    const levelDB = (levelMB / 100).toFixed(1);
+                    const formattedFreq =
+                      freq >= 1000 ? `${(freq / 1000).toFixed(1)} kHz` : `${freq} Hz`;
+
+                    return (
+                      <View key={idx} style={styles.eqBandRow}>
+                        <View style={styles.eqBandLabelCol}>
+                          <Text
+                            style={[
+                              styles.eqBandFreqText,
+                              { color: colors.onSurface },
+                            ]}
+                          >
+                            {formattedFreq}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.eqBandDbText,
+                              {
+                                color:
+                                  levelMB > 0
+                                    ? colors.primary
+                                    : levelMB < 0
+                                    ? colors.error
+                                    : colors.onSurfaceVariant,
+                              },
+                            ]}
+                          >
+                            {levelMB > 0 ? `+${levelDB}` : levelDB} dB
+                          </Text>
+                        </View>
+
+                        {/* Stepper buttons and visual level meter */}
+                        <View style={styles.eqBandControls}>
+                          <TouchableOpacity
+                            style={[
+                              styles.eqStepBtn,
+                              {
+                                backgroundColor: colors.surfaceVariant,
+                                borderRadius: borderRadius.sm,
+                              },
+                            ]}
+                            disabled={!eqConfig.enabled || levelMB <= -1500}
+                            onPress={() => {
+                              if (selectedAddress) {
+                                setDeviceBandLevel(
+                                  selectedAddress,
+                                  idx,
+                                  levelMB - 100
+                                );
+                              }
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.eqStepBtnText,
+                                { color: colors.onSurface },
+                              ]}
+                            >
+                              -
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* Visual level track */}
+                          <View
+                            style={[
+                              styles.eqLevelTrack,
+                              { backgroundColor: colors.surfaceVariant },
+                            ]}
+                          >
+                            {/* Center 0dB indicator */}
+                            <View
+                              style={[
+                                styles.eqZeroIndicator,
+                                { backgroundColor: colors.outlineVariant },
+                              ]}
+                            />
+                            {/* Active level fill */}
+                            <View
+                              style={[
+                                styles.eqLevelFill,
+                                {
+                                  backgroundColor:
+                                    levelMB >= 0 ? colors.primary : colors.error,
+                                  left: levelMB >= 0 ? '50%' : undefined,
+                                  right:
+                                    levelMB < 0
+                                      ? `${50 - (Math.abs(levelMB) / 3000) * 100}%`
+                                      : undefined,
+                                  width: `${(Math.abs(levelMB) / 3000) * 100}%`,
+                                },
+                              ]}
+                            />
+                          </View>
+
+                          <TouchableOpacity
+                            style={[
+                              styles.eqStepBtn,
+                              {
+                                backgroundColor: colors.surfaceVariant,
+                                borderRadius: borderRadius.sm,
+                              },
+                            ]}
+                            disabled={!eqConfig.enabled || levelMB >= 1500}
+                            onPress={() => {
+                              if (selectedAddress) {
+                                setDeviceBandLevel(
+                                  selectedAddress,
+                                  idx,
+                                  levelMB + 100
+                                );
+                              }
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.eqStepBtnText,
+                                { color: colors.onSurface },
+                              ]}
+                            >
+                              +
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          </View>
+
         </>
       )}
     </ScrollView>
@@ -1170,6 +1460,96 @@ const styles = StyleSheet.create({
   quickTestTimerText: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  eqBody: {
+    padding: 18,
+    paddingTop: 8,
+  },
+  eqUnavailableBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+  },
+  eqUnavailableIcon: {
+    fontSize: 24,
+  },
+  eqUnavailableTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  eqUnavailableBody: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  presetsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 6,
+  },
+  eqPresetChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  eqPresetText: {
+    fontSize: 12,
+  },
+  eqBandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 6,
+    justifyContent: 'space-between',
+  },
+  eqBandLabelCol: {
+    width: 75,
+  },
+  eqBandFreqText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  eqBandDbText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  eqBandControls: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 8,
+  },
+  eqStepBtn: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eqStepBtnText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  eqLevelTrack: {
+    flex: 1,
+    height: 12,
+    borderRadius: 6,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  eqZeroIndicator: {
+    position: 'absolute',
+    left: '50%',
+    top: 0,
+    bottom: 0,
+    width: 2,
+    marginLeft: -1,
+    zIndex: 1,
+  },
+  eqLevelFill: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    borderRadius: 6,
   },
   card: {
     padding: 24,

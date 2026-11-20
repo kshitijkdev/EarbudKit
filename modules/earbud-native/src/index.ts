@@ -31,6 +31,20 @@ export interface BleRssiEvent {
   rssi: number;
 }
 
+export interface EqualizerBand {
+  band: number;
+  centerFreqHz: number;
+  currentLevelMB: number;
+}
+
+export interface EqualizerParameters {
+  isSupported: boolean;
+  numberOfBands: number;
+  minLevelMB: number;
+  maxLevelMB: number;
+  bands: EqualizerBand[];
+}
+
 export type EarbudNativeEvents = {
   onDeviceConnectionChanged: (event: ConnectionChangeEvent) => void;
   onBluetoothStateChanged: (event: BluetoothStateEvent) => void;
@@ -509,3 +523,52 @@ export function addRssiListener(
     },
   };
 }
+
+/**
+ * Stage 9: Check if device hardware audiofx Equalizer is available.
+ */
+export function isEqualizerAvailable(): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.isEqualizerAvailable() ?? false;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Stage 9: Get hardware Equalizer parameters (bands, min/max level, center frequencies).
+ */
+export function getEqualizerParameters(): EqualizerParameters | null {
+  if (Platform.OS !== 'android') return null;
+  try {
+    return NativeModule?.getEqualizerParameters() ?? null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Stage 9: Set specific band gain level in millibels.
+ */
+export function setEqualizerBandLevel(band: number, levelMB: number): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.setEqualizerBandLevel(band, levelMB) ?? false;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Stage 9: Enable or disable equalizer engine.
+ */
+export function setEqualizerEnabled(enabled: boolean): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.setEqualizerEnabled(enabled) ?? false;
+  } catch (e) {
+    return false;
+  }
+}
+

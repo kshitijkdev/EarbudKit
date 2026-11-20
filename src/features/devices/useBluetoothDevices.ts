@@ -14,7 +14,7 @@ import {
   getDeviceBatteryLevel,
   openBluetoothSettings,
 } from '../../../modules/earbud-native';
-import { useDeviceStore, useAutoStore } from '../../store';
+import { useDeviceStore, useAutoStore, useEqualizerStore } from '../../store';
 import { captureCurrentLocation } from '../../services/location';
 
 export function useBluetoothDevices() {
@@ -101,6 +101,7 @@ export function useBluetoothDevices() {
       // Trigger per-device auto-action profile
       if (event.connected) {
         useAutoStore.getState().executeConnectProfile(event.address);
+        useEqualizerStore.getState().applyToHardware(event.address);
         // If connected, query battery immediately
         getDeviceBatteryLevel(event.address).then((lvl) => {
           if (lvl !== null) {

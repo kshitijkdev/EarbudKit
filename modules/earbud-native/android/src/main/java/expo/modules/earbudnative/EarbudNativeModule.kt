@@ -22,6 +22,7 @@ import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.audiofx.Equalizer
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
@@ -76,6 +77,10 @@ class EarbudNativeModule : Module() {
     // BLE RSSI Scanning
     private var isScanningRssi = false
     private var targetScanAddress: String? = null
+
+    // Equalizer instance (audio session 0 = global mix)
+    private var nativeEqualizer: Equalizer? = null
+    private var isEqSupported: Boolean? = null
 
     private val bleScanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
@@ -238,6 +243,7 @@ class EarbudNativeModule : Module() {
             if (instance === this@EarbudNativeModule) {
                 instance = null
             }
+            releaseEqualizer()
             stopBleRssiScan()
             unregisterBluetoothReceiver()
             closeProfileProxies()
@@ -300,6 +306,81 @@ class EarbudNativeModule : Module() {
                 true
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to open bluetooth settings", e)
+                false
+            }
+        }
+
+        /**
+         * Stage 9: Check if Equalizer is supported by the device's AudioFX engine
+         */
+        Function("isEqualizerAvailable") {
+            checkEqualizerSupport()
+        }
+
+        /**
+         * Stage 9: Get Equalizer parameters (bands, min/max level, center frequencies)
+         */
+        Function("getEqualizerParameters") {
+            try {
+                val eq = getOrCreateEqualizer() ?: return@Function null
+                val numBands = eq.numberOfBands.toInt()
+                val minLevel = eq.bandLevelRange[0].toInt() // typically -1500 mB
+                val maxLevel = eq.bandLevelRange[1].toInt() // typically +1500 mB
+
+                val bandsList = mutableListOf<Map<String, Any>>()
+                for (b in 0 until numBands) {
+                    val bandShort = b.toShort()
+                    val centerFreqHz = eq.getCenterFreq(bandShort) / 1000 // Convert mHz to Hz
+                    val currentLevelMB = eq.getBandLevel(bandShort).toInt()
+
+                    bandsList.add(mapOf(
+                        "band" to b,
+                        "centerFreqHz" to centerFreqHz,
+                        "currentLevelMB" to currentLevelMB
+                    ))
+                }
+
+                mapOf(
+                    "isSupported" to true,
+                    "numberOfBands" to numBands,
+                    "minLevelMB" to minLevel,
+                    "maxLevelMB" to maxLevel,
+                    "bands" to bandsList
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to get equalizer parameters: ${e.message}")
+                null
+            }
+        }
+
+        /**
+         * Stage 9: Set individual Equalizer band level in millibels
+         */
+        Function("setEqualizerBandLevel") { band: Int, levelMB: Int ->
+            try {
+                val eq = getOrCreateEqualizer() ?: return@Function false
+                val range = eq.bandLevelRange
+                val clamped = levelMB.coerceIn(range[0].toInt(), range[1].toInt()).toShort()
+                eq.setBandLevel(band.toShort(), clamped)
+                Log.d(TAG, "Set EQ band $band to $clamped mB")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set EQ band level", e)
+                false
+            }
+        }
+
+        /**
+         * Stage 9: Enable or disable the Equalizer
+         */
+        Function("setEqualizerEnabled") { enabled: Boolean ->
+            try {
+                val eq = getOrCreateEqualizer() ?: return@Function false
+                eq.enabled = enabled
+                Log.d(TAG, "Set Equalizer enabled: $enabled")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set equalizer enabled", e)
                 false
             }
         }
@@ -503,6 +584,45 @@ class EarbudNativeModule : Module() {
             }
 
             result
+        }
+    }
+
+    private fun checkEqualizerSupport(): Boolean {
+        if (isEqSupported != null) return isEqSupported!!
+        return try {
+            val testEq = Equalizer(0, 0)
+            val bands = testEq.numberOfBands
+            testEq.release()
+            val supported = bands > 0
+            isEqSupported = supported
+            supported
+        } catch (e: Exception) {
+            Log.w(TAG, "Equalizer not supported on this device/hardware: ${e.message}")
+            isEqSupported = false
+            false
+        }
+    }
+
+    private fun getOrCreateEqualizer(): Equalizer? {
+        if (nativeEqualizer != null) return nativeEqualizer
+        return try {
+            val eq = Equalizer(0, 0)
+            nativeEqualizer = eq
+            isEqSupported = true
+            eq
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to initialize Equalizer: ${e.message}")
+            isEqSupported = false
+            null
+        }
+    }
+
+    private fun releaseEqualizer() {
+        try {
+            nativeEqualizer?.release()
+            nativeEqualizer = null
+        } catch (e: Exception) {
+            Log.w(TAG, "Error releasing Equalizer: ${e.message}")
         }
     }
 
