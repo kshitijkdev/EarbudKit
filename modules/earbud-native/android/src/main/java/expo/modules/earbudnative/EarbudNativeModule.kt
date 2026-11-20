@@ -21,6 +21,11 @@ import expo.modules.kotlin.modules.ModuleDefinition
 private const val TAG = "EarbudNative"
 
 class EarbudNativeModule : Module() {
+    companion object {
+        var instance: EarbudNativeModule? = null
+            private set
+    }
+
     private val context: Context
         get() = appContext.reactContext ?: throw IllegalStateException("React context is unavailable")
 
@@ -67,38 +72,52 @@ class EarbudNativeModule : Module() {
 
                     device?.let { dev ->
                         val isConnected = (action == BluetoothDevice.ACTION_ACL_CONNECTED)
-                        val address = dev.address ?: ""
-                        val name = try {
-                            if (hasConnectPermission()) dev.name ?: "Unknown" else "Unknown"
-                        } catch (e: SecurityException) {
-                            "Unknown"
-                        }
-
-                        Log.d(TAG, "ACL Event: $address ($name) connected=$isConnected")
-
-                        sendEvent("onDeviceConnectionChanged", mapOf(
-                            "address" to address,
-                            "name" to name,
-                            "connected" to isConnected
-                        ))
+                        handleDeviceConnectionEvent(dev, isConnected)
                     }
                 }
 
                 BluetoothAdapter.ACTION_STATE_CHANGED -> {
                     val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
                     val isEnabled = (state == BluetoothAdapter.STATE_ON)
-                    Log.d(TAG, "Bluetooth state changed: enabled=$isEnabled")
-
-                    sendEvent("onBluetoothStateChanged", mapOf(
-                        "enabled" to isEnabled
-                    ))
+                    handleBluetoothStateEvent(isEnabled)
                 }
 
                 BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
-                    // Refresh devices when pairing changes
                     sendEvent("onBondStateChanged", mapOf<String, Any>())
                 }
             }
+        }
+    }
+
+    fun handleDeviceConnectionEvent(device: BluetoothDevice, isConnected: Boolean) {
+        val address = device.address ?: ""
+        val name = try {
+            if (hasConnectPermission()) device.name ?: "Unknown" else "Unknown"
+        } catch (e: SecurityException) {
+            "Unknown"
+        }
+
+        Log.d(TAG, "Device connection event: $address ($name) connected=$isConnected")
+
+        try {
+            sendEvent("onDeviceConnectionChanged", mapOf(
+                "address" to address,
+                "name" to name,
+                "connected" to isConnected
+            ))
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not send event to JS (app may be backgrounded/suspended): ${e.message}")
+        }
+    }
+
+    fun handleBluetoothStateEvent(isEnabled: Boolean) {
+        Log.d(TAG, "Bluetooth state changed: enabled=$isEnabled")
+        try {
+            sendEvent("onBluetoothStateChanged", mapOf(
+                "enabled" to isEnabled
+            ))
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not send bluetooth state event to JS: ${e.message}")
         }
     }
 
@@ -112,11 +131,15 @@ class EarbudNativeModule : Module() {
         )
 
         OnCreate {
+            instance = this@EarbudNativeModule
             initProfileProxies()
             registerBluetoothReceiver()
         }
 
         OnDestroy {
+            if (instance === this@EarbudNativeModule) {
+                instance = null
+            }
             unregisterBluetoothReceiver()
             closeProfileProxies()
         }
@@ -126,7 +149,7 @@ class EarbudNativeModule : Module() {
         }
 
         OnStopObserving {
-            // Keep active for background handling, will be unhooked OnDestroy
+            // Keep listening in background
         }
 
         Function("hasBluetoothPermission") {
@@ -135,6 +158,30 @@ class EarbudNativeModule : Module() {
 
         Function("isBluetoothEnabled") {
             bluetoothAdapter?.isEnabled ?: false
+        }
+
+        Function("isWatcherServiceRunning") {
+            EarbudForegroundService.isServiceRunning
+        }
+
+        AsyncFunction("startWatcherService") {
+            try {
+                EarbudForegroundService.start(context)
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to start foreground service", e)
+                false
+            }
+        }
+
+        AsyncFunction("stopWatcherService") {
+            try {
+                EarbudForegroundService.stop(context)
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to stop foreground service", e)
+                false
+            }
         }
 
         Function("openBluetoothSettings") {
@@ -220,7 +267,6 @@ class EarbudNativeModule : Module() {
             return true
         }
 
-        // Check specific audio device types
         return when (btClass.deviceClass) {
             BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES,
             BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET,
@@ -308,7 +354,7 @@ class EarbudNativeModule : Module() {
                 ContextCompat.RECEIVER_EXPORTED
             )
             isReceiverRegistered = true
-            Log.d(TAG, "Bluetooth receiver registered")
+            Log.d(TAG, "Bluetooth receiver registered in module")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to register Bluetooth receiver", e)
         }
@@ -319,7 +365,7 @@ class EarbudNativeModule : Module() {
         try {
             context.unregisterReceiver(bluetoothReceiver)
             isReceiverRegistered = false
-            Log.d(TAG, "Bluetooth receiver unregistered")
+            Log.d(TAG, "Bluetooth receiver unregistered from module")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to unregister Bluetooth receiver", e)
         }

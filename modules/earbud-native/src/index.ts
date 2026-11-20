@@ -90,11 +90,75 @@ export async function requestBluetoothPermissions(): Promise<boolean> {
 
       return connectGranted;
     } else {
-      // Android < 12 does not require runtime BLUETOOTH permission
       return true;
     }
   } catch (err) {
     console.warn('[EarbudNative] Error requesting bluetooth permissions:', err);
+    return false;
+  }
+}
+
+/**
+ * Request notification permission (required on Android 13+ / API 33+ for foreground service).
+ */
+export async function requestNotificationPermission(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    if (Platform.Version >= 33) {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    }
+    return true;
+  } catch (e) {
+    console.warn('[EarbudNative] Error requesting notification permission:', e);
+    return false;
+  }
+}
+
+/**
+ * Check if the background device watcher foreground service is currently running.
+ */
+export function isDeviceWatcherServiceRunning(): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.isWatcherServiceRunning() ?? false;
+  } catch (e) {
+    console.warn('[EarbudNative] Error checking service running:', e);
+    return false;
+  }
+}
+
+/**
+ * Starts the foreground service (type: connectedDevice) with a persistent notification
+ * ("EarbudKit is watching your devices") so events arrive in background with screen off.
+ */
+export async function startDeviceWatcherService(): Promise<boolean> {
+  if (Platform.OS !== 'android') {
+    console.log('[EarbudNative] Foreground service not supported on iOS');
+    return false;
+  }
+
+  try {
+    // Ensure notification permission on Android 13+
+    await requestNotificationPermission();
+    return (await NativeModule?.startWatcherService()) ?? false;
+  } catch (e) {
+    console.error('[EarbudNative] Failed to start device watcher service:', e);
+    return false;
+  }
+}
+
+/**
+ * Stops the background device watcher foreground service.
+ */
+export async function stopDeviceWatcherService(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return (await NativeModule?.stopWatcherService()) ?? false;
+  } catch (e) {
+    console.error('[EarbudNative] Failed to stop device watcher service:', e);
     return false;
   }
 }
