@@ -12,6 +12,7 @@ import {
   addBondStateListener,
   openBluetoothSettings,
 } from '../../../modules/earbud-native';
+import { useDeviceStore } from '../../store';
 
 export function useBluetoothDevices() {
   const [bondedDevices, setBondedDevices] = useState<BondedDevice[]>([]);
@@ -19,6 +20,9 @@ export function useBluetoothDevices() {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [bluetoothEnabled, setBluetoothEnabled] = useState(false);
   const [lastEvent, setLastEvent] = useState<ConnectionChangeEvent | null>(null);
+
+  const syncWithBondedDevices = useDeviceStore((s) => s.syncWithBondedDevices);
+  const setConnectionState = useDeviceStore((s) => s.setConnectionState);
 
   const checkAndRefresh = useCallback(async () => {
     if (Platform.OS !== 'android') {
@@ -41,12 +45,13 @@ export function useBluetoothDevices() {
       const devices = await getBondedAudioDevices();
       console.log(`[EarbudKit] Fetched ${devices.length} bonded audio device(s):`, devices);
       setBondedDevices(devices);
+      syncWithBondedDevices(devices);
     } catch (err) {
       console.error('[EarbudKit] Error fetching bonded audio devices:', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [syncWithBondedDevices]);
 
   const requestPermission = useCallback(async () => {
     const granted = await requestBluetoothPermissions();
@@ -66,7 +71,7 @@ export function useBluetoothDevices() {
       console.log(`[EarbudKit LIVE EVENT] ${event.name} (${event.address}) is now ${event.connected ? 'CONNECTED' : 'DISCONNECTED'}`);
       setLastEvent(event);
 
-      // Update connection state in list
+      // Update native bonded list
       setBondedDevices((prev) =>
         prev.map((dev) =>
           dev.address.toLowerCase() === event.address.toLowerCase()
@@ -74,6 +79,9 @@ export function useBluetoothDevices() {
             : dev
         )
       );
+
+      // Update Zustand persisted store
+      setConnectionState(event.address, event.connected);
     });
 
     // Listen for Bluetooth state changes (on/off)
@@ -96,7 +104,7 @@ export function useBluetoothDevices() {
       btStateSub.remove();
       bondSub.remove();
     };
-  }, [checkAndRefresh]);
+  }, [checkAndRefresh, setConnectionState]);
 
   return {
     bondedDevices,

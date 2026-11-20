@@ -1,1 +1,1 @@
-export type { TrackedDevice } from './deviceStore';
+export * from './deviceStore';
