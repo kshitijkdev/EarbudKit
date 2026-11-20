@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-bright": "#39383e", "secondary": "#ffade3", "on-background": "#e4e1e9", "on-tertiary": "#263500", "on-secondary-fixed-variant": "#860070", "on-surface-variant": "#c9c4d8", "surface": "#131318", "on-secondary-container": "#ffe0f0", "on-error": "#690005", "tertiary-fixed-dim": "#a2d801", "outline": "#938ea1", "inverse-primary": "#603ce2", "on-tertiary-fixed": "#141f00", "background": "#131318", "error": "#ffb4ab", "on-tertiary-fixed-variant": "#384e00", "surface-variant": "#35343a", "on-error-container": "#ffdad6", "tertiary-fixed": "#bdf532", "secondary-fixed": "#ffd8ee", "inverse-surface": "#e4e1e9", "surface-container-high": "#2a292f", "error-container": "#93000a", "outline-variant": "#484555", "on-primary": "#31009a", "primary-container": "#947dff", "surface-dim": "#131318", "tertiary": "#a2d801", "surface-container-low": "#1b1b20", "surface-tint": "#cabeff", "on-secondary": "#5f004f", "primary": "#cabeff", "primary-fixed-dim": "#cabeff", "on-primary-container": "#2a0088", "primary-fixed": "#e6deff", "on-tertiary-container": "#202e00", "inverse-on-surface": "#303036", "surface-container-highest": "#35343a", "secondary-container": "#c000a2", "surface-container-lowest": "#0e0e13", "on-primary-fixed-variant": "#4816cb", "tertiary-container": "#759e00", "on-primary-fixed": "#1c0062", "on-surface": "#e4e1e9", "secondary-fixed-dim": "#ffade3", "on-secondary-fixed": "#3a0030", "surface-container": "#1f1f24" }, borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, spacing: { "gutter": "1rem", "space-xs": "0.25rem", "space-lg": "1.5rem", "margin": "1rem", "margin-tablet": "2rem", "space-xl": "2rem", "space-sm": "0.5rem", "space-md": "1rem", "margin-desktop": "3rem", "gutter-desktop": "1.5rem" }, fontFamily: { "display-hero": ["Space Grotesk"], "display-hero-mobile": ["Space Grotesk"], "headline-sm": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "label-lg": ["Space Grotesk"], "title-md": ["Space Grotesk"], "body-lg": ["Inter"], "body-md": ["Inter"], "label-md": ["Space Grotesk"], "body-sm": ["Inter"], "label-sm": ["Space Grotesk"], "headline-lg": ["Space Grotesk"] }, fontSize: { "display-hero": ["56px", { lineHeight: "64px", letterSpacing: "-0.03em", fontWeight: "700" }], "display-hero-mobile": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }], "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }], "label-lg": ["14px", { lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "600" }], "title-md": ["18px", { lineHeight: "24px", fontWeight: "600" }], "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }], "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }], "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.04em", fontWeight: "600" }], "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }], "label-sm": ["10px", { lineHeight: "14px", letterSpacing: "0.08em", fontWeight: "700" }], "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#131318;}body{overscroll-behavior-y:none;font-family:'Inter',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface min-h-screen relative flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><div class="fixed inset-0 pointer-events-none z-0 overflow-hidden"><div class="absolute -top-32 -left-32 w-96 h-96 bg-primary-container/15 rounded-full blur-[100px]"></div><div class="absolute top-1/3 -right-36 w-80 h-80 bg-secondary-container/15 rounded-full blur-[90px]"></div><div class="absolute -bottom-24 left-1/4 w-88 h-88 bg-tertiary-container/10 rounded-full blur-[110px]"></div></div><header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]"><div class="h-16 px-margin flex items-center justify-between relative"><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high/90"><span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span><span class="font-label-sm text-label-sm uppercase tracking-wider text-tertiary-fixed">Watcher Active</span></div></div><div class="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight block">Home</span></div><div class="flex items-center gap-space-xs"><div class="flex items-center gap-1 text-on-surface-variant pr-1"><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[16px]">battery_charging_full</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative z-10 w-full min-h-screen px-margin pt-16 pb-28 bg-surface"><div class="flex flex-col w-full pb-8 space-y-5">
+<!-- Greeting Row with Watcher Status -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">Hey Kk</h1>
+<span class="text-lg">👋</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1.5">
+<span>Audio environment active</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+</p>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high/90 shadow-[0_0_14px_rgba(162,216,1,0.2)]">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-tertiary-fixed">Watcher: ON</span>
+</div>
+</div>
+<!-- Connected Device Hero Card (Level 2 Bento) -->
+<div class="relative w-full rounded-xl bg-surface-container-low/95 backdrop-blur-2xl p-5 shadow-[0_12px_36px_rgba(0,0,0,0.55)] overflow-hidden">
+<!-- Ambient Reactive Glow Orbs behind artwork -->
+<div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-primary-container/20 blur-3xl pointer-events-none"></div>
+<div class="absolute -left-10 bottom-0 w-36 h-36 rounded-full bg-secondary-container/20 blur-3xl pointer-events-none"></div>
+<!-- Header Specs & Tags -->
+<div class="relative z-10 flex items-start justify-between">
+<div class="flex flex-col">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-highest/80 self-start mb-1.5">
+<span class="font-label-sm text-label-sm text-secondary-fixed">Daily Driver 🎧</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface font-display-hero tracking-tight">Sony WH-1000XM5</h2>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Active Noise Cancelling • Spatial Sync</span>
+</div>
+<div class="flex flex-col items-end gap-1.5 shrink-0">
+<span class="px-2.5 py-1 rounded-full bg-tertiary text-on-tertiary font-label-sm text-label-sm uppercase tracking-wider font-bold shadow-[0_0_12px_rgba(162,216,1,0.35)]">
+          Connected
+        </span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-primary font-label-sm text-label-sm tracking-wide">
+          LDAC • 990kbps
+        </span>
+</div>
+</div>
+<!-- Visualizer & Device Silhouette Showcase -->
+<div class="relative z-10 my-4 flex items-center justify-center py-2">
+<!-- Gradient Halo Ring around Headset -->
+<div class="relative w-52 h-52 rounded-full flex items-center justify-center p-1 bg-gradient-to-tr from-primary-container via-secondary to-tertiary/40 shadow-[0_0_32px_rgba(148,125,255,0.25)]">
+<div class="w-full h-full rounded-full bg-surface-container-lowest/90 backdrop-blur-xl flex items-center justify-center relative overflow-hidden">
+<!-- Animated Radial Frequency Grid Overlay -->
+<svg class="absolute inset-0 w-full h-full opacity-30 animate-[spin_24s_linear_infinite]" viewbox="0 0 100 100">
+<circle class="text-primary" cx="50" cy="50" fill="none" r="42" stroke="currentColor" stroke-dasharray="3 4"></circle>
+<circle class="text-secondary" cx="50" cy="50" fill="none" r="30" stroke="currentColor" stroke-dasharray="2 6"></circle>
+</svg>
+<!-- Headset Hero Visual Placeholder with Atmospheric Context -->
+<img class="w-36 h-36 object-contain z-10 drop-shadow-[0_16px_20px_rgba(0,0,0,0.85)] select-none" data-alt="Matte obsidian black sleek over-ear wireless headphones centered in front of a glowing circular neon tube reflecting purple and electric violet studio lights, high-tech hyper-detailed 3D render, dark mood, sleek Nothing OS aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBc1QGCP29Mo7HkuVjLFGN-qAW03x5ftXq8rdskUgpS0TNeHLisnAetVR7OVgdtMBim1Ldl_NlCmNYc_Rkb2IRV1en5O7-mVmwNdfnhmYVZv4evl-f-RuowaIfHk785ykv7orcuQFggrNwpnrjZ9VqdHdsnIys5twm1g87JtbrBfjQbg5X11bflA3gbm4g6-dvqe1tai_o4oQk2MpC2mXAjgEzQlYm5k-0AocfkWA"/>
+</div>
+</div>
+</div>
+<!-- Telemetry & Battery Ring Matrix -->
+<div class="relative z-10 grid grid-cols-2 gap-3 pt-2">
+<!-- Primary Battery Cluster (Chunky Metric) -->
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-high/80">
+<div class="relative w-12 h-12 flex items-center justify-center shrink-0">
+<svg class="w-12 h-12 -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-tertiary stroke-current transition-all duration-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-dasharray="84, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<span class="material-symbols-outlined text-[15px] absolute text-tertiary" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-baseline gap-1">
+<span class="font-headline-md text-headline-md font-display-hero text-on-surface leading-none">84</span>
+<span class="font-label-sm text-label-sm text-tertiary font-bold">%</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Playing • 28h left</span>
+</div>
+</div>
+<!-- Secondary Telemetry / Case & Protocol -->
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-container-high/80">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-[22px]">graphic_eq</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-none font-display-hero">48kHz</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Ultra Latency Off</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Tracked Devices Section Header -->
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<h3 class="font-title-md text-title-md text-on-surface">Registered Fleet</h3>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">3</span>
+</div>
+<button class="font-label-md text-label-md text-primary hover:text-primary-fixed transition-colors flex items-center gap-0.5">
+<span>Manage</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+<!-- Tracked Devices Quick Horizontal Scroll Carousel -->
+<div class="flex gap-3 overflow-x-auto pb-1 -mx-margin px-margin no-scrollbar snap-x snap-mandatory">
+<!-- Card 1: Active In-Case (realme Studio H1) -->
+<div class="snap-start shrink-0 w-[240px] rounded-lg bg-surface-container p-4 flex flex-col justify-between shadow-md relative overflow-hidden group">
+<div class="flex items-start justify-between">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[20px]">earbuds</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary-fixed font-label-sm text-label-sm">
+          In Case
+        </span>
+</div>
+<div class="my-3">
+<h4 class="font-headline-sm text-headline-sm text-on-surface truncate">realme Studio H1</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Case Lid Closed</p>
+</div>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 rounded-full bg-secondary-container/40 flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">95%</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Standby</span>
+</div>
+</div>
+<!-- Card 2: Greyed Out Offline State (Noise Buds Vector) -->
+<div class="snap-start shrink-0 w-[240px] rounded-lg bg-surface-container/60 p-4 flex flex-col justify-between opacity-80 shadow-sm relative overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="w-10 h-10 rounded-full bg-surface-container-high/60 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-[20px]">headphones</span>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-outline font-label-sm text-label-sm">
+          Offline
+        </span>
+</div>
+<div class="my-3">
+<h4 class="font-headline-sm text-headline-sm text-on-surface/80 truncate">Noise Buds Vector</h4>
+<p class="font-body-sm text-body-sm text-outline mt-0.5">Last seen 2h ago • Desk</p>
+</div>
+<div class="flex items-center justify-between pt-2">
+<!-- Friendly Empty / Unknown Ring Badge (Not Red Alert) -->
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 rounded-full bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[13px] text-outline">help</span>
+</div>
+<span class="font-label-md text-label-md text-outline">Unavailable</span>
+</div>
+<button class="font-label-sm text-label-sm text-primary-fixed underline hover:text-primary transition-colors">Ping</button>
+</div>
+</div>
+<!-- Card 3: Mini Action Card - Pair New -->
+<button class="snap-start shrink-0 w-[140px] rounded-lg bg-surface-container-low p-4 flex flex-col items-center justify-center gap-2 text-center group hover:bg-surface-container transition-all">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest group-hover:bg-primary-container/20 group-hover:text-primary transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">add</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface">Add Kit</span>
+</button>
+</div>
+<!-- Bento Grid Technical Telemetry Tiles (Mixed-Size) -->
+<div class="grid grid-cols-2 gap-3 pt-1">
+<!-- Tile 1 (Wide): Listening Time & Real-time Waveform Bars -->
+<div class="col-span-2 rounded-lg bg-surface-container p-4 relative overflow-hidden shadow-md">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">timelapse</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Daily Session Load</span>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary-fixed bg-tertiary-container/30 px-2 py-0.5 rounded-full font-bold">Optimal Range</span>
+</div>
+<div class="flex items-end justify-between mt-2">
+<div>
+<span class="font-display-hero-mobile text-display-hero-mobile font-display-hero text-on-surface tracking-tight leading-none">3h 42m</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1.5">Avg Volume 68 dB • Safe Hearing</p>
+</div>
+<!-- Mini Audio Visualizer Waveform Graphic -->
+<div aria-label="Audio Visualizer" class="flex items-end gap-1.5 h-10 pb-1">
+<div class="w-1.5 rounded-full bg-tertiary animate-[pulse_1.2s_ease-in-out_infinite] h-4"></div>
+<div class="w-1.5 rounded-full bg-primary animate-[pulse_0.9s_ease-in-out_infinite_0.1s] h-7"></div>
+<div class="w-1.5 rounded-full bg-secondary animate-[pulse_1.5s_ease-in-out_infinite_0.2s] h-9 shadow-[0_0_8px_rgba(255,173,227,0.5)]"></div>
+<div class="w-1.5 rounded-full bg-primary animate-[pulse_0.7s_ease-in-out_infinite_0.15s] h-6"></div>
+<div class="w-1.5 rounded-full bg-tertiary animate-[pulse_1.1s_ease-in-out_infinite_0.3s] h-8 shadow-[0_0_8px_rgba(162,216,1,0.5)]"></div>
+<div class="w-1.5 rounded-full bg-primary-container animate-[pulse_1.4s_ease-in-out_infinite_0.05s] h-5"></div>
+<div class="w-1.5 rounded-full bg-secondary animate-[pulse_0.8s_ease-in-out_infinite_0.25s] h-3"></div>
+</div>
+</div>
+</div>
+<!-- Tile 2: Bluetooth Diagnostics & Quick Stack -->
+<div class="rounded-lg bg-surface-container p-4 flex flex-col justify-between shadow-sm relative group">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-primary text-[20px]">bluetooth</span>
+<button class="w-8 h-5 rounded-full bg-tertiary p-0.5 transition-colors flex items-center justify-end" id="toggle-bt">
+<span class="w-4 h-4 rounded-full bg-surface-container-lowest shadow-sm"></span>
+</button>
+</div>
+<div class="mt-4">
+<span class="font-headline-sm text-headline-sm font-display-hero text-on-surface block leading-tight">BT 5.3 Ready</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-snug">
+          LDAC / SBC / AAC
+        </p>
+</div>
+</div>
+<!-- Tile 3: Tracked Telemetry Pulse Tile -->
+<div class="rounded-lg bg-surface-container p-4 flex flex-col justify-between shadow-sm relative">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-secondary text-[20px]">hub</span>
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-tertiary">Live</span>
+</div>
+</div>
+<div class="mt-4">
+<div class="flex items-baseline gap-1">
+<span class="font-display-hero-mobile text-display-hero-mobile font-display-hero text-on-surface leading-tight">3</span>
+<span class="font-label-md text-label-md text-on-surface-variant">kits</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 truncate">
+          1 Active • 2 Sleep
+        </p>
+</div>
+</div>
+</div>
+<!-- Quick Action Glass Pills (Horizontal Interaction Row) -->
+<div class="flex flex-col space-y-2 pt-1">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline px-1 font-bold">Rapid Commands</span>
+<div class="flex gap-2.5 overflow-x-auto pb-2 -mx-margin px-margin no-scrollbar">
+<!-- Action 1: Sleep Timer -->
+<button class="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-high/90 hover:bg-surface-bright active:scale-95 transition-all shadow-sm">
+<span class="text-sm">🌙</span>
+<span class="font-label-md text-label-md text-on-surface">Sleep Timer (30m)</span>
+</button>
+<!-- Action 2: Find Device -->
+<button class="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-high/90 hover:bg-surface-bright active:scale-95 transition-all shadow-sm">
+<span class="text-sm">📍</span>
+<span class="font-label-md text-label-md text-on-surface">Find Device</span>
+</button>
+<!-- Action 3: Equalizer -->
+<button class="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-high/90 hover:bg-surface-bright active:scale-95 transition-all shadow-sm">
+<span class="text-sm">🎛️</span>
+<span class="font-label-md text-label-md text-on-surface">Equalizer</span>
+</button>
+<!-- Action 4: Quick Boost -->
+<button class="shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary/20 hover:bg-primary/30 active:scale-95 transition-all shadow-[0_0_12px_rgba(202,190,255,0.2)]">
+<span class="text-sm">⚡</span>
+<span class="font-label-md text-label-md text-primary-fixed">Quick Boost</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  // Simple micro-interaction for Bluetooth quick switch demo
+  const btToggle = document.getElementById('toggle-bt');
+  if (btToggle) {
+    let active = true;
+    btToggle.addEventListener('click', () => {
+      active = !active;
+      if (active) {
+        btToggle.className = 'w-8 h-5 rounded-full bg-tertiary p-0.5 transition-colors flex items-center justify-end';
+      } else {
+        btToggle.className = 'w-8 h-5 rounded-full bg-surface-variant p-0.5 transition-colors flex items-center justify-start';
+      }
+    });
+  }
+</script></main><div class="fixed bottom-0 w-full z-50 pb-safe pointer-events-none flex justify-center"><nav class="pointer-events-auto mb-space-md mx-margin w-full max-w-[396px] h-16 rounded-full bg-surface-container-lowest/85 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.6)] px-space-xs flex items-center justify-between" data-active-classes="text-primary-fixed bg-surface-container-high shadow-[0_0_16px_rgba(148,125,255,0.35)]"><a aria-current="page" class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-primary-fixed bg-surface-container-high shadow-[0_0_16px_rgba(148,125,255,0.35)]" data-path="home" href="#"><span class="material-symbols-outlined text-[20px]">headphones</span><span class="font-label-sm text-label-sm mt-0.5">Home</span></a><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="devices" href="#"><span class="material-symbols-outlined text-[20px]">devices</span><span class="font-label-sm text-label-sm mt-0.5">Devices</span></a><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="auto" href="#"><span class="material-symbols-outlined text-[20px]">bolt</span><span class="font-label-sm text-label-sm mt-0.5">Auto</span></a><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="tools" href="#"><span class="material-symbols-outlined text-[20px]">equalizer</span><span class="font-label-sm text-label-sm mt-0.5">Tools</span></a><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-label-sm text-label-sm mt-0.5">Settings</span></a></nav></div></body></html>

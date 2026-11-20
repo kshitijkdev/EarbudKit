@@ -20,10 +20,14 @@ import {
   deduceDeviceIcon,
 } from '../../src/store';
 import { BondedDevice } from '../../modules/earbud-native';
+import { FeedbackToast } from '../../src/components/FeedbackToast';
 
 export default function DevicesScreen() {
   const { theme } = useTheme();
   const { colors, borderRadius, typography } = theme;
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => setToastMessage(msg);
 
   const {
     bondedDevices,
@@ -73,6 +77,7 @@ export default function DevicesScreen() {
     updateNickname(editingDevice.address, editNickname);
     updateIcon(editingDevice.address, editIcon);
     setLowBatteryThreshold(editingDevice.address, editThreshold);
+    showToast(`✓ Saved settings for ${editNickname || editingDevice.nickname}`);
     setEditingDevice(null);
   };
 
@@ -115,6 +120,7 @@ export default function DevicesScreen() {
         icon: 'earbuds',
         isConnected: false,
       });
+      showToast('✓ Added Noise Buds Vector');
     } else {
       addTrackedDevice({
         name: 'realme TechLife Studio H1',
@@ -123,6 +129,7 @@ export default function DevicesScreen() {
         icon: 'headphones',
         isConnected: false,
       });
+      showToast('✓ Added realme Studio H1');
     }
   };
 
@@ -145,6 +152,7 @@ export default function DevicesScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
     >
+      <FeedbackToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       {/* Live Event Banner */}
       {lastEvent && (
         <View
@@ -191,6 +199,7 @@ export default function DevicesScreen() {
           <TouchableOpacity
             style={[styles.actionBtn, { backgroundColor: colors.primary, borderRadius: borderRadius.sm }]}
             onPress={requestPermission}
+            activeOpacity={0.7}
           >
             <Text style={[styles.actionBtnText, { color: colors.onPrimary }]}>
               Grant Permission
@@ -263,15 +272,20 @@ export default function DevicesScreen() {
         trackedDevices.map((dev) => {
           const isActive = dev.address === activeDeviceAddress;
           return (
-            <View
+            <TouchableOpacity
               key={dev.address}
+              activeOpacity={0.8}
+              onPress={() => {
+                setActiveDevice(dev.address);
+                showToast(`✓ ${dev.nickname} set as Active Target`);
+              }}
               style={[
                 styles.deviceCard,
                 {
                   backgroundColor: colors.surfaceContainer,
                   borderRadius: borderRadius.lg,
                   borderColor: isActive ? colors.primary : colors.outlineVariant,
-                  borderWidth: isActive ? 2 : 1,
+                  borderWidth: isActive ? 2.5 : 1,
                 },
               ]}
             >
@@ -352,7 +366,7 @@ export default function DevicesScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })
       )}

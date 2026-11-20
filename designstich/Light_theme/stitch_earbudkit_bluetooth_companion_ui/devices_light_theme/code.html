@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><title>EarbudKit</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#fcf8ff;}body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-primary-container": "#fffbff", "on-tertiary-container": "#f5fff6", "primary-fixed": "#e6deff", "primary": "#5e39e0", "on-primary-fixed-variant": "#4816cb", "on-background": "#1b1b24", "tertiary-fixed-dim": "#4edea3", "on-surface": "#1b1b24", "inverse-primary": "#cabeff", "primary-fixed-dim": "#cabeff", "surface-container": "#efecfa", "on-tertiary-fixed-variant": "#005236", "tertiary": "#006947", "on-error-container": "#93000a", "inverse-on-surface": "#f2effd", "primary-container": "#7757fa", "secondary-container": "#fe4ed7", "surface-container-lowest": "#ffffff", "error-container": "#ffdad6", "on-tertiary-fixed": "#002113", "on-error": "#ffffff", "on-secondary-container": "#5f004f", "outline-variant": "#c9c4d8", "on-secondary": "#ffffff", "secondary-fixed": "#ffd8ee", "secondary": "#af0093", "secondary-fixed-dim": "#ffade3", "inverse-surface": "#302f39", "on-primary": "#ffffff", "on-surface-variant": "#484555", "surface-container-highest": "#e4e1ee", "on-tertiary": "#ffffff", "surface-bright": "#fcf8ff", "surface-variant": "#e4e1ee", "tertiary-container": "#00855b", "surface-dim": "#dbd8e6", "outline": "#797587", "surface": "#fcf8ff", "error": "#ba1a1a", "surface-container-low": "#f5f2ff", "on-primary-fixed": "#1c0062", "surface-container-high": "#e9e6f4", "tertiary-fixed": "#6ffbbe", "on-secondary-fixed-variant": "#860070", "surface-tint": "#603ce2", "on-secondary-fixed": "#3a0030", "background": "#fcf8ff" }, borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, spacing: { "space-sm": "0.5rem", "space-lg": "1.5rem", "space-xl": "2.5rem", "margin-tablet": "2rem", "gutter-desktop": "1.5rem", "gutter": "1rem", "space-md": "1rem", "margin": "1rem", "space-xs": "0.25rem", "margin-desktop": "3rem" }, fontFamily: { "body-sm": ["Inter"], "label-lg": ["Space Grotesk"], "headline-sm": ["Space Grotesk"], "body-md": ["Inter"], "headline-lg": ["Space Grotesk"], "headline-lg-mobile": ["Space Grotesk"], "display-mobile": ["Space Grotesk"], "label-sm": ["Space Grotesk"], "body-lg": ["Inter"], "label-md": ["Space Grotesk"], "display": ["Space Grotesk"], "headline-md": ["Space Grotesk"] }, fontSize: { "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }], "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "600" }], "display-mobile": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "600" }], "display": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "700" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md antialiased min-h-screen relative flex flex-col selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/75 backdrop-blur-xl shadow-[0_1px_12px_rgba(94,57,224,0.06)]"><div class="h-16 px-gutter flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0 flex-1"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm uppercase tracking-wider shrink-0 shadow-[0_0_12px_rgba(111,251,190,0.45)]"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>WATCHER ACTIVE</span><h1 class="font-headline-sm text-headline-sm text-on-surface truncate">Devices</h1></div><div class="flex items-center shrink-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-[0_0_16px_rgba(94,57,224,0.25)]"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full min-h-screen px-gutter pt-16 pb-28 bg-surface"><div class="flex flex-col w-full gap-space-lg">
+<!-- Top Ambient Glow Aura (Soft Decorative Background Blur) -->
+<div class="relative w-full">
+<div class="absolute -top-12 -left-10 w-48 h-48 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+<div class="absolute top-2 -right-8 w-44 h-44 rounded-full bg-tertiary-fixed/40 blur-2xl pointer-events-none"></div>
+<div class="absolute top-40 left-1/3 w-52 h-52 rounded-full bg-secondary-fixed/50 blur-3xl pointer-events-none"></div>
+<!-- Screen Sub-Header & Live Status Badges -->
+<div class="relative flex flex-col gap-space-xs pt-1">
+<div class="flex items-center justify-between gap-space-sm flex-wrap">
+<div class="flex items-center gap-space-xs">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight">Tracked Devices</h2>
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-label-md text-label-md">3 Saved</span>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm uppercase tracking-wider shadow-sm">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+<span>Radio Active</span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Live telemetry, background introspection &amp; acoustic presets.</p>
+</div>
+</div>
+<!-- Background Service Telemetry Banner -->
+<section class="relative overflow-hidden rounded-lg bg-surface-container-lowest/90 backdrop-blur-xl p-space-md shadow-[0_8px_30px_rgba(94,57,224,0.06)]">
+<div class="flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 shadow-inner">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">tune</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2">
+<h3 class="font-label-lg text-label-lg text-on-surface">Background Access Active</h3>
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 line-clamp-2">Always monitoring battery telemetry and auto-reconnect routines across physical ports.</p>
+</div>
+</div>
+</section>
+<!-- Stacked Wallet / Managed Devices Section -->
+<section class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Active &amp; Paired Devices</span>
+<span class="font-label-sm text-label-sm text-primary font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+        Synced 12s ago
+      </span>
+</div>
+<!-- CARD 1: Sony WH-1000XM5 (Active Connected) -->
+<article class="relative overflow-hidden rounded-xl bg-surface-container-lowest/95 backdrop-blur-2xl p-space-lg shadow-[0_12px_36px_rgba(94,57,224,0.08),0_2px_10px_rgba(0,0,0,0.02)] transition-all duration-300">
+<!-- Top edge ambient glow strip -->
+<div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-secondary-container to-tertiary-fixed-dim"></div>
+<!-- Device Header -->
+<div class="flex items-start justify-between gap-space-sm">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="relative w-13 h-13 p-2.5 rounded-full bg-primary-fixed/40 text-primary flex items-center justify-center shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 1;">headphones</span>
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-tertiary-fixed-dim shadow-[0_0_8px_rgba(78,222,163,0.8)]"></span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2 flex-wrap">
+<h4 class="font-headline-sm text-headline-sm text-on-surface truncate">Sony WH-1000XM5</h4>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm font-semibold tracking-wide">ACTIVE CONNECTED</span>
+</div>
+<div class="flex items-center gap-2 mt-0.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="font-mono text-body-sm tracking-tight text-outline">MAC 74:45:CE:8B:12</span>
+<span>•</span>
+<span class="flex items-center gap-1 text-tertiary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">signal_cellular_alt</span> Strong (-42 dBm)
+              </span>
+</div>
+</div>
+</div>
+<button aria-label="Device Options" class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors shrink-0">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<!-- Telemetry Data Grid -->
+<div class="mt-space-lg rounded-lg bg-surface-container-low p-space-md flex flex-col gap-space-md">
+<!-- Battery Row -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center justify-between text-on-surface">
+<span class="font-label-md text-label-md flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-tertiary">battery_charging_full</span>
+              Battery Telemetry
+            </span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">84%</span>
+</div>
+<div class="w-full h-2.5 rounded-full bg-surface-container-highest overflow-hidden p-0.5 shadow-inner">
+<div class="h-full rounded-full bg-gradient-to-r from-tertiary to-tertiary-fixed-dim transition-all duration-500 shadow-sm" style="width: 84%;"></div>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Est. playback ~24h remaining</span>
+<span class="text-tertiary font-medium">Fast Charge OK</span>
+</div>
+</div>
+<!-- Alert Threshold Slider Control -->
+<div class="flex flex-col gap-2 pt-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Low Battery Push Warning</span>
+<span class="font-label-md text-label-md font-bold text-primary" id="threshold-val">20%</span>
+</div>
+<div class="relative flex items-center">
+<input aria-label="Battery alert threshold" class="w-full h-2 rounded-full appearance-none bg-surface-container-highest accent-primary cursor-pointer" id="threshold-slider" max="40" min="5" type="range" value="20"/>
+</div>
+</div>
+</div>
+<!-- Protocol Badges & EQ Quick Action -->
+<div class="mt-space-md pt-space-xs flex items-center justify-between gap-space-sm flex-wrap">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="px-2.5 py-1 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold tracking-wider shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">graphic_eq</span>
+            LDAC 990K
+          </span>
+<span class="px-2.5 py-1 rounded-full bg-primary-fixed/50 text-on-primary-fixed font-label-sm text-label-sm font-semibold tracking-wider shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">spatial_audio</span>
+            SPATIAL AUDIO
+          </span>
+</div>
+<button class="px-4 py-2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-md text-label-md font-semibold tracking-wide hover:shadow-md transition-all flex items-center gap-1.5 active:scale-95">
+<span class="material-symbols-outlined text-[18px]">equalizer</span>
+<span>Manage EQ</span>
+</button>
+</div>
+</article>
+<!-- CARD 2: Noise Buds Vector (Offline with timestamp) -->
+<article class="relative overflow-hidden rounded-xl bg-surface-container-lowest/85 backdrop-blur-xl p-space-md shadow-[0_4px_20px_rgba(27,27,36,0.04)]">
+<div class="flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-12 h-12 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">earbuds</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="font-label-lg text-label-lg text-on-surface truncate">Noise Buds Vector</h4>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">AAC</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 truncate">
+              Offline • 2h ago @ Coffee Lab
+            </p>
+<p class="font-mono text-body-sm text-outline mt-0.5">MAC 38:B4:DC:21:55</p>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 gap-1">
+<div class="flex items-center gap-1 text-on-surface font-label-md text-label-md font-semibold">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">battery_3_bar</span>
+<span>45%</span>
+</div>
+<button class="px-3 py-1 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high transition-colors">
+            Ping
+          </button>
+</div>
+</div>
+</article>
+<!-- CARD 3: realme Studio H1 (Idle Standby) -->
+<article class="relative overflow-hidden rounded-xl bg-surface-container-lowest/85 backdrop-blur-xl p-space-md shadow-[0_4px_20px_rgba(27,27,36,0.04)]">
+<div class="flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-12 h-12 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">headset</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="font-label-lg text-label-lg text-on-surface truncate">realme Studio H1</h4>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">Idle • Standby</span>
+</div>
+<p class="font-mono text-body-sm text-outline mt-0.5">MAC 9A:12:88:FF:4C</p>
+</div>
+</div>
+<div class="flex flex-col items-end shrink-0 gap-1">
+<div class="flex items-center gap-1 text-tertiary font-label-md text-label-md font-semibold">
+<span class="material-symbols-outlined text-[16px]">battery_full</span>
+<span>95%</span>
+</div>
+<button class="px-3 py-1 rounded-full bg-primary-fixed/40 text-primary font-label-sm text-label-sm font-semibold hover:bg-primary-fixed transition-colors">
+            Connect
+          </button>
+</div>
+</div>
+</article>
+</section>
+<!-- Add New Device Section (Delightful Frosted Interactive Target) -->
+<section class="flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Discovery &amp; Provisioning</span>
+<span class="font-label-sm text-label-sm text-secondary font-medium flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-ping"></span>
+        BLE Scanner Live
+      </span>
+</div>
+<!-- Dashed Frosted Pairing Card -->
+<div class="group relative overflow-hidden rounded-xl bg-surface-container-low/70 backdrop-blur-xl p-space-lg flex flex-col items-center text-center shadow-sm hover:shadow-md transition-all cursor-pointer">
+<!-- Luminous highlight orb behind plus button -->
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full bg-primary/10 blur-2xl group-hover:scale-125 transition-transform duration-500 pointer-events-none"></div>
+<!-- Big Delightful '+' Pulse Button -->
+<button aria-label="Add Device" class="relative w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_10px_25px_rgba(94,57,224,0.35)] group-hover:scale-105 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</button>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mt-space-md font-semibold">Pair New Bluetooth Device</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs mt-1">
+        Detects unbranded &amp; third-party gear instantly with deep protocol introspection.
+      </p>
+<div class="mt-space-md inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px] text-primary animate-spin">radar</span>
+<span class="font-mono tracking-wider">SCANNING BLE BEACON 2.4GHZ</span>
+</div>
+</div>
+</section>
+<!-- Detected in Proximity Quick Chips -->
+<section class="flex flex-col gap-space-xs pb-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">sensors</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Detected in Proximity</span>
+</div>
+<button class="font-label-sm text-label-sm text-primary hover:underline font-medium flex items-center gap-0.5" id="rescan-btn">
+<span class="material-symbols-outlined text-[13px]">refresh</span>
+        Rescan
+      </button>
+</div>
+<!-- Quick action chips row -->
+<div class="flex items-center gap-space-sm overflow-x-auto py-1 no-scrollbar">
+<button class="shrink-0 px-3.5 py-2 rounded-full bg-surface-container-lowest text-on-surface shadow-sm hover:shadow hover:bg-surface-container-low transition-all flex items-center gap-2 font-label-md text-label-md">
+<span class="w-2 h-2 rounded-full bg-tertiary-fixed-dim"></span>
+<span>Noise Buds Vector +</span>
+<span class="material-symbols-outlined text-[16px] text-primary">add_circle</span>
+</button>
+<button class="shrink-0 px-3.5 py-2 rounded-full bg-surface-container-lowest text-on-surface shadow-sm hover:shadow hover:bg-surface-container-low transition-all flex items-center gap-2 font-label-md text-label-md">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+<span>realme Studio H1 +</span>
+<span class="material-symbols-outlined text-[16px] text-primary">add_circle</span>
+</button>
+<button class="shrink-0 px-3.5 py-2 rounded-full bg-surface-container text-on-surface-variant shadow-sm hover:text-on-surface transition-all flex items-center gap-1.5 font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">podcasts</span>
+<span>Broadcast Source</span>
+</button>
+</div>
+</section>
+</div>
+<script>
+  (function() {
+    // Battery Threshold Slider Live Display
+    const slider = document.getElementById('threshold-slider');
+    const valDisplay = document.getElementById('threshold-val');
+    if (slider && valDisplay) {
+      slider.addEventListener('input', function(e) {
+        valDisplay.textContent = e.target.value + '%';
+      });
+    }
+
+    // Interactive Rescan feedback
+    const rescanBtn = document.getElementById('rescan-btn');
+    if (rescanBtn) {
+      rescanBtn.addEventListener('click', function() {
+        const icon = rescanBtn.querySelector('.material-symbols-outlined');
+        if (icon) {
+          icon.classList.add('animate-spin');
+          setTimeout(() => {
+            icon.classList.remove('animate-spin');
+          }, 800);
+        }
+      });
+    }
+  })();
+</script></main><div class="fixed bottom-0 w-full z-50 pointer-events-none pb-safe"><div class="px-gutter pb-space-sm pt-space-xs"><nav class="pointer-events-auto h-16 w-full rounded-full bg-surface-container-lowest/85 backdrop-blur-2xl shadow-[0_12px_36px_rgba(94,57,224,0.12),0_2px_8px_rgba(27,27,36,0.04)] px-2 flex items-center justify-between gap-1" data-active-classes="bg-primary text-on-primary shadow-[0_0_20px_rgba(124,92,255,0.4)]"><a class="flex-1 h-12 min-w-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-all duration-200" data-path="home" href="#"><span class="material-symbols-outlined text-[20px]">graphic_eq</span><span class="font-label-sm text-label-sm">Home</span></a><a aria-current="page" class="flex-1 h-12 min-w-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 bg-primary text-on-primary shadow-[0_0_20px_rgba(124,92,255,0.4)]" data-path="devices" href="#"><span class="material-symbols-outlined text-[20px]">headphones</span><span class="font-label-sm text-label-sm">Devices</span></a><a class="flex-1 h-12 min-w-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-all duration-200" data-path="auto" href="#"><span class="material-symbols-outlined text-[20px]">auto_mode</span><span class="font-label-sm text-label-sm">Auto</span></a><a class="flex-1 h-12 min-w-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-all duration-200" data-path="tools" href="#"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-label-sm text-label-sm">Tools</span></a><a class="flex-1 h-12 min-w-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 text-on-surface-variant hover:text-on-surface transition-all duration-200" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-label-sm text-label-sm">Settings</span></a></nav></div></div></body></html>

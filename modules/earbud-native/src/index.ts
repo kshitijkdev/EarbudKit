@@ -140,10 +140,15 @@ export async function requestBluetoothPermissions(): Promise<boolean> {
 
   try {
     if (Platform.Version >= 31) {
-      const granted = await PermissionsAndroid.requestMultiple([
+      const permsToRequest = [
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-      ]);
+      ];
+      if (Platform.Version >= 33) {
+        permsToRequest.push(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+      }
+
+      const granted = await PermissionsAndroid.requestMultiple(permsToRequest);
 
       const connectGranted =
         granted[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] ===
@@ -151,7 +156,10 @@ export async function requestBluetoothPermissions(): Promise<boolean> {
 
       return connectGranted;
     } else {
-      return true;
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
   } catch (err) {
     console.warn('[EarbudNative] Error requesting bluetooth permissions:', err);
@@ -388,6 +396,19 @@ export async function openBluetoothSettings(): Promise<boolean> {
     return (await NativeModule?.openBluetoothSettings()) ?? false;
   } catch (e) {
     console.warn('[EarbudNative] Error opening bluetooth settings:', e);
+    return false;
+  }
+}
+
+/**
+ * Opens system App Info settings for this app so user can grant permissions.
+ */
+export async function openAppSettings(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return (await NativeModule?.openAppSettings()) ?? false;
+  } catch (e) {
+    console.warn('[EarbudNative] Error opening app settings:', e);
     return false;
   }
 }

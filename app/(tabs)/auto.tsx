@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,13 +15,13 @@ import {
   useDeviceStore,
   useAutoStore,
   MEDIA_APP_OPTIONS,
-  AppOption,
   TrackedDevice,
 } from '../../src/store';
 import {
   isDndPermissionGranted,
   openDndSettings,
 } from '../../modules/earbud-native';
+import { FeedbackToast } from '../../src/components/FeedbackToast';
 
 export default function AutoScreen() {
   const router = useRouter();
@@ -36,6 +36,11 @@ export default function AutoScreen() {
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [hasDndPermission, setHasDndPermission] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'android') {
@@ -58,14 +63,17 @@ export default function AutoScreen() {
     ? trackedDevicesMap[selectedAddress]
     : undefined;
 
+  // Reactively subscribe to profiles so button highlights and toggle changes re-render immediately!
+  const profiles = useAutoStore((s) => s.profiles);
   const getProfile = useAutoStore((s) => s.getProfile);
   const updateConnectAction = useAutoStore((s) => s.updateConnectAction);
   const updateDisconnectAction = useAutoStore((s) => s.updateDisconnectAction);
   const executeConnectProfile = useAutoStore((s) => s.executeConnectProfile);
   const executeDisconnectProfile = useAutoStore((s) => s.executeDisconnectProfile);
 
-  const currentProfile = selectedAddress
-    ? getProfile(selectedAddress, selectedDevice?.name)
+  const selectedUpper = selectedAddress ? selectedAddress.toUpperCase() : null;
+  const currentProfile = selectedUpper
+    ? (profiles[selectedUpper] ?? getProfile(selectedUpper, selectedDevice?.name))
     : null;
 
   const handleTestConnect = async () => {
@@ -78,6 +86,7 @@ export default function AutoScreen() {
     if (res.dndSet) msgs.push('Enabled DND');
     const summary = msgs.length > 0 ? msgs.join(' • ') : 'Connect actions executed';
     setTestResult(`✓ Connect Profile Executed: ${summary}`);
+    showToast(`✓ Tested Connect Profile: ${summary}`);
     setTimeout(() => setTestResult(null), 4000);
   };
 
@@ -91,6 +100,7 @@ export default function AutoScreen() {
     if (res.dndReset) msgs.push('Disabled DND');
     const summary = msgs.length > 0 ? msgs.join(' • ') : 'Disconnect actions executed';
     setTestResult(`✓ Disconnect Profile Executed: ${summary}`);
+    showToast(`✓ Tested Disconnect Profile: ${summary}`);
     setTimeout(() => setTestResult(null), 4000);
   };
 
@@ -139,6 +149,7 @@ export default function AutoScreen() {
           <TouchableOpacity
             style={[styles.primaryBtn, { backgroundColor: colors.primary, borderRadius: borderRadius.sm }]}
             onPress={() => router.push('/devices')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>
               Go to Devices Screen
@@ -154,6 +165,9 @@ export default function AutoScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
     >
+      {/* Universal Instant Feedback Toast */}
+      <FeedbackToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+
       {/* Device Selector Pill Bar */}
       <Text style={[styles.sectionLabel, { color: colors.onSurfaceVariant }]}>
         Configure Profile For:
@@ -175,10 +189,15 @@ export default function AutoScreen() {
                     ? colors.primaryContainer
                     : colors.surfaceContainer,
                   borderColor: isSelected ? colors.primary : colors.outlineVariant,
+                  borderWidth: isSelected ? 2 : 1.5,
                   borderRadius: borderRadius.full,
                 },
               ]}
-              onPress={() => setSelectedAddress(dev.address)}
+              onPress={() => {
+                setSelectedAddress(dev.address);
+                showToast(`✓ Selected: ${dev.nickname}`);
+              }}
+              activeOpacity={0.6}
             >
               <Text style={styles.pillEmoji}>
                 {dev.icon === 'earbuds' ? '🎧' : '🎧'}
@@ -194,7 +213,7 @@ export default function AutoScreen() {
                   },
                 ]}
               >
-                {dev.nickname}
+                {isSelected ? '✓ ' : ''}{dev.nickname}
               </Text>
               {dev.isConnected && (
                 <View
@@ -240,7 +259,8 @@ export default function AutoScreen() {
               {
                 backgroundColor: colors.surfaceContainer,
                 borderRadius: borderRadius.xl,
-                borderColor: colors.outlineVariant,
+                borderColor: currentProfile.onConnect.enabled ? colors.primary : colors.outlineVariant,
+                borderWidth: currentProfile.onConnect.enabled ? 2 : 1,
               },
             ]}
           >
@@ -262,23 +282,44 @@ export default function AutoScreen() {
                 </View>
               </View>
 
-              <Switch
-                value={currentProfile.onConnect.enabled}
-                onValueChange={(val) => {
-                  if (selectedAddress) {
-                    updateConnectAction(selectedAddress, { enabled: val });
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: borderRadius.full,
+                    backgroundColor: currentProfile.onConnect.enabled ? '#10b981' : colors.surfaceVariant,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '800',
+                      color: currentProfile.onConnect.enabled ? '#ffffff' : colors.onSurfaceVariant,
+                    }}
+                  >
+                    {currentProfile.onConnect.enabled ? 'ON' : 'OFF'}
+                  </Text>
+                </View>
+                <Switch
+                  value={currentProfile.onConnect.enabled}
+                  onValueChange={(val) => {
+                    if (selectedAddress) {
+                      updateConnectAction(selectedAddress, { enabled: val });
+                      showToast(val ? '✓ Auto-actions enabled on connect' : 'Auto-actions disabled on connect');
+                    }
+                  }}
+                  thumbColor={
+                    currentProfile.onConnect.enabled
+                      ? colors.primary
+                      : colors.outline
                   }
-                }}
-                thumbColor={
-                  currentProfile.onConnect.enabled
-                    ? colors.primary
-                    : colors.outline
-                }
-                trackColor={{
-                  false: colors.surfaceVariant,
-                  true: colors.primaryContainer,
-                }}
-              />
+                  trackColor={{
+                    false: colors.surfaceVariant,
+                    true: colors.primaryContainer,
+                  }}
+                />
+              </View>
             </View>
 
             {currentProfile.onConnect.enabled && (
@@ -306,16 +347,22 @@ export default function AutoScreen() {
                             borderColor: isPicked
                               ? colors.primary
                               : colors.outlineVariant,
+                            borderWidth: isPicked ? 2 : 1,
                             borderRadius: borderRadius.md,
                           },
                         ]}
-                        onPress={() =>
-                          selectedAddress &&
-                          updateConnectAction(selectedAddress, {
-                            launchAppPackage: isPicked ? null : app.packageName,
-                            launchAppLabel: isPicked ? null : app.label,
-                          })
-                        }
+                        onPress={() => {
+                          if (selectedAddress) {
+                            const newPackage = isPicked ? null : app.packageName;
+                            const newLabel = isPicked ? null : app.label;
+                            updateConnectAction(selectedAddress, {
+                              launchAppPackage: newPackage,
+                              launchAppLabel: newLabel,
+                            });
+                            showToast(isPicked ? 'Auto-launch removed' : `✓ Auto-launch set to: ${app.label}`);
+                          }
+                        }}
+                        activeOpacity={0.6}
                       >
                         <Text style={styles.appChipEmoji}>{app.icon}</Text>
                         <Text
@@ -330,7 +377,7 @@ export default function AutoScreen() {
                           ]}
                           numberOfLines={1}
                         >
-                          {app.label}
+                          {isPicked ? '✓ ' : ''}{app.label}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -362,15 +409,19 @@ export default function AutoScreen() {
                             borderColor: isPicked
                               ? colors.primary
                               : colors.outlineVariant,
+                            borderWidth: isPicked ? 2 : 1,
                             borderRadius: borderRadius.sm,
                           },
                         ]}
-                        onPress={() =>
-                          selectedAddress &&
-                          updateConnectAction(selectedAddress, {
-                            setVolume: vol,
-                          })
-                        }
+                        onPress={() => {
+                          if (selectedAddress) {
+                            updateConnectAction(selectedAddress, {
+                              setVolume: vol,
+                            });
+                            showToast(vol === null ? 'Volume control disabled' : `✓ On-connect volume: ${vol}%`);
+                          }
+                        }}
+                        activeOpacity={0.6}
                       >
                         <Text
                           style={[
@@ -383,7 +434,7 @@ export default function AutoScreen() {
                             },
                           ]}
                         >
-                          {vol === null ? 'None' : `${vol}%`}
+                          {isPicked && vol !== null ? '✓ ' : ''}{vol === null ? 'None' : `${vol}%`}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -410,25 +461,46 @@ export default function AutoScreen() {
                       Mute calls & notifications while listening
                     </Text>
                   </View>
-                  <Switch
-                    value={currentProfile.onConnect.enableDnd}
-                    onValueChange={(val) => {
-                      if (val && !hasDndPermission) {
-                        handleRequestDnd();
-                      } else if (selectedAddress) {
-                        updateConnectAction(selectedAddress, { enableDnd: val });
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: borderRadius.full,
+                        backgroundColor: currentProfile.onConnect.enableDnd ? '#10b981' : colors.surfaceVariant,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '800',
+                          color: currentProfile.onConnect.enableDnd ? '#ffffff' : colors.onSurfaceVariant,
+                        }}
+                      >
+                        {currentProfile.onConnect.enableDnd ? 'ON' : 'OFF'}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={currentProfile.onConnect.enableDnd}
+                      onValueChange={(val) => {
+                        if (val && !hasDndPermission) {
+                          handleRequestDnd();
+                        } else if (selectedAddress) {
+                          updateConnectAction(selectedAddress, { enableDnd: val });
+                          showToast(val ? '✓ Do Not Disturb enabled on connect' : 'Do Not Disturb disabled');
+                        }
+                      }}
+                      thumbColor={
+                        currentProfile.onConnect.enableDnd
+                          ? colors.primary
+                          : colors.outline
                       }
-                    }}
-                    thumbColor={
-                      currentProfile.onConnect.enableDnd
-                        ? colors.primary
-                        : colors.outline
-                    }
-                    trackColor={{
-                      false: colors.surfaceVariant,
-                      true: colors.primaryContainer,
-                    }}
-                  />
+                      trackColor={{
+                        false: colors.surfaceVariant,
+                        true: colors.primaryContainer,
+                      }}
+                    />
+                  </View>
                 </View>
 
                 {/* Test Connect Button */}
@@ -442,6 +514,7 @@ export default function AutoScreen() {
                     },
                   ]}
                   onPress={handleTestConnect}
+                  activeOpacity={0.7}
                 >
                   <Text
                     style={[styles.testActionText, { color: colors.primary }]}
@@ -460,7 +533,8 @@ export default function AutoScreen() {
               {
                 backgroundColor: colors.surfaceContainer,
                 borderRadius: borderRadius.xl,
-                borderColor: colors.outlineVariant,
+                borderColor: currentProfile.onDisconnect.enabled ? colors.primary : colors.outlineVariant,
+                borderWidth: currentProfile.onDisconnect.enabled ? 2 : 1,
               },
             ]}
           >
@@ -482,23 +556,44 @@ export default function AutoScreen() {
                 </View>
               </View>
 
-              <Switch
-                value={currentProfile.onDisconnect.enabled}
-                onValueChange={(val) => {
-                  if (selectedAddress) {
-                    updateDisconnectAction(selectedAddress, { enabled: val });
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: borderRadius.full,
+                    backgroundColor: currentProfile.onDisconnect.enabled ? '#10b981' : colors.surfaceVariant,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '800',
+                      color: currentProfile.onDisconnect.enabled ? '#ffffff' : colors.onSurfaceVariant,
+                    }}
+                  >
+                    {currentProfile.onDisconnect.enabled ? 'ON' : 'OFF'}
+                  </Text>
+                </View>
+                <Switch
+                  value={currentProfile.onDisconnect.enabled}
+                  onValueChange={(val) => {
+                    if (selectedAddress) {
+                      updateDisconnectAction(selectedAddress, { enabled: val });
+                      showToast(val ? '✓ Auto-actions enabled on disconnect' : 'Auto-actions disabled on disconnect');
+                    }
+                  }}
+                  thumbColor={
+                    currentProfile.onDisconnect.enabled
+                      ? colors.primary
+                      : colors.outline
                   }
-                }}
-                thumbColor={
-                  currentProfile.onDisconnect.enabled
-                    ? colors.primary
-                    : colors.outline
-                }
-                trackColor={{
-                  false: colors.surfaceVariant,
-                  true: colors.primaryContainer,
-                }}
-              />
+                  trackColor={{
+                    false: colors.surfaceVariant,
+                    true: colors.primaryContainer,
+                  }}
+                />
+              </View>
             </View>
 
             {currentProfile.onDisconnect.enabled && (
@@ -520,25 +615,46 @@ export default function AutoScreen() {
                       Immediately pause Spotify, podcasts, YouTube, or music
                     </Text>
                   </View>
-                  <Switch
-                    value={currentProfile.onDisconnect.pauseMedia}
-                    onValueChange={(val) => {
-                      if (selectedAddress) {
-                        updateDisconnectAction(selectedAddress, {
-                          pauseMedia: val,
-                        });
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: borderRadius.full,
+                        backgroundColor: currentProfile.onDisconnect.pauseMedia ? '#10b981' : colors.surfaceVariant,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '800',
+                          color: currentProfile.onDisconnect.pauseMedia ? '#ffffff' : colors.onSurfaceVariant,
+                        }}
+                      >
+                        {currentProfile.onDisconnect.pauseMedia ? 'ON' : 'OFF'}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={currentProfile.onDisconnect.pauseMedia}
+                      onValueChange={(val) => {
+                        if (selectedAddress) {
+                          updateDisconnectAction(selectedAddress, {
+                            pauseMedia: val,
+                          });
+                          showToast(val ? '✓ Auto-pause playback enabled' : 'Auto-pause playback disabled');
+                        }
+                      }}
+                      thumbColor={
+                        currentProfile.onDisconnect.pauseMedia
+                          ? colors.primary
+                          : colors.outline
                       }
-                    }}
-                    thumbColor={
-                      currentProfile.onDisconnect.pauseMedia
-                        ? colors.primary
-                        : colors.outline
-                    }
-                    trackColor={{
-                      false: colors.surfaceVariant,
-                      true: colors.primaryContainer,
-                    }}
-                  />
+                      trackColor={{
+                        false: colors.surfaceVariant,
+                        true: colors.primaryContainer,
+                      }}
+                    />
+                  </View>
                 </View>
 
                 {/* 2. Reset Volume Option */}
@@ -566,15 +682,19 @@ export default function AutoScreen() {
                             borderColor: isPicked
                               ? colors.primary
                               : colors.outlineVariant,
+                            borderWidth: isPicked ? 2 : 1,
                             borderRadius: borderRadius.sm,
                           },
                         ]}
-                        onPress={() =>
-                          selectedAddress &&
-                          updateDisconnectAction(selectedAddress, {
-                            setVolume: vol,
-                          })
-                        }
+                        onPress={() => {
+                          if (selectedAddress) {
+                            updateDisconnectAction(selectedAddress, {
+                              setVolume: vol,
+                            });
+                            showToast(vol === null ? 'Reset volume disabled' : `✓ On-disconnect volume: ${vol}%`);
+                          }
+                        }}
+                        activeOpacity={0.6}
                       >
                         <Text
                           style={[
@@ -587,7 +707,7 @@ export default function AutoScreen() {
                             },
                           ]}
                         >
-                          {vol === null ? 'Keep' : `${vol}%`}
+                          {isPicked && vol !== null ? '✓ ' : ''}{vol === null ? 'Keep' : `${vol}%`}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -616,25 +736,46 @@ export default function AutoScreen() {
                       Restore normal notification volume on disconnect
                     </Text>
                   </View>
-                  <Switch
-                    value={currentProfile.onDisconnect.disableDnd}
-                    onValueChange={(val) => {
-                      if (selectedAddress) {
-                        updateDisconnectAction(selectedAddress, {
-                          disableDnd: val,
-                        });
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 3,
+                        borderRadius: borderRadius.full,
+                        backgroundColor: currentProfile.onDisconnect.disableDnd ? '#10b981' : colors.surfaceVariant,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '800',
+                          color: currentProfile.onDisconnect.disableDnd ? '#ffffff' : colors.onSurfaceVariant,
+                        }}
+                      >
+                        {currentProfile.onDisconnect.disableDnd ? 'ON' : 'OFF'}
+                      </Text>
+                    </View>
+                    <Switch
+                      value={currentProfile.onDisconnect.disableDnd}
+                      onValueChange={(val) => {
+                        if (selectedAddress) {
+                          updateDisconnectAction(selectedAddress, {
+                            disableDnd: val,
+                          });
+                          showToast(val ? '✓ Disable DND on disconnect enabled' : 'Disable DND disabled');
+                        }
+                      }}
+                      thumbColor={
+                        currentProfile.onDisconnect.disableDnd
+                          ? colors.primary
+                          : colors.outline
                       }
-                    }}
-                    thumbColor={
-                      currentProfile.onDisconnect.disableDnd
-                        ? colors.primary
-                        : colors.outline
-                    }
-                    trackColor={{
-                      false: colors.surfaceVariant,
-                      true: colors.primaryContainer,
-                    }}
-                  />
+                      trackColor={{
+                        false: colors.surfaceVariant,
+                        true: colors.primaryContainer,
+                      }}
+                    />
+                  </View>
                 </View>
 
                 {/* Test Disconnect Button */}
@@ -648,6 +789,7 @@ export default function AutoScreen() {
                     },
                   ]}
                   onPress={handleTestDisconnect}
+                  activeOpacity={0.7}
                 >
                   <Text
                     style={[styles.testActionText, { color: colors.primary }]}
@@ -690,7 +832,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderWidth: 1.5,
     gap: 8,
   },
   pillEmoji: {
@@ -714,7 +855,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   profileCard: {
-    borderWidth: 1,
     marginBottom: 16,
     overflow: 'hidden',
   },
@@ -761,7 +901,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderWidth: 1,
     gap: 6,
   },
   appChipEmoji: {
@@ -778,7 +917,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     alignItems: 'center',
-    borderWidth: 1,
   },
   volumeBtnText: {
     fontSize: 12,

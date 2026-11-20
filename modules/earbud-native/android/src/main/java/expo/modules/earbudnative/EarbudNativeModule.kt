@@ -310,6 +310,20 @@ class EarbudNativeModule : Module() {
             }
         }
 
+        Function("openAppSettings") {
+            try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = android.net.Uri.fromParts("package", context.packageName, null)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to open app settings", e)
+                false
+            }
+        }
+
         /**
          * Stage 9: Check if Equalizer is supported by the device's AudioFX engine
          */
@@ -598,18 +612,10 @@ class EarbudNativeModule : Module() {
 
     private fun checkEqualizerSupport(): Boolean {
         if (isEqSupported != null) return isEqSupported!!
-        return try {
-            val testEq = Equalizer(0, 0)
-            val bands = testEq.numberOfBands
-            testEq.release()
-            val supported = bands > 0
-            isEqSupported = supported
-            supported
-        } catch (e: Exception) {
-            Log.w(TAG, "Equalizer not supported on this device/hardware: ${e.message}")
-            isEqSupported = false
-            false
-        }
+        val eq = getOrCreateEqualizer()
+        val supported = (eq != null && eq.numberOfBands > 0)
+        isEqSupported = supported
+        return supported
     }
 
     private fun getOrCreateEqualizer(): Equalizer? {

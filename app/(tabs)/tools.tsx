@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,579 @@ import {
   openGoogleMapsNavigation,
   requestLocationPermissions,
 } from '../../src/services/location';
+import { FeedbackToast } from '../../src/components/FeedbackToast';
 
+// -------------------------------------------------------------
+// Memoized Sleep Timer Section (avoids re-rendering the whole page every 1s)
+// -------------------------------------------------------------
+interface SleepTimerCardProps {
+  colors: any;
+  borderRadius: any;
+  onToast: (msg: string) => void;
+}
+
+const SleepTimerCard = memo(function SleepTimerCard({
+  colors,
+  borderRadius,
+  onToast,
+}: SleepTimerCardProps) {
+  const isTimerActive = useSleepTimerStore((s) => s.isActive);
+  const remainingSeconds = useSleepTimerStore((s) => s.remainingSeconds);
+  const isFading = useSleepTimerStore((s) => s.isFading);
+  const selectedPreset = useSleepTimerStore((s) => s.selectedPreset);
+  const startTimer = useSleepTimerStore((s) => s.startTimer);
+  const startQuickTestTimer = useSleepTimerStore((s) => s.startQuickTestTimer);
+  const cancelTimer = useSleepTimerStore((s) => s.cancelTimer);
+  const [customMinutes, setCustomMinutes] = useState(25);
+
+  const formatSeconds = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartPreset = (mins: number) => {
+    startTimer(mins);
+    onToast(`✓ Sleep timer started for ${mins} minutes`);
+  };
+
+  const handleStartCustom = () => {
+    startTimer(customMinutes);
+    onToast(`✓ Sleep timer started for ${customMinutes} minutes`);
+  };
+
+  const handleQuickTest = () => {
+    startQuickTestTimer(15);
+    onToast('⚡ 15s fade test started');
+  };
+
+  const handleCancel = () => {
+    cancelTimer();
+    onToast('Sleep timer cancelled');
+  };
+
+  return (
+    <View
+      style={[
+        styles.toolCard,
+        {
+          backgroundColor: colors.surfaceContainer,
+          borderRadius: borderRadius.xl,
+          borderColor: isTimerActive ? colors.primary : colors.outlineVariant,
+          borderWidth: isTimerActive ? 2 : 1,
+        },
+      ]}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.cardEmoji}>⏰</Text>
+          <View>
+            <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
+              Sleep Timer
+            </Text>
+            <Text style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}>
+              Fades volume down over 10s, then pauses playback
+            </Text>
+          </View>
+        </View>
+        {isTimerActive && (
+          <View
+            style={[
+              styles.activeTimerPill,
+              {
+                backgroundColor: isFading
+                  ? colors.errorContainer
+                  : colors.primaryContainer,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.activeTimerPillText,
+                {
+                  color: isFading
+                    ? colors.onError
+                    : colors.onPrimaryContainer,
+                },
+              ]}
+            >
+              {isFading ? 'FADING OUT' : 'RUNNING'}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.timerBody}>
+        {isTimerActive ? (
+          <View style={styles.countdownContainer}>
+            <Text
+              style={[
+                styles.countdownDisplay,
+                {
+                  color: isFading ? colors.error : colors.onSurface,
+                },
+              ]}
+            >
+              {formatSeconds(remainingSeconds)}
+            </Text>
+            <Text
+              style={[
+                styles.countdownSubtext,
+                {
+                  color: isFading ? colors.error : colors.onSurfaceVariant,
+                },
+              ]}
+            >
+              {isFading
+                ? '🔉 Fading out volume over 10 seconds...'
+                : 'Media playing • Will fade out & pause automatically'}
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.cancelTimerBtn,
+                {
+                  backgroundColor: colors.surfaceVariant,
+                  borderRadius: borderRadius.md,
+                },
+              ]}
+              onPress={handleCancel}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.cancelTimerText,
+                  { color: colors.onSurfaceVariant },
+                ]}
+              >
+                ✕ Cancel Sleep Timer
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <Text style={[styles.inputHeading, { color: colors.onSurface }]}>
+              Select Duration:
+            </Text>
+            <View style={styles.presetsGrid}>
+              {[15, 30, 45, 60].map((mins) => {
+                const isPicked = selectedPreset === mins;
+                return (
+                  <TouchableOpacity
+                    key={mins}
+                    style={[
+                      styles.presetChip,
+                      {
+                        backgroundColor: isPicked
+                          ? colors.primaryContainer
+                          : colors.surface,
+                        borderColor: isPicked
+                          ? colors.primary
+                          : colors.outlineVariant,
+                        borderWidth: isPicked ? 2 : 1,
+                        borderRadius: borderRadius.md,
+                      },
+                    ]}
+                    onPress={() => handleStartPreset(mins)}
+                    activeOpacity={0.6}
+                  >
+                    <Text
+                      style={[
+                        styles.presetChipText,
+                        {
+                          color: isPicked
+                            ? colors.onPrimaryContainer
+                            : colors.onSurface,
+                          fontWeight: isPicked ? '700' : '600',
+                        },
+                      ]}
+                    >
+                      {isPicked ? '✓ ' : ''}{mins}m
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Custom Minutes Stepper */}
+            <View style={styles.customRow}>
+              <Text
+                style={[
+                  styles.customLabel,
+                  { color: colors.onSurfaceVariant },
+                ]}
+              >
+                Custom: {customMinutes} min
+              </Text>
+              <View style={styles.stepperGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.stepperBtn,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.outlineVariant,
+                      borderRadius: borderRadius.sm,
+                    },
+                  ]}
+                  onPress={() => setCustomMinutes((p) => Math.max(5, p - 5))}
+                  activeOpacity={0.6}
+                >
+                  <Text style={[styles.stepperText, { color: colors.onSurface }]}>-5m</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.stepperBtn,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.outlineVariant,
+                      borderRadius: borderRadius.sm,
+                    },
+                  ]}
+                  onPress={() => setCustomMinutes((p) => p + 5)}
+                  activeOpacity={0.6}
+                >
+                  <Text style={[styles.stepperText, { color: colors.onSurface }]}>+5m</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.startCustomBtn,
+                    {
+                      backgroundColor: colors.primary,
+                      borderRadius: borderRadius.sm,
+                    },
+                  ]}
+                  onPress={handleStartCustom}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.startCustomText, { color: colors.onPrimary }]}>
+                    Start ({customMinutes}m)
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 15s Test Preset */}
+            <TouchableOpacity
+              style={[
+                styles.quickTestTimerBtn,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.outlineVariant,
+                  borderRadius: borderRadius.sm,
+                },
+              ]}
+              onPress={handleQuickTest}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.quickTestTimerText, { color: colors.primary }]}>
+                ⚡ Test Fade Out & Pause (15-second timer)
+              </Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+    </View>
+  );
+});
+
+// -------------------------------------------------------------
+// Memoized Equalizer Card (reactively bound to configs)
+// -------------------------------------------------------------
+interface EqualizerCardProps {
+  colors: any;
+  borderRadius: any;
+  selectedAddress: string | null;
+  selectedNickname: string;
+  onToast: (msg: string) => void;
+}
+
+const EqualizerCard = memo(function EqualizerCard({
+  colors,
+  borderRadius,
+  selectedAddress,
+  selectedNickname,
+  onToast,
+}: EqualizerCardProps) {
+  const configs = useEqualizerStore((s) => s.configs);
+  const isEqSupported = useEqualizerStore((s) => s.isSupported);
+  const bandFrequencies = useEqualizerStore((s) => s.bandFrequencies);
+  const setDeviceEqEnabled = useEqualizerStore((s) => s.setDeviceEqEnabled);
+  const setDevicePreset = useEqualizerStore((s) => s.setDevicePreset);
+  const setDeviceBandLevel = useEqualizerStore((s) => s.setDeviceBandLevel);
+  const getDeviceConfig = useEqualizerStore((s) => s.getDeviceConfig);
+
+  const upperAddr = selectedAddress ? selectedAddress.toUpperCase() : '';
+  const eqConfig = upperAddr && configs[upperAddr]
+    ? configs[upperAddr]
+    : (upperAddr ? getDeviceConfig(upperAddr) : DEFAULT_DEVICE_EQ);
+
+  const handleToggle = (val: boolean) => {
+    if (!upperAddr) return;
+    setDeviceEqEnabled(upperAddr, val);
+    onToast(val ? '✓ Equalizer Turned ON' : 'Equalizer Turned OFF');
+  };
+
+  const handlePreset = (preset: EqPresetName) => {
+    if (!upperAddr) return;
+    setDevicePreset(upperAddr, preset);
+    onToast(`✓ Equalizer Preset: ${preset}`);
+  };
+
+  const handleBandLevel = (bandIdx: number, newLevel: number, freqLabel: string) => {
+    if (!upperAddr) return;
+    setDeviceBandLevel(upperAddr, bandIdx, newLevel);
+    const db = (newLevel / 100).toFixed(1);
+    onToast(`✓ ${freqLabel}: ${newLevel > 0 ? '+' : ''}${db} dB`);
+  };
+
+  return (
+    <View
+      style={[
+        styles.toolCard,
+        {
+          backgroundColor: colors.surfaceContainer,
+          borderColor: eqConfig.enabled ? colors.primary : colors.outlineVariant,
+          borderWidth: eqConfig.enabled ? 2 : 1,
+          borderRadius: borderRadius.xl,
+        },
+      ]}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.cardEmoji}>🎚️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
+              Equalizer (AudioFX)
+            </Text>
+            <Text style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}>
+              {selectedNickname} hardware EQ profile
+            </Text>
+          </View>
+        </View>
+
+        {isEqSupported && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 3,
+                borderRadius: borderRadius.full,
+                backgroundColor: eqConfig.enabled ? '#10b981' : colors.surfaceVariant,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: '800',
+                  color: eqConfig.enabled ? '#ffffff' : colors.onSurfaceVariant,
+                }}
+              >
+                {eqConfig.enabled ? 'ON' : 'OFF'}
+              </Text>
+            </View>
+            <Switch
+              value={eqConfig.enabled}
+              onValueChange={handleToggle}
+              thumbColor={eqConfig.enabled ? colors.primary : colors.surfaceVariant}
+              trackColor={{
+                false: colors.surfaceVariant,
+                true: colors.primaryContainer,
+              }}
+            />
+          </View>
+        )}
+      </View>
+
+      <View style={styles.eqBody}>
+        {!isEqSupported ? (
+          <View
+            style={[
+              styles.eqUnavailableBanner,
+              {
+                backgroundColor: colors.surfaceVariant,
+                borderRadius: borderRadius.sm,
+              },
+            ]}
+          >
+            <Text style={styles.eqUnavailableIcon}>⚠️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.eqUnavailableTitle, { color: colors.onSurface }]}>
+                EQ unavailable on this device
+              </Text>
+              <Text style={[styles.eqUnavailableBody, { color: colors.onSurfaceVariant }]}>
+                Hardware Android AudioFX Equalizer engine is not supported on this device/session. Standard audio playback is unaffected.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={{ opacity: eqConfig.enabled ? 1 : 0.45 }}>
+            {/* Presets Row */}
+            <Text style={[styles.inputHeading, { color: colors.onSurface }]}>
+              Presets
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.presetsRow}
+            >
+              {(['Flat', 'Bass Boost', 'Vocal', 'Treble', 'Custom'] as EqPresetName[]).map((preset) => {
+                const isSelected = eqConfig.preset === preset;
+                return (
+                  <TouchableOpacity
+                    key={preset}
+                    style={[
+                      styles.eqPresetChip,
+                      {
+                        backgroundColor: isSelected
+                          ? colors.primary
+                          : colors.surface,
+                        borderColor: isSelected
+                          ? colors.primary
+                          : colors.outlineVariant,
+                        borderWidth: isSelected ? 2 : 1,
+                        borderRadius: borderRadius.full,
+                      },
+                    ]}
+                    disabled={!eqConfig.enabled}
+                    onPress={() => handlePreset(preset)}
+                    activeOpacity={0.6}
+                  >
+                    <Text
+                      style={[
+                        styles.eqPresetText,
+                        {
+                          color: isSelected
+                            ? colors.onPrimary
+                            : colors.onSurface,
+                          fontWeight: isSelected ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {isSelected ? '✓ ' : ''}{preset}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* 5-Band Sliders / Steppers */}
+            <Text
+              style={[
+                styles.inputHeading,
+                { color: colors.onSurface, marginTop: 16 },
+              ]}
+            >
+              Frequency Bands
+            </Text>
+
+            {bandFrequencies.map((freq, idx) => {
+              const levelMB = eqConfig.bandLevels[idx] ?? 0;
+              const levelDB = (levelMB / 100).toFixed(1);
+              const formattedFreq =
+                freq >= 1000 ? `${(freq / 1000).toFixed(1)} kHz` : `${freq} Hz`;
+
+              return (
+                <View key={idx} style={styles.eqBandRow}>
+                  <View style={styles.eqBandLabelCol}>
+                    <Text style={[styles.eqBandFreqText, { color: colors.onSurface }]}>
+                      {formattedFreq}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.eqBandDbText,
+                        {
+                          color:
+                            levelMB > 0
+                              ? colors.primary
+                              : levelMB < 0
+                              ? colors.error
+                              : colors.onSurfaceVariant,
+                          fontWeight: '700',
+                        },
+                      ]}
+                    >
+                      {levelMB > 0 ? `+${levelDB}` : levelDB} dB
+                    </Text>
+                  </View>
+
+                  <View style={styles.eqBandControls}>
+                    <TouchableOpacity
+                      style={[
+                        styles.eqStepBtn,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          borderRadius: borderRadius.sm,
+                        },
+                      ]}
+                      disabled={!eqConfig.enabled || levelMB <= -1500}
+                      onPress={() => handleBandLevel(idx, levelMB - 100, formattedFreq)}
+                      activeOpacity={0.6}
+                    >
+                      <Text style={[styles.eqStepBtnText, { color: colors.onSurface }]}>
+                        -
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* Visual level track */}
+                    <View
+                      style={[
+                        styles.eqLevelTrack,
+                        { backgroundColor: colors.surfaceVariant },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.eqZeroIndicator,
+                          { backgroundColor: colors.outlineVariant },
+                        ]}
+                      />
+                      <View
+                        style={[
+                          styles.eqLevelFill,
+                          {
+                            backgroundColor:
+                              levelMB >= 0 ? colors.primary : colors.error,
+                            left: levelMB >= 0 ? '50%' : undefined,
+                            right:
+                              levelMB < 0
+                                ? `${50 - (Math.abs(levelMB) / 3000) * 100}%`
+                                : undefined,
+                            width: `${(Math.abs(levelMB) / 3000) * 100}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.eqStepBtn,
+                        {
+                          backgroundColor: colors.surfaceVariant,
+                          borderRadius: borderRadius.sm,
+                        },
+                      ]}
+                      disabled={!eqConfig.enabled || levelMB >= 1500}
+                      onPress={() => handleBandLevel(idx, levelMB + 100, formattedFreq)}
+                      activeOpacity={0.6}
+                    >
+                      <Text style={[styles.eqStepBtnText, { color: colors.onSurface }]}>
+                        +
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+});
+
+// -------------------------------------------------------------
+// Main Tools Screen
+// -------------------------------------------------------------
 export default function ToolsScreen() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -46,9 +618,13 @@ export default function ToolsScreen() {
   const [isScanning, setIsScanning] = useState(false);
   const [currentRssi, setCurrentRssi] = useState<number | null>(null);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
-  const [locationActionFeedback, setLocationActionFeedback] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Keep a selected device
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+  }, []);
+
+  // Ensure valid selected address
   useEffect(() => {
     if (trackedDevices.length > 0) {
       if (!selectedAddress || !trackedDevicesMap[selectedAddress]) {
@@ -67,31 +643,9 @@ export default function ToolsScreen() {
   const setDisconnectAlert = useDeviceStore((s) => s.setDisconnectAlert);
   const triggerTestDisconnectAlert = useDeviceStore((s) => s.triggerTestDisconnectAlert);
 
-  // Sleep Timer hooks
-  const isTimerActive = useSleepTimerStore((s) => s.isActive);
-  const remainingSeconds = useSleepTimerStore((s) => s.remainingSeconds);
-  const isFading = useSleepTimerStore((s) => s.isFading);
-  const selectedPreset = useSleepTimerStore((s) => s.selectedPreset);
-  const startTimer = useSleepTimerStore((s) => s.startTimer);
-  const startQuickTestTimer = useSleepTimerStore((s) => s.startQuickTestTimer);
-  const cancelTimer = useSleepTimerStore((s) => s.cancelTimer);
-  const [customMinutes, setCustomMinutes] = useState(25);
-
-  const formatSeconds = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // Equalizer hooks
-  const isEqSupported = useEqualizerStore((s) => s.isSupported);
+  // Equalizer Support Init
   const hasCheckedEq = useEqualizerStore((s) => s.hasCheckedSupport);
   const checkEqSupport = useEqualizerStore((s) => s.checkEqualizerSupport);
-  const bandFrequencies = useEqualizerStore((s) => s.bandFrequencies);
-  const setDeviceEqEnabled = useEqualizerStore((s) => s.setDeviceEqEnabled);
-  const setDevicePreset = useEqualizerStore((s) => s.setDevicePreset);
-  const setDeviceBandLevel = useEqualizerStore((s) => s.setDeviceBandLevel);
-  const getDeviceConfig = useEqualizerStore((s) => s.getDeviceConfig);
 
   useEffect(() => {
     if (!hasCheckedEq) {
@@ -99,12 +653,14 @@ export default function ToolsScreen() {
     }
   }, [hasCheckedEq, checkEqSupport]);
 
-  const eqConfig = selectedAddress ? getDeviceConfig(selectedAddress) : DEFAULT_DEVICE_EQ;
-
-
-  // Subscribe to live BLE RSSI scan events
+  // Throttled RSSI scanner listener (max 1 update per 250ms to eliminate UI stutter)
+  const lastRssiRef = useRef<number>(0);
   useEffect(() => {
     const rssiSub = addRssiListener((event) => {
+      const now = Date.now();
+      if (now - lastRssiRef.current < 250) return;
+      lastRssiRef.current = now;
+
       if (
         selectedAddress &&
         event.address.toLowerCase() === selectedAddress.toLowerCase()
@@ -128,10 +684,13 @@ export default function ToolsScreen() {
       stopRssiScan();
       setIsScanning(false);
       setCurrentRssi(null);
+      showToast('Proximity scan stopped');
     } else {
       const started = startRssiScan(selectedAddress);
       setIsScanning(started);
-      if (!started) {
+      if (started) {
+        showToast(`🔍 Searching for ${selectedDevice?.nickname || 'device'}...`);
+      } else {
         Alert.alert(
           'Scan Notice',
           'Ensure Bluetooth and Location permissions are enabled on your device to search nearby.'
@@ -156,10 +715,8 @@ export default function ToolsScreen() {
       const loc = await captureCurrentLocation();
       if (loc) {
         setDeviceLocation(selectedAddress, loc);
-        setLocationActionFeedback('✓ Current location saved as last-seen point!');
-        setTimeout(() => setLocationActionFeedback(null), 4000);
+        showToast('✓ Current location saved as last-seen point!');
       } else {
-        // Fallback demo location for testing if emulator has no GPS fix
         const demoLoc: DeviceLocation = {
           latitude: 37.7749,
           longitude: -122.4194,
@@ -168,8 +725,7 @@ export default function ToolsScreen() {
           addressText: 'Market St & 4th, San Francisco, CA',
         };
         setDeviceLocation(selectedAddress, demoLoc);
-        setLocationActionFeedback('✓ Simulated location saved for testing!');
-        setTimeout(() => setLocationActionFeedback(null), 4000);
+        showToast('✓ Simulated location saved for testing!');
       }
     } finally {
       setIsCapturingLocation(false);
@@ -179,6 +735,7 @@ export default function ToolsScreen() {
   const handleNavigate = () => {
     if (!selectedDevice?.lastLocation) return;
     const { latitude, longitude } = selectedDevice.lastLocation;
+    showToast('🧭 Launching Google Maps...');
     openGoogleMapsNavigation(latitude, longitude);
   };
 
@@ -186,27 +743,25 @@ export default function ToolsScreen() {
     if (!selectedAddress) return;
     const sent = await triggerTestDisconnectAlert(selectedAddress);
     if (sent) {
-      Alert.alert('Alert Dispatched', 'Disconnect drop notification delivered!');
+      showToast('✓ Test disconnect notification delivered!');
     }
   };
 
-  // Convert RSSI dBm into proximity meter percentage (0-100) and warmth category
   const calculateProximity = (rssi: number | null) => {
     if (rssi === null) return { percent: 0, label: 'Scanning for signal...', color: colors.outline };
-    // Normal BLE RSSI spans roughly -100 dBm (very weak) to -40 dBm (right next to device)
     const clamped = Math.min(Math.max(rssi, -100), -40);
     const percent = Math.round(((clamped - -100) / (-40 - -100)) * 100);
 
     if (rssi >= -55) {
-      return { percent, label: '🔥 HOT! Very Close (Within 1-2m)', color: colors.error };
-    } else if (rssi >= -75) {
-      return { percent, label: '♨️ WARMER! Approaching Device', color: colors.warning };
+      return { percent, label: '🔥 Hot! Right next to you', color: colors.error };
+    } else if (rssi >= -70) {
+      return { percent, label: '♨️ Very Warm! In the same room', color: '#f97316' };
+    } else if (rssi >= -85) {
+      return { percent, label: '🌤️ Getting Warmer...', color: colors.primary };
     } else {
-      return { percent, label: '❄️ COLD. Weak Signal (Far away)', color: colors.primary };
+      return { percent, label: '❄️ Cold (Weak signal)', color: colors.onSurfaceVariant };
     }
   };
-
-  const proximity = calculateProximity(currentRssi);
 
   if (Platform.OS !== 'android') {
     return (
@@ -215,7 +770,7 @@ export default function ToolsScreen() {
           <Text style={styles.largeEmoji}>🍎</Text>
           <Text style={[styles.title, { color: colors.onSurface }]}>iOS Not Supported</Text>
           <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-            Find My Device and Bluetooth RSSI proximity scanning require Android Bluetooth and Location APIs.
+            Tools (Find My Device, BLE Radar, Sleep Timer volume fade, and AudioFX Equalizer) require Android system APIs.
           </Text>
         </View>
       </View>
@@ -226,14 +781,15 @@ export default function ToolsScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
-          <Text style={styles.largeEmoji}>📍</Text>
+          <Text style={styles.largeEmoji}>🔧</Text>
           <Text style={[styles.title, { color: colors.onSurface }]}>No Devices Tracked</Text>
           <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-            Add a device to view its last known disconnect location on a map and search with the BLE proximity radar.
+            Add a device to configure last-seen location, sleep timer volume fade, and hardware equalizer profiles.
           </Text>
           <TouchableOpacity
             style={[styles.primaryBtn, { backgroundColor: colors.primary, borderRadius: borderRadius.sm }]}
             onPress={() => router.push('/devices')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>
               Go to Devices Screen
@@ -244,11 +800,16 @@ export default function ToolsScreen() {
     );
   }
 
+  const proximity = calculateProximity(currentRssi);
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
     >
+      {/* Universal Instant Feedback Toast */}
+      <FeedbackToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+
       {/* Device Selector Pill Bar */}
       <Text style={[styles.sectionLabel, { color: colors.onSurfaceVariant }]}>
         Select Device:
@@ -270,17 +831,15 @@ export default function ToolsScreen() {
                     ? colors.primaryContainer
                     : colors.surfaceContainer,
                   borderColor: isSelected ? colors.primary : colors.outlineVariant,
+                  borderWidth: isSelected ? 2 : 1,
                   borderRadius: borderRadius.full,
                 },
               ]}
               onPress={() => {
-                if (isScanning) {
-                  stopRssiScan();
-                  setIsScanning(false);
-                  setCurrentRssi(null);
-                }
                 setSelectedAddress(dev.address);
+                showToast(`✓ Selected: ${dev.nickname}`);
               }}
+              activeOpacity={0.6}
             >
               <Text style={styles.pillEmoji}>
                 {dev.icon === 'earbuds' ? '🎧' : '🎧'}
@@ -296,29 +855,20 @@ export default function ToolsScreen() {
                   },
                 ]}
               >
-                {dev.nickname}
+                {isSelected ? '✓ ' : ''}{dev.nickname}
               </Text>
+              {dev.isConnected && (
+                <View
+                  style={[
+                    styles.onlineDot,
+                    { backgroundColor: colors.primary },
+                  ]}
+                />
+              )}
             </TouchableOpacity>
           );
         })}
       </ScrollView>
-
-      {/* Action feedback banner */}
-      {locationActionFeedback && (
-        <View
-          style={[
-            styles.feedbackBanner,
-            {
-              backgroundColor: colors.primaryContainer,
-              borderRadius: borderRadius.md,
-            },
-          ]}
-        >
-          <Text style={[styles.feedbackText, { color: colors.onPrimaryContainer }]}>
-            {locationActionFeedback}
-          </Text>
-        </View>
-      )}
 
       {selectedDevice && (
         <>
@@ -349,7 +899,6 @@ export default function ToolsScreen() {
 
             {selectedDevice.lastLocation ? (
               <View style={styles.locationBody}>
-                {/* Visual Map Representation Card */}
                 <View
                   style={[
                     styles.mapMockCard,
@@ -369,8 +918,7 @@ export default function ToolsScreen() {
                           { color: colors.onSurface },
                         ]}
                       >
-                        {selectedDevice.lastLocation.addressText ||
-                          'Coordinates Recorded'}
+                        {selectedDevice.lastLocation.addressText || 'Coordinates Recorded'}
                       </Text>
                       <Text
                         style={[
@@ -387,14 +935,8 @@ export default function ToolsScreen() {
                           { color: colors.onSurfaceVariant },
                         ]}
                       >
-                        Accuracy: ±
-                        {Math.round(
-                          selectedDevice.lastLocation.accuracy ?? 10
-                        )}
-                        m •{' '}
-                        {new Date(
-                          selectedDevice.lastLocation.timestamp
-                        ).toLocaleTimeString([], {
+                        Accuracy: ±{Math.round(selectedDevice.lastLocation.accuracy ?? 10)}m •{' '}
+                        {new Date(selectedDevice.lastLocation.timestamp).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
@@ -403,7 +945,6 @@ export default function ToolsScreen() {
                   </View>
                 </View>
 
-                {/* Navigate Button */}
                 <TouchableOpacity
                   style={[
                     styles.navigateBtn,
@@ -413,15 +954,13 @@ export default function ToolsScreen() {
                     },
                   ]}
                   onPress={handleNavigate}
+                  activeOpacity={0.7}
                 >
-                  <Text
-                    style={[styles.navigateBtnText, { color: colors.onPrimary }]}
-                  >
+                  <Text style={[styles.navigateBtnText, { color: colors.onPrimary }]}>
                     🧭 Navigate in Google Maps
                   </Text>
                 </TouchableOpacity>
 
-                {/* Simulate / Update Location Button */}
                 <TouchableOpacity
                   style={[
                     styles.secondaryBtn,
@@ -433,16 +972,12 @@ export default function ToolsScreen() {
                   ]}
                   onPress={handleManualCaptureLocation}
                   disabled={isCapturingLocation}
+                  activeOpacity={0.7}
                 >
                   {isCapturingLocation ? (
                     <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
-                    <Text
-                      style={[
-                        styles.secondaryBtnText,
-                        { color: colors.onSurface },
-                      ]}
-                    >
+                    <Text style={[styles.secondaryBtnText, { color: colors.onSurface }]}>
                       📍 Update Location Now
                     </Text>
                   )}
@@ -451,17 +986,10 @@ export default function ToolsScreen() {
             ) : (
               <View style={styles.noLocationContainer}>
                 <Text style={styles.dimEmoji}>🗺️</Text>
-                <Text
-                  style={[styles.noLocationTitle, { color: colors.onSurface }]}
-                >
+                <Text style={[styles.noLocationTitle, { color: colors.onSurface }]}>
                   No Location Saved Yet
                 </Text>
-                <Text
-                  style={[
-                    styles.noLocationDesc,
-                    { color: colors.onSurfaceVariant },
-                  ]}
-                >
+                <Text style={[styles.noLocationDesc, { color: colors.onSurfaceVariant }]}>
                   Disconnect coordinates will be captured when your device disconnects. You can also save your current location now.
                 </Text>
                 <TouchableOpacity
@@ -475,16 +1003,12 @@ export default function ToolsScreen() {
                   ]}
                   onPress={handleManualCaptureLocation}
                   disabled={isCapturingLocation}
+                  activeOpacity={0.7}
                 >
                   {isCapturingLocation ? (
                     <ActivityIndicator size="small" color={colors.onPrimary} />
                   ) : (
-                    <Text
-                      style={[
-                        styles.primaryBtnText,
-                        { color: colors.onPrimary },
-                      ]}
-                    >
+                    <Text style={[styles.primaryBtnText, { color: colors.onPrimary }]}>
                       📍 Record Current Location
                     </Text>
                   )}
@@ -500,7 +1024,8 @@ export default function ToolsScreen() {
               {
                 backgroundColor: colors.surfaceContainer,
                 borderRadius: borderRadius.xl,
-                borderColor: colors.outlineVariant,
+                borderColor: isScanning ? colors.primary : colors.outlineVariant,
+                borderWidth: isScanning ? 2 : 1,
               },
             ]}
           >
@@ -519,22 +1044,15 @@ export default function ToolsScreen() {
             </View>
 
             <View style={styles.radarBody}>
-              {/* Radar Status Bar */}
               <View style={styles.radarHeaderRow}>
                 <Text style={[styles.proximityCategory, { color: proximity.color }]}>
                   {proximity.label}
                 </Text>
-                <Text
-                  style={[
-                    styles.rssiValueText,
-                    { color: colors.onSurfaceVariant },
-                  ]}
-                >
+                <Text style={[styles.rssiValueText, { color: colors.onSurfaceVariant }]}>
                   {currentRssi !== null ? `${currentRssi} dBm` : '-- dBm'}
                 </Text>
               </View>
 
-              {/* Meter Gauge Bar */}
               <View
                 style={[
                   styles.meterTrack,
@@ -556,13 +1074,10 @@ export default function ToolsScreen() {
                 />
               </View>
 
-              <Text
-                style={[styles.meterHint, { color: colors.onSurfaceVariant }]}
-              >
+              <Text style={[styles.meterHint, { color: colors.onSurfaceVariant }]}>
                 Walk around the room slowly while scanning. As the meter fills and turns red, you are getting closer!
               </Text>
 
-              {/* Start / Stop Scan Button */}
               <TouchableOpacity
                 style={[
                   styles.scanBtn,
@@ -574,10 +1089,11 @@ export default function ToolsScreen() {
                   },
                 ]}
                 onPress={handleToggleRssiScan}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.scanBtnText, { color: colors.onPrimary }]}>
+                <Text style={[styles.scanBtnText, { color: '#ffffff' }]}>
                   {isScanning
-                    ? '⏹️ Stop Searching'
+                    ? '⏹ Stop Proximity Search'
                     : '🔍 Start Proximity Search'}
                 </Text>
               </TouchableOpacity>
@@ -591,7 +1107,8 @@ export default function ToolsScreen() {
               {
                 backgroundColor: colors.surfaceContainer,
                 borderRadius: borderRadius.xl,
-                borderColor: colors.outlineVariant,
+                borderColor: selectedDevice.disconnectAlertEnabled ? colors.primary : colors.outlineVariant,
+                borderWidth: selectedDevice.disconnectAlertEnabled ? 2 : 1,
               },
             ]}
           >
@@ -608,29 +1125,44 @@ export default function ToolsScreen() {
                 </View>
               </View>
 
-              <Switch
-                value={selectedDevice.disconnectAlertEnabled}
-                onValueChange={(val) => {
-                  if (selectedAddress) {
-                    setDisconnectAlert(selectedAddress, val);
-                  }
-                }}
-                thumbColor={
-                  selectedDevice.disconnectAlertEnabled
-                    ? colors.primary
-                    : colors.outline
-                }
-                trackColor={{
-                  false: colors.surfaceVariant,
-                  true: colors.primaryContainer,
-                }}
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: borderRadius.full,
+                    backgroundColor: selectedDevice.disconnectAlertEnabled ? '#10b981' : colors.surfaceVariant,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '800',
+                      color: selectedDevice.disconnectAlertEnabled ? '#ffffff' : colors.onSurfaceVariant,
+                    }}
+                  >
+                    {selectedDevice.disconnectAlertEnabled ? 'ON' : 'OFF'}
+                  </Text>
+                </View>
+                <Switch
+                  value={selectedDevice.disconnectAlertEnabled}
+                  onValueChange={(val) => {
+                    if (selectedAddress) {
+                      setDisconnectAlert(selectedAddress, val);
+                      showToast(val ? '✓ Disconnect Drop Alert Enabled' : 'Disconnect Drop Alert Disabled');
+                    }
+                  }}
+                  thumbColor={selectedDevice.disconnectAlertEnabled ? colors.primary : colors.outline}
+                  trackColor={{
+                    false: colors.surfaceVariant,
+                    true: colors.primaryContainer,
+                  }}
+                />
+              </View>
             </View>
 
             <View style={styles.alertCardBody}>
-              <Text
-                style={[styles.alertNotice, { color: colors.onSurfaceVariant }]}
-              >
+              <Text style={[styles.alertNotice, { color: colors.onSurfaceVariant }]}>
                 Prevents leaving your earbuds behind in a cafe or gym. If connection drops while your phone screen is active, EarbudKit rings an instant alert.
               </Text>
               <TouchableOpacity
@@ -644,530 +1176,30 @@ export default function ToolsScreen() {
                   },
                 ]}
                 onPress={handleTestDisconnectAlert}
+                activeOpacity={0.7}
               >
-                <Text
-                  style={[styles.secondaryBtnText, { color: colors.primary }]}
-                >
+                <Text style={[styles.secondaryBtnText, { color: colors.primary }]}>
                   🔔 Test Disconnect Alert
                 </Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* CARD 4: SLEEP TIMER WITH 10S VOLUME FADE */}
-          <View
-            style={[
-              styles.toolCard,
-              {
-                backgroundColor: colors.surfaceContainer,
-                borderRadius: borderRadius.xl,
-                borderColor: isTimerActive ? colors.primary : colors.outlineVariant,
-                borderWidth: isTimerActive ? 2 : 1,
-              },
-            ]}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.headerLeft}>
-                <Text style={styles.cardEmoji}>⏰</Text>
-                <View>
-                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                    Sleep Timer
-                  </Text>
-                  <Text style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}>
-                    Fades volume down over 10s, then pauses playback
-                  </Text>
-                </View>
-              </View>
-              {isTimerActive && (
-                <View
-                  style={[
-                    styles.activeTimerPill,
-                    {
-                      backgroundColor: isFading
-                        ? colors.errorContainer
-                        : colors.primaryContainer,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.activeTimerPillText,
-                      {
-                        color: isFading
-                          ? colors.onError
-                          : colors.onPrimaryContainer,
-                      },
-                    ]}
-                  >
-                    {isFading ? 'FADING OUT' : 'RUNNING'}
-                  </Text>
-                </View>
-              )}
-            </View>
+          {/* CARD 4: SLEEP TIMER WITH 10S VOLUME FADE (MEMOIZED) */}
+          <SleepTimerCard
+            colors={colors}
+            borderRadius={borderRadius}
+            onToast={showToast}
+          />
 
-            <View style={styles.timerBody}>
-              {isTimerActive ? (
-                /* Active Countdown Display */
-                <View style={styles.countdownContainer}>
-                  <Text
-                    style={[
-                      styles.countdownDisplay,
-                      {
-                        color: isFading ? colors.error : colors.onSurface,
-                      },
-                    ]}
-                  >
-                    {formatSeconds(remainingSeconds)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.countdownSubtext,
-                      {
-                        color: isFading
-                          ? colors.error
-                          : colors.onSurfaceVariant,
-                      },
-                    ]}
-                  >
-                    {isFading
-                      ? '🔉 Fading out volume over 10 seconds...'
-                      : 'Media playing • Will fade out & pause automatically'}
-                  </Text>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.cancelTimerBtn,
-                      {
-                        backgroundColor: colors.surfaceVariant,
-                        borderRadius: borderRadius.md,
-                      },
-                    ]}
-                    onPress={cancelTimer}
-                  >
-                    <Text
-                      style={[
-                        styles.cancelTimerText,
-                        { color: colors.onSurfaceVariant },
-                      ]}
-                    >
-                      ✕ Cancel Sleep Timer
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                /* Preset Selection */
-                <>
-                  <Text
-                    style={[styles.inputHeading, { color: colors.onSurface }]}
-                  >
-                    Select Duration:
-                  </Text>
-                  <View style={styles.presetsGrid}>
-                    {[15, 30, 45, 60].map((mins) => {
-                      const isPicked = selectedPreset === mins;
-                      return (
-                        <TouchableOpacity
-                          key={mins}
-                          style={[
-                            styles.presetChip,
-                            {
-                              backgroundColor: isPicked
-                                ? colors.primaryContainer
-                                : colors.surface,
-                              borderColor: isPicked
-                                ? colors.primary
-                                : colors.outlineVariant,
-                              borderRadius: borderRadius.md,
-                            },
-                          ]}
-                          onPress={() => startTimer(mins)}
-                        >
-                          <Text
-                            style={[
-                              styles.presetChipText,
-                              {
-                                color: isPicked
-                                  ? colors.onPrimaryContainer
-                                  : colors.onSurface,
-                                fontWeight: isPicked ? '700' : '600',
-                              },
-                            ]}
-                          >
-                            {mins} min
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                  {/* Custom Minutes Row */}
-                  <View style={styles.customRow}>
-                    <Text
-                      style={[
-                        styles.customLabel,
-                        { color: colors.onSurfaceVariant },
-                      ]}
-                    >
-                      Custom: {customMinutes} min
-                    </Text>
-                    <View style={styles.stepperGroup}>
-                      <TouchableOpacity
-                        style={[
-                          styles.stepperBtn,
-                          {
-                            backgroundColor: colors.surface,
-                            borderColor: colors.outlineVariant,
-                            borderRadius: borderRadius.sm,
-                          },
-                        ]}
-                        onPress={() =>
-                          setCustomMinutes((prev) => Math.max(5, prev - 5))
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.stepperText,
-                            { color: colors.onSurface },
-                          ]}
-                        >
-                          -5m
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.stepperBtn,
-                          {
-                            backgroundColor: colors.surface,
-                            borderColor: colors.outlineVariant,
-                            borderRadius: borderRadius.sm,
-                          },
-                        ]}
-                        onPress={() => setCustomMinutes((prev) => prev + 5)}
-                      >
-                        <Text
-                          style={[
-                            styles.stepperText,
-                            { color: colors.onSurface },
-                          ]}
-                        >
-                          +5m
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[
-                          styles.startCustomBtn,
-                          {
-                            backgroundColor: colors.primary,
-                            borderRadius: borderRadius.sm,
-                          },
-                        ]}
-                        onPress={() => startTimer(customMinutes)}
-                      >
-                        <Text
-                          style={[
-                            styles.startCustomText,
-                            { color: colors.onPrimary },
-                          ]}
-                        >
-                          Start ({customMinutes}m)
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {/* Fast 15s Test Preset */}
-                  <TouchableOpacity
-                    style={[
-                      styles.quickTestTimerBtn,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.outlineVariant,
-                        borderRadius: borderRadius.sm,
-                      },
-                    ]}
-                    onPress={() => startQuickTestTimer(15)}
-                  >
-                    <Text
-                      style={[
-                        styles.quickTestTimerText,
-                        { color: colors.primary },
-                      ]}
-                    >
-                      ⚡ Test Fade Out & Pause (15-second timer)
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-
-          {/* EQUALIZER CARD */}
-          <View
-            style={[
-              styles.toolCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.outlineVariant,
-                borderRadius: borderRadius.md,
-              },
-            ]}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.headerLeft}>
-                <Text style={styles.cardEmoji}>🎚️</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
-                    Equalizer (AudioFX)
-                  </Text>
-                  <Text style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}>
-                    {selectedDevice?.nickname || selectedDevice?.name || 'Device'} hardware EQ profile
-                  </Text>
-                </View>
-              </View>
-                {isEqSupported && (
-                  <Switch
-                    value={eqConfig.enabled}
-                    onValueChange={(val) => {
-                      if (selectedAddress) {
-                        setDeviceEqEnabled(selectedAddress, val);
-                      }
-                    }}
-                    thumbColor={eqConfig.enabled ? colors.primary : colors.surfaceVariant}
-                    trackColor={{
-                      false: colors.surfaceVariant,
-                      true: colors.primaryContainer,
-                    }}
-                  />
-                )}
-              </View>
-
-            <View style={styles.eqBody}>
-              {!isEqSupported ? (
-                /* Hardware Equalizer unavailable degradation banner */
-                <View
-                  style={[
-                    styles.eqUnavailableBanner,
-                    {
-                      backgroundColor: colors.surfaceVariant,
-                      borderRadius: borderRadius.sm,
-                    },
-                  ]}
-                >
-                  <Text style={styles.eqUnavailableIcon}>⚠️</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={[
-                        styles.eqUnavailableTitle,
-                        { color: colors.onSurface },
-                      ]}
-                    >
-                      EQ unavailable on this device
-                    </Text>
-                    <Text
-                      style={[
-                        styles.eqUnavailableBody,
-                        { color: colors.onSurfaceVariant },
-                      ]}
-                    >
-                      Hardware Android AudioFX Equalizer engine is not supported on this device/session. Standard audio playback is unaffected.
-                    </Text>
-                  </View>
-                </View>
-              ) : (
-                /* Equalizer Controls */
-                <View style={{ opacity: eqConfig.enabled ? 1 : 0.45 }}>
-                  {/* Presets Row */}
-                  <Text style={[styles.inputHeading, { color: colors.onSurface }]}>
-                    Presets
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.presetsRow}
-                  >
-                    {(['Flat', 'Bass Boost', 'Vocal', 'Treble', 'Custom'] as EqPresetName[]).map((preset) => {
-                      const isSelected = eqConfig.preset === preset;
-                      return (
-                        <TouchableOpacity
-                          key={preset}
-                          style={[
-                            styles.eqPresetChip,
-                            {
-                              backgroundColor: isSelected
-                                ? colors.primary
-                                : colors.surfaceVariant,
-                              borderRadius: borderRadius.full,
-                            },
-                          ]}
-                          disabled={!eqConfig.enabled}
-                          onPress={() => {
-                            if (selectedAddress) {
-                              setDevicePreset(selectedAddress, preset);
-                            }
-                          }}
-                        >
-                          <Text
-                            style={[
-                              styles.eqPresetText,
-                              {
-                                color: isSelected
-                                  ? colors.onPrimary
-                                  : colors.onSurfaceVariant,
-                                fontWeight: isSelected ? '700' : '500',
-                              },
-                            ]}
-                          >
-                            {preset}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-
-                  {/* 5-Band Sliders / Steppers */}
-                  <Text
-                    style={[
-                      styles.inputHeading,
-                      { color: colors.onSurface, marginTop: 16 },
-                    ]}
-                  >
-                    Frequency Bands
-                  </Text>
-
-                  {bandFrequencies.map((freq, idx) => {
-                    const levelMB = eqConfig.bandLevels[idx] ?? 0;
-                    const levelDB = (levelMB / 100).toFixed(1);
-                    const formattedFreq =
-                      freq >= 1000 ? `${(freq / 1000).toFixed(1)} kHz` : `${freq} Hz`;
-
-                    return (
-                      <View key={idx} style={styles.eqBandRow}>
-                        <View style={styles.eqBandLabelCol}>
-                          <Text
-                            style={[
-                              styles.eqBandFreqText,
-                              { color: colors.onSurface },
-                            ]}
-                          >
-                            {formattedFreq}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.eqBandDbText,
-                              {
-                                color:
-                                  levelMB > 0
-                                    ? colors.primary
-                                    : levelMB < 0
-                                    ? colors.error
-                                    : colors.onSurfaceVariant,
-                              },
-                            ]}
-                          >
-                            {levelMB > 0 ? `+${levelDB}` : levelDB} dB
-                          </Text>
-                        </View>
-
-                        {/* Stepper buttons and visual level meter */}
-                        <View style={styles.eqBandControls}>
-                          <TouchableOpacity
-                            style={[
-                              styles.eqStepBtn,
-                              {
-                                backgroundColor: colors.surfaceVariant,
-                                borderRadius: borderRadius.sm,
-                              },
-                            ]}
-                            disabled={!eqConfig.enabled || levelMB <= -1500}
-                            onPress={() => {
-                              if (selectedAddress) {
-                                setDeviceBandLevel(
-                                  selectedAddress,
-                                  idx,
-                                  levelMB - 100
-                                );
-                              }
-                            }}
-                          >
-                            <Text
-                              style={[
-                                styles.eqStepBtnText,
-                                { color: colors.onSurface },
-                              ]}
-                            >
-                              -
-                            </Text>
-                          </TouchableOpacity>
-
-                          {/* Visual level track */}
-                          <View
-                            style={[
-                              styles.eqLevelTrack,
-                              { backgroundColor: colors.surfaceVariant },
-                            ]}
-                          >
-                            {/* Center 0dB indicator */}
-                            <View
-                              style={[
-                                styles.eqZeroIndicator,
-                                { backgroundColor: colors.outlineVariant },
-                              ]}
-                            />
-                            {/* Active level fill */}
-                            <View
-                              style={[
-                                styles.eqLevelFill,
-                                {
-                                  backgroundColor:
-                                    levelMB >= 0 ? colors.primary : colors.error,
-                                  left: levelMB >= 0 ? '50%' : undefined,
-                                  right:
-                                    levelMB < 0
-                                      ? `${50 - (Math.abs(levelMB) / 3000) * 100}%`
-                                      : undefined,
-                                  width: `${(Math.abs(levelMB) / 3000) * 100}%`,
-                                },
-                              ]}
-                            />
-                          </View>
-
-                          <TouchableOpacity
-                            style={[
-                              styles.eqStepBtn,
-                              {
-                                backgroundColor: colors.surfaceVariant,
-                                borderRadius: borderRadius.sm,
-                              },
-                            ]}
-                            disabled={!eqConfig.enabled || levelMB >= 1500}
-                            onPress={() => {
-                              if (selectedAddress) {
-                                setDeviceBandLevel(
-                                  selectedAddress,
-                                  idx,
-                                  levelMB + 100
-                                );
-                              }
-                            }}
-                          >
-                            <Text
-                              style={[
-                                styles.eqStepBtnText,
-                                { color: colors.onSurface },
-                              ]}
-                            >
-                              +
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-          </View>
-
+          {/* CARD 5: EQUALIZER AUDIOFX (MEMOIZED & REACTIVE) */}
+          <EqualizerCard
+            colors={colors}
+            borderRadius={borderRadius}
+            selectedAddress={selectedAddress}
+            selectedNickname={selectedDevice.nickname || selectedDevice.name}
+            onToast={showToast}
+          />
         </>
       )}
     </ScrollView>
@@ -1200,7 +1232,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderWidth: 1.5,
     gap: 8,
   },
   pillEmoji: {
@@ -1209,17 +1240,12 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 14,
   },
-  feedbackBanner: {
-    padding: 12,
-    marginBottom: 14,
-  },
-  feedbackText: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
+  onlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
   toolCard: {
-    borderWidth: 1,
     marginBottom: 16,
     overflow: 'hidden',
   },
@@ -1414,7 +1440,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     alignItems: 'center',
-    borderWidth: 1,
   },
   presetChipText: {
     fontSize: 13,

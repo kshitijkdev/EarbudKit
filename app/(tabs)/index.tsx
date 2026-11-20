@@ -18,11 +18,15 @@ import {
   isDeviceWatcherServiceRunning,
   requestNotificationPermission,
 } from '../../modules/earbud-native';
+import { FeedbackToast } from '../../src/components/FeedbackToast';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { colors, borderRadius } = theme;
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => setToastMessage(msg);
 
   // Bluetooth & live events hook
   const { bluetoothEnabled, lastEvent } = useBluetoothDevices();
@@ -54,9 +58,11 @@ export default function HomeScreen() {
         await requestNotificationPermission();
         const success = await startDeviceWatcherService();
         setIsServiceActive(success);
+        showToast(success ? '✓ Background Watcher Service started' : 'Failed to start service');
       } else {
         const success = await stopDeviceWatcherService();
         setIsServiceActive(!success);
+        showToast(success ? 'Background Watcher Service stopped' : 'Failed to stop service');
       }
     } catch (e) {
       console.error('[HomeScreen] Error toggling foreground service:', e);
@@ -76,6 +82,7 @@ export default function HomeScreen() {
         batteryLevel: 85, // 85% battery
         audioCodec: 'LDAC',
       });
+      showToast('✓ Added Noise Buds Vector (85%)');
     } else {
       addTrackedDevice({
         name: 'realme TechLife Studio H1',
@@ -86,6 +93,7 @@ export default function HomeScreen() {
         batteryLevel: null, // Shows "Unavailable" to verify null handling
         audioCodec: 'AAC',
       });
+      showToast('✓ Added realme Studio H1 (Unavailable)');
     }
   };
 
@@ -113,6 +121,7 @@ export default function HomeScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
     >
+      <FeedbackToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       {/* Background Watcher Banner (Foreground Service) */}
       <View
         style={[
@@ -351,17 +360,24 @@ export default function HomeScreen() {
             dev.batteryLevel !== null && dev.batteryLevel <= dev.lowBatteryThreshold;
 
           return (
-            <View
+            <TouchableOpacity
               key={dev.address}
+              activeOpacity={0.8}
+              onPress={() => {
+                setActiveDevice(dev.address);
+                showToast(`✓ ${dev.nickname} set as Active Target`);
+              }}
               style={[
                 styles.deviceCard,
                 {
                   backgroundColor: colors.surfaceContainer,
                   borderRadius: borderRadius.xl,
-                  borderColor: dev.isConnected
+                  borderColor: isActive
+                    ? colors.primary
+                    : dev.isConnected
                     ? colors.primary
                     : colors.outlineVariant,
-                  borderWidth: dev.isConnected ? 2 : 1,
+                  borderWidth: isActive ? 2.5 : dev.isConnected ? 2 : 1,
                 },
               ]}
             >
@@ -582,7 +598,7 @@ export default function HomeScreen() {
                   </View>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })
       )}

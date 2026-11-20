@@ -11,11 +11,14 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../src/theme';
 import { useDeviceStore, TrackedDevice } from '../src/store';
 import { useStatsStore, formatDuration } from '../src/store/statsStore';
+import { FeedbackToast } from '../src/components/FeedbackToast';
 
 export default function StatsScreen() {
   const router = useRouter();
   const { theme } = useTheme();
   const { colors, borderRadius } = theme;
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => setToastMessage(msg);
 
   const trackedDevicesMap = useDeviceStore((s) => s.trackedDevices);
   const trackedDevices = Object.values(trackedDevicesMap);
@@ -86,6 +89,7 @@ export default function StatsScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
     >
+      <FeedbackToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       {/* Top Header Row with Back button */}
       <View style={styles.headerRow}>
         <TouchableOpacity
@@ -419,7 +423,11 @@ export default function StatsScreen() {
                       borderRadius: borderRadius.sm,
                     },
                   ]}
-                  onPress={() => recordListeningDuration(dev.address, 1800)} // +30m
+                  onPress={() => {
+                    recordListeningDuration(dev.address, 1800);
+                    showToast(`✓ Added 30m listening time to ${dev.nickname}`);
+                  }}
+                  activeOpacity={0.6}
                 >
                   <Text style={[styles.simBtnText, { color: colors.primary }]}>
                     +30m Test
@@ -435,7 +443,11 @@ export default function StatsScreen() {
                       borderRadius: borderRadius.sm,
                     },
                   ]}
-                  onPress={() => recordListeningDuration(dev.address, 3600)} // +1h
+                  onPress={() => {
+                    recordListeningDuration(dev.address, 3600);
+                    showToast(`✓ Added 1h listening time to ${dev.nickname}`);
+                  }}
+                  activeOpacity={0.6}
                 >
                   <Text style={[styles.simBtnText, { color: colors.primary }]}>
                     +1h Test
@@ -451,7 +463,11 @@ export default function StatsScreen() {
                       borderRadius: borderRadius.sm,
                     },
                   ]}
-                  onPress={() => clearStats(dev.address)}
+                  onPress={() => {
+                    clearStats(dev.address);
+                    showToast(`Stats reset for ${dev.nickname}`);
+                  }}
+                  activeOpacity={0.6}
                 >
                   <Text style={[styles.simBtnText, { color: colors.error }]}>
                     Reset

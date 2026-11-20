@@ -1,11 +1,14 @@
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/theme';
+import { FeedbackToast } from '../../src/components/FeedbackToast';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { theme, themeMode, setThemeMode } = useTheme();
   const { colors, borderRadius, spacing } = theme;
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const themeOptions: Array<{ label: string; value: 'system' | 'light' | 'dark' }> = [
     { label: '🌐 System', value: 'system' },
@@ -18,39 +21,48 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={styles.scrollContent}
     >
+      <FeedbackToast message={toastMessage} onDismiss={() => setToastMessage(null)} />
+
       {/* Theme selection */}
       <View style={[styles.section, { backgroundColor: colors.surfaceContainer, borderRadius: borderRadius.lg }]}>
         <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>Appearance</Text>
         <View style={styles.themeRow}>
-          {themeOptions.map((opt) => (
-            <TouchableOpacity
-              key={opt.value}
-              style={[
-                styles.themeButton,
-                {
-                  backgroundColor:
-                    themeMode === opt.value ? colors.primaryContainer : colors.surface,
-                  borderRadius: borderRadius.md,
-                },
-              ]}
-              onPress={() => setThemeMode(opt.value)}
-              activeOpacity={0.7}
-            >
-              <Text
+          {themeOptions.map((opt) => {
+            const isSelected = themeMode === opt.value;
+            return (
+              <TouchableOpacity
+                key={opt.value}
                 style={[
-                  styles.themeLabel,
+                  styles.themeButton,
                   {
-                    color:
-                      themeMode === opt.value
-                        ? colors.onPrimaryContainer
-                        : colors.onSurfaceVariant,
+                    backgroundColor: isSelected ? colors.primaryContainer : colors.surface,
+                    borderColor: isSelected ? colors.primary : colors.outlineVariant,
+                    borderWidth: isSelected ? 2 : 1,
+                    borderRadius: borderRadius.md,
                   },
                 ]}
+                onPress={() => {
+                  setThemeMode(opt.value);
+                  setToastMessage(`✓ Switched to ${opt.label} theme`);
+                }}
+                activeOpacity={0.6}
               >
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.themeLabel,
+                    {
+                      color: isSelected
+                        ? colors.onPrimaryContainer
+                        : colors.onSurfaceVariant,
+                      fontWeight: isSelected ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {isSelected ? '✓ ' : ''}{opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 

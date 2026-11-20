@@ -102,15 +102,17 @@ export const useEqualizerStore = create<EqualizerState>()(
       },
 
       getDeviceConfig: (address: string) => {
+        const addr = address ? address.toUpperCase() : '';
         const configs = get().configs;
-        if (!configs[address]) {
+        if (!configs[addr]) {
           return { ...DEFAULT_DEVICE_EQ };
         }
-        return configs[address];
+        return configs[addr];
       },
 
       setDeviceEqEnabled: (address: string, enabled: boolean) => {
-        const current = get().getDeviceConfig(address);
+        const addr = address.toUpperCase();
+        const current = get().getDeviceConfig(addr);
         const updated: DeviceEqConfig = {
           ...current,
           enabled,
@@ -119,15 +121,16 @@ export const useEqualizerStore = create<EqualizerState>()(
         set({
           configs: {
             ...get().configs,
-            [address]: updated,
+            [addr]: updated,
           },
         });
 
-        get().applyToHardware(address);
+        get().applyToHardware(addr);
       },
 
       setDevicePreset: (address: string, preset: EqPresetName) => {
-        const current = get().getDeviceConfig(address);
+        const addr = address.toUpperCase();
+        const current = get().getDeviceConfig(addr);
         let newLevels = [...current.bandLevels];
 
         if (preset !== 'Custom') {
@@ -146,17 +149,18 @@ export const useEqualizerStore = create<EqualizerState>()(
         set({
           configs: {
             ...get().configs,
-            [address]: updated,
+            [addr]: updated,
           },
         });
 
         if (updated.enabled) {
-          get().applyToHardware(address);
+          get().applyToHardware(addr);
         }
       },
 
       setDeviceBandLevel: (address: string, bandIndex: number, levelMB: number) => {
-        const current = get().getDeviceConfig(address);
+        const addr = address.toUpperCase();
+        const current = get().getDeviceConfig(addr);
         const minL = get().minLevelMB;
         const maxL = get().maxLevelMB;
         const clamped = Math.max(minL, Math.min(maxL, levelMB));
@@ -173,12 +177,12 @@ export const useEqualizerStore = create<EqualizerState>()(
         set({
           configs: {
             ...get().configs,
-            [address]: updated,
+            [addr]: updated,
           },
         });
 
         if (updated.enabled) {
-          get().applyToHardware(address);
+          get().applyToHardware(addr);
         }
       },
 
@@ -188,8 +192,9 @@ export const useEqualizerStore = create<EqualizerState>()(
           return false;
         }
 
+        const addr = address.toUpperCase();
         const bridge = getNativeBridge();
-        const config = get().getDeviceConfig(address);
+        const config = get().getDeviceConfig(addr);
 
         try {
           if (!config.enabled) {

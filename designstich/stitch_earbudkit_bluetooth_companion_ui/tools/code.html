@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-bright": "#39383e", "secondary": "#ffade3", "on-background": "#e4e1e9", "on-tertiary": "#263500", "on-secondary-fixed-variant": "#860070", "on-surface-variant": "#c9c4d8", "surface": "#131318", "on-secondary-container": "#ffe0f0", "on-error": "#690005", "tertiary-fixed-dim": "#a2d801", "outline": "#938ea1", "inverse-primary": "#603ce2", "on-tertiary-fixed": "#141f00", "background": "#131318", "error": "#ffb4ab", "on-tertiary-fixed-variant": "#384e00", "surface-variant": "#35343a", "on-error-container": "#ffdad6", "tertiary-fixed": "#bdf532", "secondary-fixed": "#ffd8ee", "inverse-surface": "#e4e1e9", "surface-container-high": "#2a292f", "error-container": "#93000a", "outline-variant": "#484555", "on-primary": "#31009a", "primary-container": "#947dff", "surface-dim": "#131318", "tertiary": "#a2d801", "surface-container-low": "#1b1b20", "surface-tint": "#cabeff", "on-secondary": "#5f004f", "primary": "#cabeff", "primary-fixed-dim": "#cabeff", "on-primary-container": "#2a0088", "primary-fixed": "#e6deff", "on-tertiary-container": "#202e00", "inverse-on-surface": "#303036", "surface-container-highest": "#35343a", "secondary-container": "#c000a2", "surface-container-lowest": "#0e0e13", "on-primary-fixed-variant": "#4816cb", "tertiary-container": "#759e00", "on-primary-fixed": "#1c0062", "on-surface": "#e4e1e9", "secondary-fixed-dim": "#ffade3", "on-secondary-fixed": "#3a0030", "surface-container": "#1f1f24" }, borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, spacing: { "gutter": "1rem", "space-xs": "0.25rem", "space-lg": "1.5rem", "margin": "1rem", "margin-tablet": "2rem", "space-xl": "2rem", "space-sm": "0.5rem", "space-md": "1rem", "margin-desktop": "3rem", "gutter-desktop": "1.5rem" }, fontFamily: { "display-hero": ["Space Grotesk"], "display-hero-mobile": ["Space Grotesk"], "headline-sm": ["Space Grotesk"], "headline-md": ["Space Grotesk"], "label-lg": ["Space Grotesk"], "title-md": ["Space Grotesk"], "body-lg": ["Inter"], "body-md": ["Inter"], "label-md": ["Space Grotesk"], "body-sm": ["Inter"], "label-sm": ["Space Grotesk"], "headline-lg": ["Space Grotesk"] }, fontSize: { "display-hero": ["56px", { lineHeight: "64px", letterSpacing: "-0.03em", fontWeight: "700" }], "display-hero-mobile": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "700" }], "headline-sm": ["20px", { lineHeight: "28px", fontWeight: "500" }], "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }], "label-lg": ["14px", { lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "600" }], "title-md": ["18px", { lineHeight: "24px", fontWeight: "600" }], "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }], "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }], "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.04em", fontWeight: "600" }], "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }], "label-sm": ["10px", { lineHeight: "14px", letterSpacing: "0.08em", fontWeight: "700" }], "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "600" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#131318;}body{overscroll-behavior-y:none;font-family:'Inter',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface min-h-screen relative flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container"><div class="fixed inset-0 pointer-events-none z-0 overflow-hidden"><div class="absolute -top-32 -left-32 w-96 h-96 bg-primary-container/15 rounded-full blur-[100px]"></div><div class="absolute top-1/3 -right-36 w-80 h-80 bg-secondary-container/15 rounded-full blur-[90px]"></div><div class="absolute -bottom-24 left-1/4 w-88 h-88 bg-tertiary-container/10 rounded-full blur-[110px]"></div></div><header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-lowest/80 backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.4)]"><div class="h-16 px-margin flex items-center justify-between relative"><div class="flex items-center gap-space-sm"><div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high/90"><span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span><span class="font-label-sm text-label-sm uppercase tracking-wider text-tertiary-fixed">Watcher Active</span></div></div><div class="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight block">Tools</span></div><div class="flex items-center gap-space-xs"><div class="flex items-center gap-1 text-on-surface-variant pr-1"><span class="material-symbols-outlined text-[16px]">wifi</span><span class="material-symbols-outlined text-[16px]">battery_charging_full</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative z-10 w-full min-h-screen px-margin pt-16 pb-28 bg-surface"><div class="flex flex-col w-full gap-space-lg">
+<!-- Segmented Top Filter/Pill Quick Switcher -->
+<div class="flex items-center justify-between gap-space-xs p-1.5 rounded-full bg-surface-container-low shadow-md backdrop-blur-xl">
+<button class="tool-tab flex-1 py-2 px-3 rounded-full bg-primary-container text-on-primary-container shadow-sm flex items-center justify-center gap-1.5 transition-all duration-300" onclick="scrollToSection('radar-section', this)" type="button">
+<span class="material-symbols-outlined text-[16px]">radar</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Radar</span>
+</button>
+<button class="tool-tab flex-1 py-2 px-3 rounded-full bg-transparent text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1.5 transition-all duration-300" onclick="scrollToSection('timer-section', this)" type="button">
+<span class="material-symbols-outlined text-[16px]">bedtime</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Timer</span>
+</button>
+<button class="tool-tab flex-1 py-2 px-3 rounded-full bg-transparent text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1.5 transition-all duration-300" onclick="scrollToSection('eq-section', this)" type="button">
+<span class="material-symbols-outlined text-[16px]">graphic_eq</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">EQ</span>
+</button>
+</div>
+<!-- SECTION 1: FIND MY DEVICE (PROXIMITY RADAR) -->
+<section class="flex flex-col gap-space-md scroll-mt-20" id="radar-section">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-[18px]">location_searching</span>
+</div>
+<div>
+<span class="font-title-md text-title-md text-on-surface block">Find My Device</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">BLE Proximity Radar Engine</span>
+</div>
+</div>
+<div class="px-2.5 py-1 rounded-full bg-surface-container-high flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-ping"></span>
+<span class="font-label-sm text-label-sm text-tertiary uppercase">Tracking</span>
+</div>
+</div>
+<!-- Main Radar Glass Card -->
+<div class="relative overflow-hidden rounded-lg bg-surface-container-low p-space-md shadow-xl flex flex-col gap-space-md">
+<!-- Ambient Glow Behind Radar -->
+<div class="absolute -top-10 -right-10 w-44 h-44 bg-secondary-container/20 rounded-full blur-[60px] pointer-events-none"></div>
+<!-- Radar Animation Console -->
+<div class="relative w-full h-56 rounded bg-surface-container-lowest/80 flex items-center justify-center overflow-hidden">
+<!-- Concentric Distance Rings -->
+<div class="absolute w-52 h-52 rounded-full bg-surface-container-high/20"></div>
+<div class="absolute w-40 h-40 rounded-full bg-surface-container-high/30"></div>
+<div class="absolute w-28 h-28 rounded-full bg-surface-container-high/40"></div>
+<div class="absolute w-16 h-16 rounded-full bg-primary-container/20"></div>
+<!-- Radar Sweep Scanner Line -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-56 h-56 rounded-full animate-spin [animation-duration:4s] flex items-start justify-center">
+<div class="w-1/2 h-1/2 bg-gradient-to-br from-tertiary/20 via-transparent to-transparent rounded-tl-full origin-bottom-right"></div>
+</div>
+</div>
+<!-- Center Phone Node -->
+<div class="relative z-10 w-8 h-8 rounded-full bg-surface-bright flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-primary text-[18px]">smartphone</span>
+</div>
+<!-- Pulsing Device Blip (Sony WH-1000XM5) -->
+<div class="absolute top-12 right-20 z-20 flex flex-col items-center group cursor-pointer" onclick="triggerPingBurst()">
+<span class="relative flex h-5 w-5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-5 w-5 bg-gradient-to-r from-tertiary to-secondary shadow-[0_0_12px_rgba(162,216,1,0.8)] items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-on-tertiary"></span>
+</span>
+</span>
+<div class="mt-1 px-2 py-0.5 rounded-full bg-surface-container-highest/90 backdrop-blur-md shadow-md flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-[12px]">headphones</span>
+<span class="font-label-sm text-label-sm text-on-surface truncate max-w-[85px]">Sony XM5</span>
+</div>
+</div>
+<!-- Distance Rings Telemetry Legend -->
+<div class="absolute bottom-2 left-3 flex items-center gap-2 text-outline font-label-sm text-label-sm">
+<span>0.5m</span>
+<span>•</span>
+<span>1.5m</span>
+<span>•</span>
+<span>3.0m</span>
+</div>
+<div class="absolute top-2 right-3 font-label-sm text-label-sm text-tertiary bg-surface-container-high/80 px-2 py-0.5 rounded-full">
+          Live RSSI Loop
+        </div>
+</div>
+<!-- Telemetry Readout Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="p-space-sm rounded bg-surface-container flex flex-col">
+<span class="font-label-sm text-label-sm uppercase text-outline">Proximity Status</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="font-headline-sm text-headline-sm text-secondary font-semibold">Warmer!</span>
+<span class="text-[16px]">🔥</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Signal climbing</span>
+</div>
+<div class="p-space-sm rounded bg-surface-container flex flex-col">
+<span class="font-label-sm text-label-sm uppercase text-outline">BLE Signal Power</span>
+<span class="font-headline-sm text-headline-sm text-tertiary mt-0.5 font-semibold">-52 dBm</span>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-tertiary text-[14px]">signal_cellular_alt</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Strong Link</span>
+</div>
+</div>
+</div>
+<!-- Last Seen Address Card -->
+<div class="p-space-sm rounded bg-surface-container flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[18px]">pin_drop</span>
+</div>
+<div class="min-w-0">
+<span class="font-label-md text-label-md text-on-surface block truncate">Silver Creek Library</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">14 mins ago • Range ~2.4m</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline shrink-0">history</span>
+</div>
+<!-- Radar Action Buttons -->
+<div class="flex flex-col gap-space-sm pt-1">
+<a class="w-full py-3 px-4 rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform" href="https://maps.google.com" rel="noopener noreferrer" target="_blank">
+<span class="material-symbols-outlined text-[20px]">near_me</span>
+<span>Navigate (Google Maps)</span>
+</a>
+<button class="w-full py-3 px-4 rounded-full bg-surface-container-high text-secondary hover:text-on-surface font-label-lg text-label-lg flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-transform" id="chirp-btn" onclick="playChirpEffect()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="chirp-icon">volume_up</span>
+<span id="chirp-text">Chirp Earbud (Play Beep)</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 2: SLEEP TIMER -->
+<section class="flex flex-col gap-space-md scroll-mt-20" id="timer-section">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[18px]">bedtime</span>
+</div>
+<div>
+<span class="font-title-md text-title-md text-on-surface block">Smart Sleep Timer</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">Auto Audio Dimmer &amp; Disconnect</span>
+</div>
+</div>
+<div class="px-2.5 py-1 rounded-full bg-surface-container-high">
+<span class="font-label-sm text-label-sm text-primary uppercase">Active</span>
+</div>
+</div>
+<!-- Sleep Timer Glass Card -->
+<div class="relative overflow-hidden rounded-lg bg-surface-container-low p-space-md shadow-xl flex flex-col items-center gap-space-md">
+<!-- Ambient Glow Behind Timer -->
+<div class="absolute -bottom-10 -left-10 w-44 h-44 bg-primary-container/20 rounded-full blur-[60px] pointer-events-none"></div>
+<!-- Circular Countdown Visualizer -->
+<div class="relative w-52 h-52 flex items-center justify-center my-2">
+<svg class="w-full h-full -rotate-90 transform" viewbox="0 0 160 160">
+<!-- Background Track -->
+<circle class="text-surface-container-high" cx="80" cy="80" fill="transparent" r="68" stroke="currentColor" stroke-width="8"></circle>
+<!-- Sweep Gradient Track -->
+<defs>
+<lineargradient id="timerGrad" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#cabeff"></stop>
+<stop offset="60%" stop-color="#ffade3"></stop>
+<stop offset="100%" stop-color="#a2d801"></stop>
+</lineargradient>
+</defs>
+<circle class="transition-all duration-1000 ease-linear" cx="80" cy="80" fill="transparent" id="timer-ring" r="68" stroke="url(#timerGrad)" stroke-dasharray="427.25" stroke-dashoffset="88" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<!-- Interior Dial Info -->
+<div class="absolute flex flex-col items-center justify-center text-center">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-outline">Remaining</span>
+<span class="font-display-hero-mobile text-display-hero-mobile text-on-surface font-bold tracking-tight my-0.5" id="countdown-val">24:15</span>
+<span class="font-label-sm text-label-sm text-primary px-2 py-0.5 rounded-full bg-surface-container-highest">Target: 30m</span>
+</div>
+</div>
+<!-- Quick Preset Chips -->
+<div class="w-full flex items-center justify-between gap-1.5 overflow-x-auto pb-1">
+<button class="preset-chip py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" onclick="setTimerPreset(15, this)" type="button">15m</button>
+<button class="preset-chip py-1.5 px-3 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md transition-colors shadow-sm" onclick="setTimerPreset(30, this)" type="button">30m (Active)</button>
+<button class="preset-chip py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" onclick="setTimerPreset(45, this)" type="button">45m</button>
+<button class="preset-chip py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" onclick="setTimerPreset(60, this)" type="button">60m</button>
+<button class="preset-chip py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface flex items-center gap-1" onclick="setTimerPreset(0, this)" type="button">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span>Custom</span>
+</button>
+</div>
+<!-- Gentle Dimming Notice -->
+<div class="w-full p- space-sm px-3 py-2 rounded bg-surface-container flex items-center gap-space-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0">graphic_eq</span>
+<span class="font-body-sm text-body-sm">Audio fades out smoothly over the final 10 seconds without jarring clicks.</span>
+</div>
+<!-- Toggle Timer Controls -->
+<div class="w-full flex gap-space-sm">
+<button class="flex-1 py-3 px-4 rounded-full bg-gradient-to-r from-primary to-secondary text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all" id="toggle-timer-btn" onclick="toggleTimer()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="timer-btn-icon">pause</span>
+<span id="timer-btn-text">Pause Timer</span>
+</button>
+<button aria-label="Reset Timer" class="w-12 h-12 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center shrink-0 active:scale-95 transition-transform" onclick="resetTimer()" type="button">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+</button>
+</div>
+</div>
+</section>
+<!-- SECTION 3: PARAMETRIC EQUALIZER -->
+<section class="flex flex-col gap-space-md scroll-mt-20" id="eq-section">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-tertiary-container/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[18px]">equalizer</span>
+</div>
+<div>
+<span class="font-title-md text-title-md text-on-surface block">Parametric Equalizer</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">5-Band Low-Latency Filter</span>
+</div>
+</div>
+<button class="px-2.5 py-1 rounded-full bg-tertiary text-on-tertiary flex items-center gap-1 shadow-sm active:scale-95 transition-transform" id="eq-power-badge" onclick="toggleEqPower()" type="button">
+<span class="material-symbols-outlined text-[14px]">power_settings_new</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider font-bold" id="eq-power-text">DSP ON</span>
+</button>
+</div>
+<!-- Equalizer Console Card -->
+<div class="relative overflow-hidden rounded-lg bg-surface-container-low p-space-md shadow-xl flex flex-col gap-space-md">
+<!-- Equalizer Preset Selector Chips -->
+<div class="w-full flex items-center gap-2 overflow-x-auto pb-1">
+<button class="eq-preset-chip shrink-0 py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" onclick="applyEqPreset('flat', this)" type="button">Flat</button>
+<button class="eq-preset-chip shrink-0 py-1.5 px-3 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md transition-colors shadow-sm" onclick="applyEqPreset('bass', this)" type="button">Bass Boost 🔥</button>
+<button class="eq-preset-chip shrink-0 py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" onclick="applyEqPreset('vocal', this)" type="button">Vocal</button>
+<button class="eq-preset-chip shrink-0 py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface" onclick="applyEqPreset('treble', this)" type="button">Treble</button>
+<button class="eq-preset-chip shrink-0 py-1.5 px-3 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface flex items-center gap-1" onclick="applyEqPreset('custom', this)" type="button">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+<span>Custom</span>
+</button>
+</div>
+<!-- Sliders Rack -->
+<div class="w-full p-space-md rounded bg-surface-container-lowest/80 flex items-end justify-between gap-2">
+<!-- Band 1: 60Hz -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-sm text-label-sm text-secondary font-bold" id="label-60hz">+3dB</span>
+<div class="relative w-8 h-40 bg-surface-container rounded-full flex items-end justify-center p-1">
+<div class="w-full bg-gradient-to-t from-secondary to-primary rounded-full transition-all duration-300" id="bar-60hz" style="height: 65%;"></div>
+<input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" max="10" min="-10" oninput="updateBand('60hz', this.value)" type="range" value="3"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">60Hz</span>
+</div>
+<!-- Band 2: 250Hz -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-sm text-label-sm text-secondary font-bold" id="label-250hz">+1dB</span>
+<div class="relative w-8 h-40 bg-surface-container rounded-full flex items-end justify-center p-1">
+<div class="w-full bg-gradient-to-t from-secondary to-primary rounded-full transition-all duration-300" id="bar-250hz" style="height: 55%;"></div>
+<input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" max="10" min="-10" oninput="updateBand('250hz', this.value)" type="range" value="1"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">250Hz</span>
+</div>
+<!-- Band 3: 1kHz -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-sm text-label-sm text-outline font-bold" id="label-1khz">-1dB</span>
+<div class="relative w-8 h-40 bg-surface-container rounded-full flex items-end justify-center p-1">
+<div class="w-full bg-gradient-to-t from-primary to-surface-bright rounded-full transition-all duration-300" id="bar-1khz" style="height: 45%;"></div>
+<input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" max="10" min="-10" oninput="updateBand('1khz', this.value)" type="range" value="-1"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">1kHz</span>
+</div>
+<!-- Band 4: 4kHz -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-sm text-label-sm text-tertiary font-bold" id="label-4khz">+4dB</span>
+<div class="relative w-8 h-40 bg-surface-container rounded-full flex items-end justify-center p-1">
+<div class="w-full bg-gradient-to-t from-primary to-tertiary rounded-full transition-all duration-300" id="bar-4khz" style="height: 70%;"></div>
+<input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" max="10" min="-10" oninput="updateBand('4khz', this.value)" type="range" value="4"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">4kHz</span>
+</div>
+<!-- Band 5: 12kHz -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<span class="font-label-sm text-label-sm text-tertiary font-bold" id="label-12khz">+2dB</span>
+<div class="relative w-8 h-40 bg-surface-container rounded-full flex items-end justify-center p-1">
+<div class="w-full bg-gradient-to-t from-primary to-tertiary rounded-full transition-all duration-300" id="bar-12khz" style="height: 60%;"></div>
+<input class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" max="10" min="-10" oninput="updateBand('12khz', this.value)" type="range" value="2"/>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">12kHz</span>
+</div>
+</div>
+<!-- Friendly Status Badge -->
+<div class="p-space-sm rounded bg-surface-container flex items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary animate-pulse shrink-0"></span>
+<div>
+<span class="font-label-md text-label-md text-on-surface block">Real-time DSP Active on Sony WH-1000XM5</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">Low-latency 64-bit precision buffer</span>
+</div>
+</div>
+<button class="w-7 h-7 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant hover:text-on-surface" onclick="toggleFallbackInfo()" type="button">
+<span class="material-symbols-outlined text-[16px]">info</span>
+</button>
+</div>
+<!-- Toggleable Preview Fallback Note -->
+<div class="hidden p-space-sm rounded bg-surface-container-high transition-all" id="fallback-note">
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0 mt-0.5">swap_driving_apps</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-secondary">Hardware DSP Fallback</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Hardware DSP fallback active for devices without native EQ. Processing smoothly switches to an in-app software pipeline when Bluetooth vendor profiles are unavailable.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<script>
+  // Smooth scroll and active tab pill styling
+  function scrollToSection(sectionId, clickedBtn) {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.querySelectorAll('.tool-tab').forEach(tab => {
+      tab.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-sm');
+      tab.classList.add('bg-transparent', 'text-on-surface-variant');
+    });
+    clickedBtn.classList.remove('bg-transparent', 'text-on-surface-variant');
+    clickedBtn.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-sm');
+  }
+
+  // Chirp Beep interactive feedback
+  let isChirping = false;
+  function playChirpEffect() {
+    const btn = document.getElementById('chirp-btn');
+    const text = document.getElementById('chirp-text');
+    const icon = document.getElementById('chirp-icon');
+    
+    if (isChirping) return;
+    isChirping = true;
+    
+    btn.classList.add('bg-secondary', 'text-on-secondary');
+    btn.classList.remove('bg-surface-container-high', 'text-secondary');
+    text.innerText = 'Beeping XM5 Loudly...';
+    icon.innerText = 'surround_sound';
+    icon.classList.add('animate-spin');
+
+    setTimeout(() => {
+      btn.classList.remove('bg-secondary', 'text-on-secondary');
+      btn.classList.add('bg-surface-container-high', 'text-secondary');
+      text.innerText = 'Chirp Earbud (Play Beep)';
+      icon.innerText = 'volume_up';
+      icon.classList.remove('animate-spin');
+      isChirping = false;
+    }, 2800);
+  }
+
+  function triggerPingBurst() {
+    alert('Sony WH-1000XM5 detected: 1.2m nearby in range. Proximity optimal.');
+  }
+
+  // Sleep Timer Countdown Simulation
+  let timerSeconds = 24 * 60 + 15;
+  let timerInterval = null;
+  let isRunning = true;
+
+  function formatTime(totalSec) {
+    const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+    const s = (totalSec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function updateTimerDisplay() {
+    const countdownEl = document.getElementById('countdown-val');
+    const ringEl = document.getElementById('timer-ring');
+    if (countdownEl) countdownEl.innerText = formatTime(timerSeconds);
+
+    if (ringEl) {
+      // 30m total = 1800s. Circumference = 427.25
+      const totalCapacity = 1800;
+      const progress = Math.max(0, timerSeconds / totalCapacity);
+      const offset = 427.25 * (1 - progress);
+      ringEl.style.strokeDashoffset = offset;
+    }
+  }
+
+  function startCountdown() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      if (timerSeconds > 0) {
+        timerSeconds--;
+        updateTimerDisplay();
+      } else {
+        clearInterval(timerInterval);
+        isRunning = false;
+        document.getElementById('timer-btn-text').innerText = 'Start Timer';
+        document.getElementById('timer-btn-icon').innerText = 'play_arrow';
+      }
+    }, 1000);
+  }
+
+  function toggleTimer() {
+    const btnText = document.getElementById('timer-btn-text');
+    const btnIcon = document.getElementById('timer-btn-icon');
+    if (isRunning) {
+      clearInterval(timerInterval);
+      isRunning = false;
+      btnText.innerText = 'Resume Timer';
+      btnIcon.innerText = 'play_arrow';
+    } else {
+      isRunning = true;
+      startCountdown();
+      btnText.innerText = 'Pause Timer';
+      btnIcon.innerText = 'pause';
+    }
+  }
+
+  function resetTimer() {
+    timerSeconds = 30 * 60;
+    updateTimerDisplay();
+    if (!isRunning) {
+      toggleTimer();
+    }
+  }
+
+  function setTimerPreset(mins, chipBtn) {
+    document.querySelectorAll('.preset-chip').forEach(c => {
+      c.classList.remove('bg-primary-container', 'text-on-primary-container', 'shadow-sm');
+      c.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+    });
+    chipBtn.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+    chipBtn.classList.add('bg-primary-container', 'text-on-primary-container', 'shadow-sm');
+
+    if (mins > 0) {
+      timerSeconds = mins * 60;
+      updateTimerDisplay();
+    }
+  }
+
+  startCountdown();
+
+  // Equalizer Slider Updates
+  function updateBand(band, val) {
+    const intVal = parseInt(val, 10);
+    const sign = intVal > 0 ? '+' : '';
+    const label = document.getElementById(`label-${band}`);
+    const bar = document.getElementById(`bar-${band}`);
+
+    if (label) label.innerText = `${sign}${intVal}dB`;
+    if (bar) {
+      // Map -10 to +10 dB to 10% - 95% height
+      const pct = Math.round(((intVal + 10) / 20) * 85 + 10);
+      bar.style.height = `${pct}%`;
+    }
+  }
+
+  const EQ_PRESETS = {
+    flat: { '60hz': 0, '250hz': 0, '1khz': 0, '4khz': 0, '12khz': 0 },
+    bass: { '60hz': 6, '250hz': 3, '1khz': -1, '4khz': 2, '12khz': 1 },
+    vocal: { '60hz': -2, '250hz': 1, '1khz': 4, '4khz': 3, '12khz': 0 },
+    treble: { '60hz': -1, '250hz': 0, '1khz': 1, '4khz': 4, '12khz': 5 },
+    custom: { '60hz': 3, '250hz': 1, '1khz': -1, '4khz': 4, '12khz': 2 }
+  };
+
+  function applyEqPreset(presetKey, chipBtn) {
+    document.querySelectorAll('.eq-preset-chip').forEach(c => {
+      c.classList.remove('bg-secondary-container', 'text-on-secondary-container', 'shadow-sm');
+      c.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+    });
+    chipBtn.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+    chipBtn.classList.add('bg-secondary-container', 'text-on-secondary-container', 'shadow-sm');
+
+    const config = EQ_PRESETS[presetKey];
+    if (config) {
+      Object.keys(config).forEach(band => {
+        updateBand(band, config[band]);
+      });
+    }
+  }
+
+  let eqPowered = true;
+  function toggleEqPower() {
+    const badge = document.getElementById('eq-power-badge');
+    const text = document.getElementById('eq-power-text');
+    eqPowered = !eqPowered;
+    if (eqPowered) {
+      badge.classList.remove('bg-surface-container-high', 'text-outline');
+      badge.classList.add('bg-tertiary', 'text-on-tertiary');
+      text.innerText = 'DSP ON';
+    } else {
+      badge.classList.remove('bg-tertiary', 'text-on-tertiary');
+      badge.classList.add('bg-surface-container-high', 'text-outline');
+      text.innerText = 'DSP BYPASS';
+    }
+  }
+
+  function toggleFallbackInfo() {
+    const note = document.getElementById('fallback-note');
+    if (note) {
+      note.classList.toggle('hidden');
+    }
+  }
+</script></main><div class="fixed bottom-0 w-full z-50 pb-safe pointer-events-none flex justify-center"><nav class="pointer-events-auto mb-space-md mx-margin w-full max-w-[396px] h-16 rounded-full bg-surface-container-lowest/85 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.6)] px-space-xs flex items-center justify-between" data-active-classes="text-primary-fixed bg-surface-container-high shadow-[0_0_16px_rgba(148,125,255,0.35)]"><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="home" href="#"><span class="material-symbols-outlined text-[20px]">headphones</span><span class="font-label-sm text-label-sm mt-0.5">Home</span></a><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="devices" href="#"><span class="material-symbols-outlined text-[20px]">devices</span><span class="font-label-sm text-label-sm mt-0.5">Devices</span></a><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="auto" href="#"><span class="material-symbols-outlined text-[20px]">bolt</span><span class="font-label-sm text-label-sm mt-0.5">Auto</span></a><a aria-current="page" class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-primary-fixed bg-surface-container-high shadow-[0_0_16px_rgba(148,125,255,0.35)]" data-path="tools" href="#"><span class="material-symbols-outlined text-[20px]">equalizer</span><span class="font-label-sm text-label-sm mt-0.5">Tools</span></a><a class="flex-1 flex flex-col items-center justify-center h-12 rounded-full transition-all duration-200 text-on-surface-variant hover:text-on-surface" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-label-sm text-label-sm mt-0.5">Settings</span></a></nav></div></body></html>

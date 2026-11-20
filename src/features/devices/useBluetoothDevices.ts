@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { Platform, AppState, Alert } from 'react-native';
 import {
   BondedDevice,
   ConnectionChangeEvent,
@@ -14,6 +14,7 @@ import {
   getDeviceBatteryLevel,
   getActiveAudioCodec,
   openBluetoothSettings,
+  openAppSettings,
 } from '../../../modules/earbud-native';
 import {
   useDeviceStore,
@@ -81,11 +82,24 @@ export function useBluetoothDevices() {
 
   const requestPermission = useCallback(async () => {
     const granted = await requestBluetoothPermissions();
-    setPermissionGranted(granted);
-    if (granted) {
+    const hasPerm = hasBluetoothPermission();
+    const isGranted = granted || hasPerm;
+    setPermissionGranted(isGranted);
+
+    if (isGranted) {
       await checkAndRefresh();
+    } else {
+      Alert.alert(
+        'Bluetooth Permission Required',
+        'Bluetooth permission is required to detect and manage your connected audio devices. Please grant the Bluetooth permission in Settings.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'App Settings', onPress: () => openAppSettings() },
+          { text: 'Bluetooth Settings', onPress: () => openBluetoothSettings() },
+        ]
+      );
     }
-    return granted;
+    return isGranted;
   }, [checkAndRefresh]);
 
   useEffect(() => {
@@ -162,11 +176,20 @@ export function useBluetoothDevices() {
       checkAndRefresh();
     });
 
+    // Listen for AppState changes to re-check permissions when returning from Settings
+    const appStateSub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        console.log('[EarbudKit] App became active, checking Bluetooth permissions...');
+        checkAndRefresh();
+      }
+    });
+
     return () => {
       connSub.remove();
       batterySub.remove();
       btStateSub.remove();
       bondSub.remove();
+      appStateSub.remove();
     };
   }, [checkAndRefresh, setConnectionState, setBatteryLevel]);
 
