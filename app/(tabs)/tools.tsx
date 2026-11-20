@@ -16,6 +16,7 @@ import {
   useDeviceStore,
   TrackedDevice,
   DeviceLocation,
+  useSleepTimerStore,
 } from '../../src/store';
 import {
   startRssiScan,
@@ -62,6 +63,22 @@ export default function ToolsScreen() {
   const setDeviceLocation = useDeviceStore((s) => s.setDeviceLocation);
   const setDisconnectAlert = useDeviceStore((s) => s.setDisconnectAlert);
   const triggerTestDisconnectAlert = useDeviceStore((s) => s.triggerTestDisconnectAlert);
+
+  // Sleep Timer hooks
+  const isTimerActive = useSleepTimerStore((s) => s.isActive);
+  const remainingSeconds = useSleepTimerStore((s) => s.remainingSeconds);
+  const isFading = useSleepTimerStore((s) => s.isFading);
+  const selectedPreset = useSleepTimerStore((s) => s.selectedPreset);
+  const startTimer = useSleepTimerStore((s) => s.startTimer);
+  const startQuickTestTimer = useSleepTimerStore((s) => s.startQuickTestTimer);
+  const cancelTimer = useSleepTimerStore((s) => s.cancelTimer);
+  const [customMinutes, setCustomMinutes] = useState(25);
+
+  const formatSeconds = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   // Subscribe to live BLE RSSI scan events
   useEffect(() => {
@@ -614,6 +631,253 @@ export default function ToolsScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* CARD 4: SLEEP TIMER WITH 10S VOLUME FADE */}
+          <View
+            style={[
+              styles.toolCard,
+              {
+                backgroundColor: colors.surfaceContainer,
+                borderRadius: borderRadius.xl,
+                borderColor: isTimerActive ? colors.primary : colors.outlineVariant,
+                borderWidth: isTimerActive ? 2 : 1,
+              },
+            ]}
+          >
+            <View style={styles.cardHeader}>
+              <View style={styles.headerLeft}>
+                <Text style={styles.cardEmoji}>⏰</Text>
+                <View>
+                  <Text style={[styles.cardTitle, { color: colors.onSurface }]}>
+                    Sleep Timer
+                  </Text>
+                  <Text style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}>
+                    Fades volume down over 10s, then pauses playback
+                  </Text>
+                </View>
+              </View>
+              {isTimerActive && (
+                <View
+                  style={[
+                    styles.activeTimerPill,
+                    {
+                      backgroundColor: isFading
+                        ? colors.errorContainer
+                        : colors.primaryContainer,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.activeTimerPillText,
+                      {
+                        color: isFading
+                          ? colors.onError
+                          : colors.onPrimaryContainer,
+                      },
+                    ]}
+                  >
+                    {isFading ? 'FADING OUT' : 'RUNNING'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.timerBody}>
+              {isTimerActive ? (
+                /* Active Countdown Display */
+                <View style={styles.countdownContainer}>
+                  <Text
+                    style={[
+                      styles.countdownDisplay,
+                      {
+                        color: isFading ? colors.error : colors.onSurface,
+                      },
+                    ]}
+                  >
+                    {formatSeconds(remainingSeconds)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.countdownSubtext,
+                      {
+                        color: isFading
+                          ? colors.error
+                          : colors.onSurfaceVariant,
+                      },
+                    ]}
+                  >
+                    {isFading
+                      ? '🔉 Fading out volume over 10 seconds...'
+                      : 'Media playing • Will fade out & pause automatically'}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.cancelTimerBtn,
+                      {
+                        backgroundColor: colors.surfaceVariant,
+                        borderRadius: borderRadius.md,
+                      },
+                    ]}
+                    onPress={cancelTimer}
+                  >
+                    <Text
+                      style={[
+                        styles.cancelTimerText,
+                        { color: colors.onSurfaceVariant },
+                      ]}
+                    >
+                      ✕ Cancel Sleep Timer
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                /* Preset Selection */
+                <>
+                  <Text
+                    style={[styles.inputHeading, { color: colors.onSurface }]}
+                  >
+                    Select Duration:
+                  </Text>
+                  <View style={styles.presetsGrid}>
+                    {[15, 30, 45, 60].map((mins) => {
+                      const isPicked = selectedPreset === mins;
+                      return (
+                        <TouchableOpacity
+                          key={mins}
+                          style={[
+                            styles.presetChip,
+                            {
+                              backgroundColor: isPicked
+                                ? colors.primaryContainer
+                                : colors.surface,
+                              borderColor: isPicked
+                                ? colors.primary
+                                : colors.outlineVariant,
+                              borderRadius: borderRadius.md,
+                            },
+                          ]}
+                          onPress={() => startTimer(mins)}
+                        >
+                          <Text
+                            style={[
+                              styles.presetChipText,
+                              {
+                                color: isPicked
+                                  ? colors.onPrimaryContainer
+                                  : colors.onSurface,
+                                fontWeight: isPicked ? '700' : '600',
+                              },
+                            ]}
+                          >
+                            {mins} min
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Custom Minutes Row */}
+                  <View style={styles.customRow}>
+                    <Text
+                      style={[
+                        styles.customLabel,
+                        { color: colors.onSurfaceVariant },
+                      ]}
+                    >
+                      Custom: {customMinutes} min
+                    </Text>
+                    <View style={styles.stepperGroup}>
+                      <TouchableOpacity
+                        style={[
+                          styles.stepperBtn,
+                          {
+                            backgroundColor: colors.surface,
+                            borderColor: colors.outlineVariant,
+                            borderRadius: borderRadius.sm,
+                          },
+                        ]}
+                        onPress={() =>
+                          setCustomMinutes((prev) => Math.max(5, prev - 5))
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.stepperText,
+                            { color: colors.onSurface },
+                          ]}
+                        >
+                          -5m
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.stepperBtn,
+                          {
+                            backgroundColor: colors.surface,
+                            borderColor: colors.outlineVariant,
+                            borderRadius: borderRadius.sm,
+                          },
+                        ]}
+                        onPress={() => setCustomMinutes((prev) => prev + 5)}
+                      >
+                        <Text
+                          style={[
+                            styles.stepperText,
+                            { color: colors.onSurface },
+                          ]}
+                        >
+                          +5m
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.startCustomBtn,
+                          {
+                            backgroundColor: colors.primary,
+                            borderRadius: borderRadius.sm,
+                          },
+                        ]}
+                        onPress={() => startTimer(customMinutes)}
+                      >
+                        <Text
+                          style={[
+                            styles.startCustomText,
+                            { color: colors.onPrimary },
+                          ]}
+                        >
+                          Start ({customMinutes}m)
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Fast 15s Test Preset */}
+                  <TouchableOpacity
+                    style={[
+                      styles.quickTestTimerBtn,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.outlineVariant,
+                        borderRadius: borderRadius.sm,
+                      },
+                    ]}
+                    onPress={() => startQuickTestTimer(15)}
+                  >
+                    <Text
+                      style={[
+                        styles.quickTestTimerText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      ⚡ Test Fade Out & Pause (15-second timer)
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
         </>
       )}
     </ScrollView>
@@ -805,6 +1069,107 @@ const styles = StyleSheet.create({
   alertNotice: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  activeTimerPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  activeTimerPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  timerBody: {
+    paddingHorizontal: 18,
+    paddingBottom: 18,
+    gap: 12,
+  },
+  countdownContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 8,
+  },
+  countdownDisplay: {
+    fontSize: 48,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
+  },
+  countdownSubtext: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  cancelTimerBtn: {
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  cancelTimerText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  inputHeading: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  presetsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  presetChip: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  presetChipText: {
+    fontSize: 13,
+  },
+  customRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  customLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  stepperGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepperBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+  },
+  stepperText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  startCustomBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  startCustomText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  quickTestTimerBtn: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    marginTop: 6,
+  },
+  quickTestTimerText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   card: {
     padding: 24,
