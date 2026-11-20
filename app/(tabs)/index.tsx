@@ -233,7 +233,7 @@ export default function HomeScreen() {
           <View>
             <View style={styles.greetingTitleRow}>
               <Text style={[styles.greetingTitle, { color: colors.onSurface, fontFamily: fonts.display }]}>
-                Hey Kshitij
+                Hey User
               </Text>
               <Text style={styles.greetingWave}>👋</Text>
             </View>
