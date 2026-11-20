@@ -32,14 +32,14 @@ export interface AppOption {
 
 // Popular Android media and podcast apps
 export const MEDIA_APP_OPTIONS: AppOption[] = [
-  { label: 'Spotify', packageName: 'com.spotify.music', category: 'music', icon: '🎵' },
-  { label: 'YouTube Music', packageName: 'com.google.android.apps.youtube.music', category: 'music', icon: '▶️' },
-  { label: 'Apple Music', packageName: 'com.apple.android.music', category: 'music', icon: '🍎' },
-  { label: 'Amazon Music', packageName: 'com.amazon.mp3', category: 'music', icon: '📦' },
-  { label: 'Pocket Casts', packageName: 'au.com.shiftyjelly.pocketcasts', category: 'podcast', icon: '🎙️' },
-  { label: 'Google Podcasts', packageName: 'com.google.android.apps.podcasts', category: 'podcast', icon: '🎧' },
-  { label: 'Audible', packageName: 'com.audible.application', category: 'podcast', icon: '📖' },
-  { label: 'VLC Player', packageName: 'org.videolan.vlc', category: 'other', icon: '🎞️' },
+  { label: 'Spotify', packageName: 'com.spotify.music', category: 'music', icon: 'musical-notes' },
+  { label: 'YouTube Music', packageName: 'com.google.android.apps.youtube.music', category: 'music', icon: 'play-circle' },
+  { label: 'Apple Music', packageName: 'com.apple.android.music', category: 'music', icon: 'disc' },
+  { label: 'Amazon Music', packageName: 'com.amazon.mp3', category: 'music', icon: 'musical-note' },
+  { label: 'Pocket Casts', packageName: 'au.com.shiftyjelly.pocketcasts', category: 'podcast', icon: 'radio' },
+  { label: 'Google Podcasts', packageName: 'com.google.android.apps.podcasts', category: 'podcast', icon: 'headset' },
+  { label: 'Audible', packageName: 'com.audible.application', category: 'podcast', icon: 'book' },
+  { label: 'VLC Player', packageName: 'org.videolan.vlc', category: 'other', icon: 'videocam' },
 ];
 
 export function getDefaultProfileForDevice(

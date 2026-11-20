@@ -209,7 +209,26 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - Tactile Edit Modal Sheet: nickname input, segmented form factor glyph picker ([ Earbuds | Headphones ]), low-battery threshold pills ([ 10% | 20% (Default) | 30% ]), "Test Low Battery Notification" button, discard and save buttons.
     - 100% zero emojis; Inter typography and vector icons only.
   - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
-- [ ] **Stage S4: Auto-Actions Screen**
+- [x] **Stage S4: Auto-Actions Screen**
+  - Updated `src/store/autoStore.ts`: converted all `MEDIA_APP_OPTIONS` emoji icons to clean Ionicons vector icon identifiers (`musical-notes`, `play-circle`, `disc`, `musical-note`, `radio`, `headset`, `book`, `videocam`).
+  - Rebuilt `app/(tabs)/auto.tsx`: Soft Studio editorial style:
+    - 34px bold "Auto-Actions" title with "Engine Active" pulse pill badge.
+    - Horizontal scrollable device selector pills with active checkmark pill in active accent color.
+    - Master Automation Card: "Enable Smart Handshake" with tactile `Toggle` switch.
+    - "When Hardware Links" section:
+      - Auto-Launch Media Source toggle row.
+      - 4-column App Launcher Grid with rounded cards, vector icons, active accent border/background, and checkmark pill.
+      - Target Audio Gain section: live decibel/percentage readout in `colors.primary`, `NeonSlider` (8px inset groove, active accent fill, 28px white circular thumb), and quick preset chips ([30% | 50% | 65% | 85% | Max]).
+      - Enable Acoustic Isolation (Do Not Disturb) toggle with automatic Android permission flow.
+      - Quiet Action: "Simulate Connect Handshake" pill button.
+    - "When Disconnected" section:
+      - Halt Playback Instantly toggle.
+      - Reset Speaker Volume section: readout, `NeonSlider`, and quick preset chips ([Mute | 20% | 40%]).
+      - Restore Phone Ringer toggle.
+      - Quiet Action: "Simulate Disconnect Flow" pill button.
+    - 100% zero emojis; Inter typography and vector icons only.
+  - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
+- [ ] **Stage S5: Tools Screen + Personal Hearing Calibration (HearID)**
 - [x] **Stage S3: Devices Screen & Edit Modal**
   - Rebuilt `app/(tabs)/devices.tsx`: Soft Studio editorial style:
     - 34px bold "Devices" screen heading with live count pill badge (`3 Saved`) and sync button.
@@ -221,8 +240,46 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - Tactile Edit Modal Sheet: nickname input, segmented form factor glyph picker ([ Earbuds | Headphones ]), low-battery threshold pills ([ 10% | 20% (Default) | 30% ]), "Test Low Battery Notification" button, discard and save buttons.
     - 100% zero emojis; Inter typography and vector icons only.
   - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
-- [ ] **Stage S4: Auto-Actions Screen**
-- [ ] **Stage S4: Auto-Actions Screen**
+- [x] **Stage S4: Auto-Actions Screen**
+  - Updated `src/store/autoStore.ts`: converted all `MEDIA_APP_OPTIONS` emoji icons to clean Ionicons vector icon identifiers (`musical-notes`, `play-circle`, `disc`, `musical-note`, `radio`, `headset`, `book`, `videocam`).
+  - Rebuilt `app/(tabs)/auto.tsx`: Soft Studio editorial style:
+    - 34px bold "Auto-Actions" title with "Engine Active" pulse pill badge.
+    - Horizontal scrollable device selector pills with active checkmark pill in active accent color.
+    - Master Automation Card: "Enable Smart Handshake" with tactile `Toggle` switch.
+    - "When Hardware Links" section:
+      - Auto-Launch Media Source toggle row.
+      - 4-column App Launcher Grid with rounded cards, vector icons, active accent border/background, and checkmark pill.
+      - Target Audio Gain section: live decibel/percentage readout in `colors.primary`, `NeonSlider` (8px inset groove, active accent fill, 28px white circular thumb), and quick preset chips ([30% | 50% | 65% | 85% | Max]).
+      - Enable Acoustic Isolation (Do Not Disturb) toggle with automatic Android permission flow.
+      - Quiet Action: "Simulate Connect Handshake" pill button.
+    - "When Disconnected" section:
+      - Halt Playback Instantly toggle.
+      - Reset Speaker Volume section: readout, `NeonSlider`, and quick preset chips ([Mute | 20% | 40%]).
+      - Restore Phone Ringer toggle.
+      - Quiet Action: "Simulate Disconnect Flow" pill button.
+    - 100% zero emojis; Inter typography and vector icons only.
+  - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
+- [ ] **Stage S5: Tools Screen + Personal Hearing Calibration (HearID)**
+- [x] **Stage S4: Auto-Actions Screen**
+  - Updated `src/store/autoStore.ts`: converted all `MEDIA_APP_OPTIONS` emoji icons to clean Ionicons vector icon identifiers (`musical-notes`, `play-circle`, `disc`, `musical-note`, `radio`, `headset`, `book`, `videocam`).
+  - Rebuilt `app/(tabs)/auto.tsx`: Soft Studio editorial style:
+    - 34px bold "Auto-Actions" title with "Engine Active" pulse pill badge.
+    - Horizontal scrollable device selector pills with active checkmark pill in active accent color.
+    - Master Automation Card: "Enable Smart Handshake" with tactile `Toggle` switch.
+    - "When Hardware Links" section:
+      - Auto-Launch Media Source toggle row.
+      - 4-column App Launcher Grid with rounded cards, vector icons, active accent border/background, and checkmark pill.
+      - Target Audio Gain section: live decibel/percentage readout in `colors.primary`, `NeonSlider` (8px inset groove, active accent fill, 28px white circular thumb), and quick preset chips ([30% | 50% | 65% | 85% | Max]).
+      - Enable Acoustic Isolation (Do Not Disturb) toggle with automatic Android permission flow.
+      - Quiet Action: "Simulate Connect Handshake" pill button.
+    - "When Disconnected" section:
+      - Halt Playback Instantly toggle.
+      - Reset Speaker Volume section: readout, `NeonSlider`, and quick preset chips ([Mute | 20% | 40%]).
+      - Restore Phone Ringer toggle.
+      - Quiet Action: "Simulate Disconnect Flow" pill button.
+    - 100% zero emojis; Inter typography and vector icons only.
+  - All 7 unit test suites passing cleanly; TypeScript passing with 0 errors.
+- [ ] **Stage S5: Tools Screen + Personal Hearing Calibration (HearID)**
 - [ ] **Stage S5: Tools Screen + Personal Hearing Calibration (HearID)**
 - [ ] **Stage S6: Settings Screen (Theme & Accent Switching) & Stats Dashboard**
 - [ ] **Stage S7: Light Theme Polish, Verification, APK Build & Docs
