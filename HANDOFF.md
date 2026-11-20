@@ -280,9 +280,17 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - Telemetry testing simulation buttons (`+15m Session`, `+1h Session`, `Reset`).
     - 100% zero emojis; Inter typography and vector icons only.
   - All 8 unit test suites passing cleanly; TypeScript passing with 0 errors.
-- [ ] **Stage S7: Light Theme Polish, Verification, APK Build & Docs
-- [ ] **Stage S7: Light Theme Polish, Verification, APK Build & Docs
+- [x] **Stage S7: Light Theme Polish, Verification, APK Build & Docs**
+  - Polished Light Mode across all 5 navigation tabs (`index.tsx`, `devices.tsx`, `auto.tsx`, `tools.tsx`, `settings.tsx`) and dedicated routes (`stats.tsx`).
+  - Zero emoji enforcement: verified all vector iconography uses Ionicons with Inter typography throughout.
+  - Exported production offline JS bundle with assets:
+    `npx expo export:embed --platform android --dev false --reset-cache --entry-file node_modules/expo-router/entry.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res`
+  - Cleaned `compressed_assets` collision and compiled debug APK via Gradle:
+    `./gradlew.bat assembleDebug` -> `BUILD SUCCESSFUL in 4m 13s`.
+  - Copied built artifact to `D:\android\EarbudKit\EarbudKit.apk` (263 MB, 4 architectures: arm64-v8a, armeabi-v7a, x86, x86_64).
+  - Streamed and installed cleanly to connected Samsung Galaxy Tab S6 Lite (`R52N713R7MY`).
+  - Updated `README.md` and `HANDOFF.md` with complete Soft Studio design tokens, Personal Hearing Calibration (Audiogram / Auto-EQ), Smart Habit Predictor, and full test suite documentation.
+  - All 8 unit test suites passing cleanly; TypeScript passing with 0 errors.
 
-## Upcoming Roadmap
-- [ ] **Personal Hearing Calibration (Audiogram & Auto-EQ)**: Interactive hearing test (250Hz–8kHz) generating per-MAC EQ curves.
-- [ ] **Smart Habit Predictor (Adaptive Context Engine / Smart Handshake)**: Lightweight on-device pattern learner (<5KB).
+## Soft Studio Redesign & New Features Complete (Stages S1–S7)
+All 7 Soft Studio stages (S1–S7) have been implemented, verified, tested, built into a standalone APK, and pushed to GitHub.
