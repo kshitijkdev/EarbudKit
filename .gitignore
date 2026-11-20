@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Android build and local files
+android/build/
+android/.gradle/
+android/app/build/
+android/local.properties
+.gradle/
+.kotlin/
+build/
+*.keystore
+*.jks
+*.orig.*
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# iOS build
+ios/Pods/
+ios/build/
+
+# Environment
+.env
+.env.local
+.env.production
+.env*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Metro
+.metro-health-check*
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
