@@ -48,20 +48,32 @@ export default function HomeScreen() {
 
   const trackedDevices = Object.values(trackedDevicesMap);
 
-  // Stats from Zustand statsStore
+  // Stats from Zustand statsStore with real-time session tracking
   const statsMap = useStatsStore((s) => s.stats);
-  const todayKey = (() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
-  })();
+  const getDeviceStats = useStatsStore((s) => s.getDeviceStats);
+
+  // Live timer tick to update current listening duration every 1 second while listening
+  const [, setTick] = useState(0);
+  const isAnyListening = trackedDevices.some(
+    (dev) => statsMap[dev.address.toUpperCase()]?.sessionStartTimestamp !== null
+  );
+
+  useEffect(() => {
+    if (!isAnyListening) return;
+    const interval = setInterval(() => {
+      setTick((t) => t + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isAnyListening]);
 
   let todayListeningSeconds = 0;
   let totalListeningSeconds = 0;
   let totalSessionCount = 0;
-  Object.values(statsMap).forEach((st) => {
-    todayListeningSeconds += st.dailySeconds?.[todayKey] ?? 0;
-    totalListeningSeconds += st.totalSeconds ?? 0;
-    totalSessionCount += st.sessionCount ?? 0;
+  trackedDevices.forEach((dev) => {
+    const s = getDeviceStats(dev.address);
+    todayListeningSeconds += s.todaySeconds;
+    totalListeningSeconds += s.totalSeconds;
+    totalSessionCount += s.sessionCount;
   });
 
   // Foreground Service State
@@ -409,6 +421,7 @@ export default function HomeScreen() {
                 <BatteryRing
                   battery={activeDevice.batteryLevel}
                   size={46}
+                  showLabel={false}
                 />
                 <View style={styles.telemetryTextCol}>
                   <View style={styles.telemetryValueRow}>

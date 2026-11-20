@@ -58,9 +58,15 @@ export function useBluetoothDevices() {
       setBondedDevices(devices);
       syncWithBondedDevices(devices);
 
-      // Fetch battery and codec for connected devices
+      // Fetch battery, codec, location, and start listening session for connected devices
       for (const dev of devices) {
         if (dev.isConnected) {
+          const upperAddr = dev.address.toUpperCase();
+          const currentStats = useStatsStore.getState().stats[upperAddr];
+          if (!currentStats || currentStats.sessionStartTimestamp === null) {
+            useStatsStore.getState().startListeningSession(dev.address);
+          }
+
           getDeviceBatteryLevel(dev.address).then((lvl) => {
             if (lvl !== null) {
               setBatteryLevel(dev.address, lvl);
@@ -69,6 +75,11 @@ export function useBluetoothDevices() {
           getActiveAudioCodec(dev.address).then((codec) => {
             if (codec) {
               useDeviceStore.getState().setAudioCodec(dev.address, codec);
+            }
+          });
+          captureCurrentLocation().then((loc) => {
+            if (loc) {
+              useDeviceStore.getState().setDeviceLocation(dev.address, loc);
             }
           });
         }

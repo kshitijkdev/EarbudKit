@@ -87,14 +87,18 @@ class EarbudNativeModule : Module() {
             result ?: return
             val dev = result.device ?: return
             val address = dev.address ?: return
+            val devName = try { dev.name ?: "" } catch (_: SecurityException) { "" } catch (_: Exception) { "" }
             val target = targetScanAddress ?: return
 
-            if (address.equals(target, ignoreCase = true)) {
+            val matchesAddress = address.equals(target, ignoreCase = true)
+            val matchesName = devName.isNotEmpty() && (target.contains(devName, ignoreCase = true) || devName.contains(target, ignoreCase = true))
+
+            if (matchesAddress || matchesName) {
                 val rssi = result.rssi
-                Log.d(TAG, "BLE Scan RSSI for $address: $rssi dBm")
+                Log.d(TAG, "BLE Scan RSSI for ${dev.address} ($devName): $rssi dBm")
                 try {
                     sendEvent("onBleRssiScanned", mapOf(
-                        "address" to address,
+                        "address" to target,
                         "rssi" to rssi
                     ))
                 } catch (e: Exception) {
@@ -656,12 +660,9 @@ class EarbudNativeModule : Module() {
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
 
-        val filters = listOf(
-            ScanFilter.Builder().setDeviceAddress(address).build()
-        )
-
         try {
-            scanner.startScan(filters, settings, bleScanCallback)
+            // Pass null filters so all surrounding BLE beacons and devices are captured
+            scanner.startScan(null, settings, bleScanCallback)
             isScanningRssi = true
             Log.d(TAG, "Started BLE RSSI scan for $address")
             return true

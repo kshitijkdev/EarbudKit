@@ -14,7 +14,7 @@ export function BatteryRing({
   battery,
   size = 80,
   strokeWidth = 7,
-  showLabel = true,
+  showLabel = false,
 }: BatteryRingProps) {
   const { theme } = useTheme();
   const { colors, fonts } = theme;
@@ -44,6 +44,9 @@ export function BatteryRing({
   const progressOffset = isUnavailable
     ? 0
     : circumference - (circumference * numericValue) / 100;
+
+  const shouldShowLabel = Boolean(showLabel && size >= 80);
+  const fontSize = Math.round(size * (shouldShowLabel ? 0.22 : 0.28));
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
@@ -85,13 +88,14 @@ export function BatteryRing({
             <Text
               style={[
                 styles.questionMark,
-                { color: colors.outline, fontFamily: fonts.display },
+                { color: colors.outline, fontFamily: fonts.display, fontSize: Math.round(size * 0.35) },
               ]}
             >
               ?
             </Text>
-            {showLabel && (
+            {shouldShowLabel && (
               <Text
+                numberOfLines={1}
                 style={[
                   styles.unavailableLabel,
                   { color: colors.onSurfaceVariant, fontFamily: fonts.body },
@@ -104,22 +108,24 @@ export function BatteryRing({
         ) : (
           <>
             <Text
+              numberOfLines={1}
               style={[
                 styles.percentText,
                 {
                   color: ringColor,
                   fontFamily: fonts.display,
-                  fontSize: size * 0.28,
+                  fontSize,
                 },
               ]}
             >
               {numericValue}%
             </Text>
-            {showLabel && (
+            {shouldShowLabel && (
               <Text
+                numberOfLines={1}
                 style={[
                   styles.batterySubLabel,
-                  { color: colors.onSurfaceVariant, fontFamily: fonts.label },
+                  { color: colors.onSurfaceVariant, fontFamily: fonts.label, fontSize: Math.round(size * 0.1) },
                 ]}
               >
                 BATTERY
@@ -149,20 +155,21 @@ const styles = StyleSheet.create({
   },
   percentText: {
     fontWeight: '700',
-    lineHeight: 26,
+    textAlign: 'center',
   },
   batterySubLabel: {
-    fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.5,
     marginTop: 1,
+    textAlign: 'center',
   },
   questionMark: {
-    fontSize: 22,
     fontWeight: '700',
+    textAlign: 'center',
   },
   unavailableLabel: {
     fontSize: 10,
     fontWeight: '500',
+    textAlign: 'center',
   },
 });

@@ -36,12 +36,12 @@ export default function StatsScreen() {
   const recordListeningDuration = useStatsStore((s) => s.recordListeningDuration);
   const clearStats = useStatsStore((s) => s.clearStats);
 
-  // Live timer tick to update current session duration every 5 seconds
+  // Live timer tick to update current session duration every 1 second
   const [, setTick] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
       setTick((t) => t + 1);
-    }, 5000);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
