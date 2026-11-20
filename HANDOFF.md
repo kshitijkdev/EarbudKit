@@ -169,4 +169,12 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 - All 6 unit test suites passing cleanly.
 - Standalone offline JS embed bundle built (`android/app/src/main/assets/index.android.bundle`).
 - Gradle debug APK assembled and verified (`android/app/build/outputs/apk/debug/app-debug.apk`).
-- App installed and actively running on emulator (`emulator-5554`).
+- App installed and actively running on emulator (`emulator-5554`) and Samsung tablet (`R52N713R7MY`).
+
+## Upcoming Roadmap (Queued - Do Not Build Yet)
+- [ ] **Personal Hearing Calibration (Audiogram & Auto-EQ)**:
+  - Interactive frequency tone hearing test (standard Android AudioTrack, 250Hz to 8kHz tones).
+  - Automatically calculates hearing/driver compensation curve and maps it to the 5-band AudioFX Equalizer.
+  - Saved per-device MAC address in `equalizerStore`.
+  - Works with 100% of Bluetooth audio devices on Android (no vendor chip required).
+  - *Note*: Pending UI changes and design specifications before implementation begins.
