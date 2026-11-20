@@ -8,6 +8,8 @@ export interface BatteryRingProps {
   size?: number;
   strokeWidth?: number;
   showLabel?: boolean;
+  centerMode?: 'icon' | 'percent' | 'none';
+  centerIcon?: React.ReactNode;
 }
 
 export function BatteryRing({
@@ -15,6 +17,8 @@ export function BatteryRing({
   size = 80,
   strokeWidth = 7,
   showLabel = false,
+  centerMode,
+  centerIcon,
 }: BatteryRingProps) {
   const { theme } = useTheme();
   const { colors, fonts } = theme;
@@ -45,8 +49,89 @@ export function BatteryRing({
     ? 0
     : circumference - (circumference * numericValue) / 100;
 
-  const shouldShowLabel = Boolean(showLabel && size >= 80);
-  const fontSize = Math.round(size * (shouldShowLabel ? 0.22 : 0.28));
+  // Auto-select centerMode if not provided: compact rings (<60) default to icon; larger rings default to percent
+  const effectiveCenterMode = centerMode ?? (size < 60 ? 'icon' : 'percent');
+  const shouldShowLabel = Boolean(showLabel && size >= 84 && effectiveCenterMode === 'percent');
+  const percentFontSize = Math.max(10, Math.round(size * (shouldShowLabel ? 0.20 : 0.28)));
+  const iconFontSize = Math.max(12, Math.round(size * 0.36));
+
+  const renderCenterContent = () => {
+    if (effectiveCenterMode === 'none') {
+      return null;
+    }
+
+    if (centerIcon !== undefined) {
+      return typeof centerIcon === 'string' ? (
+        <Text style={{ fontSize: iconFontSize }}>{centerIcon}</Text>
+      ) : (
+        centerIcon
+      );
+    }
+
+    if (isUnavailable) {
+      return (
+        <Text
+          style={[
+            styles.questionMark,
+            { color: colors.outline, fontFamily: fonts.display, fontSize: Math.round(size * 0.38) },
+          ]}
+        >
+          ?
+        </Text>
+      );
+    }
+
+    if (effectiveCenterMode === 'icon') {
+      return (
+        <Text
+          style={[
+            styles.iconText,
+            {
+              color: ringColor,
+              fontSize: iconFontSize,
+            },
+          ]}
+        >
+          ⚡
+        </Text>
+      );
+    }
+
+    // Default 'percent' mode
+    return (
+      <View style={styles.percentCol}>
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.percentText,
+            {
+              color: ringColor,
+              fontFamily: fonts.display,
+              fontSize: percentFontSize,
+            },
+          ]}
+        >
+          {numericValue}%
+        </Text>
+        {shouldShowLabel && (
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="clip"
+            style={[
+              styles.batterySubLabel,
+              {
+                color: colors.onSurfaceVariant,
+                fontFamily: fonts.label,
+                fontSize: Math.max(8, Math.round(size * 0.09)),
+              },
+            ]}
+          >
+            BATTERY
+          </Text>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
@@ -82,58 +167,7 @@ export function BatteryRing({
       </Svg>
 
       {/* Center Readout */}
-      <View style={styles.centerContent}>
-        {isUnavailable ? (
-          <>
-            <Text
-              style={[
-                styles.questionMark,
-                { color: colors.outline, fontFamily: fonts.display, fontSize: Math.round(size * 0.35) },
-              ]}
-            >
-              ?
-            </Text>
-            {shouldShowLabel && (
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.unavailableLabel,
-                  { color: colors.onSurfaceVariant, fontFamily: fonts.body },
-                ]}
-              >
-                N/A
-              </Text>
-            )}
-          </>
-        ) : (
-          <>
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.percentText,
-                {
-                  color: ringColor,
-                  fontFamily: fonts.display,
-                  fontSize,
-                },
-              ]}
-            >
-              {numericValue}%
-            </Text>
-            {shouldShowLabel && (
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.batterySubLabel,
-                  { color: colors.onSurfaceVariant, fontFamily: fonts.label, fontSize: Math.round(size * 0.1) },
-                ]}
-              >
-                BATTERY
-              </Text>
-            )}
-          </>
-        )}
-      </View>
+      <View style={styles.centerContent}>{renderCenterContent()}</View>
     </View>
   );
 }
@@ -153,8 +187,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  percentCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   percentText: {
     fontWeight: '700',
+    textAlign: 'center',
+  },
+  iconText: {
     textAlign: 'center',
   },
   batterySubLabel: {
@@ -165,11 +206,6 @@ const styles = StyleSheet.create({
   },
   questionMark: {
     fontWeight: '700',
-    textAlign: 'center',
-  },
-  unavailableLabel: {
-    fontSize: 10,
-    fontWeight: '500',
     textAlign: 'center',
   },
 });

@@ -420,8 +420,9 @@ export default function HomeScreen() {
               <View style={[styles.telemetryPod, { backgroundColor: colors.surfaceContainerHigh }]}>
                 <BatteryRing
                   battery={activeDevice.batteryLevel}
-                  size={46}
-                  showLabel={false}
+                  size={48}
+                  strokeWidth={4.5}
+                  centerMode="icon"
                 />
                 <View style={styles.telemetryTextCol}>
                   <View style={styles.telemetryValueRow}>
@@ -434,7 +435,10 @@ export default function HomeScreen() {
                       </Text>
                     )}
                   </View>
-                  <Text style={[styles.telemetryCaption, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.telemetryCaption, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}
+                  >
                     {activeDevice.batteryLevel !== null
                       ? activeDevice.batteryLevel <= activeDevice.lowBatteryThreshold
                         ? 'Low Battery'
@@ -447,7 +451,7 @@ export default function HomeScreen() {
               {/* Audio Stream Pod */}
               <View style={[styles.telemetryPod, { backgroundColor: colors.surfaceContainerHigh }]}>
                 <View style={[styles.telemetryIconCircle, { backgroundColor: colors.surfaceContainerHighest }]}>
-                  <Text style={{ fontSize: 18 }}>🎛️</Text>
+                  <Text style={{ fontSize: 20 }}>🎛️</Text>
                 </View>
                 <View style={styles.telemetryTextCol}>
                   <Text
@@ -456,7 +460,10 @@ export default function HomeScreen() {
                   >
                     {activeDevice.isConnected ? (activeDevice.audioCodec || 'SBC') : 'Standby'}
                   </Text>
-                  <Text style={[styles.telemetryCaption, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.telemetryCaption, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}
+                  >
                     {activeDevice.isConnected ? 'Active Codec' : 'No Stream'}
                   </Text>
                 </View>
@@ -1007,20 +1014,22 @@ const styles = StyleSheet.create({
   },
   heroTelemetryRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
   },
   telemetryPod: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 12,
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     borderRadius: 16,
+    minHeight: 72,
   },
   telemetryIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
