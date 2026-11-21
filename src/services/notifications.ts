@@ -1,3 +1,5 @@
+import { sanitizeDeviceName, safeLog } from '../utils/security';
+
 let notificationsModule: typeof import('expo-notifications') | null = null;
 
 try {
@@ -23,8 +25,9 @@ export async function sendLowBatteryNotification(
   batteryLevel: number,
   threshold: number
 ): Promise<boolean> {
+  const safeName = sanitizeDeviceName(deviceName);
   if (!notificationsModule) {
-    console.log(`[Notifications TEST STUB] Low Battery: ${deviceName} at ${batteryLevel}% (threshold: ${threshold}%)`);
+    safeLog.log(`[Notifications TEST STUB] Low Battery: ${safeName} at ${batteryLevel}% (threshold: ${threshold}%)`);
     return true;
   }
 
@@ -33,25 +36,25 @@ export async function sendLowBatteryNotification(
     if (status !== 'granted') {
       const request = await notificationsModule.requestPermissionsAsync();
       if (request.status !== 'granted') {
-        console.warn('[Notifications] Notification permission not granted');
+        safeLog.warn('[Notifications] Notification permission not granted');
         return false;
       }
     }
 
     await notificationsModule.scheduleNotificationAsync({
       content: {
-        title: `🪫 Low Battery: ${deviceName}`,
-        body: `${deviceName} is at ${batteryLevel}% (below your ${threshold}% alert threshold). Please plug it in to charge.`,
+        title: `Low Battery: ${safeName}`,
+        body: `${safeName} is at ${batteryLevel}% (below your ${threshold}% alert threshold). Please plug it in to charge.`,
         sound: true,
         priority: notificationsModule.AndroidNotificationPriority.HIGH,
       },
       trigger: null,
     });
 
-    console.log(`[Notifications] Low battery notification delivered for ${deviceName} (${batteryLevel}%)`);
+    safeLog.log(`[Notifications] Low battery notification delivered for ${safeName}`);
     return true;
   } catch (e) {
-    console.error('[Notifications] Failed to send low battery notification:', e);
+    safeLog.error('[Notifications] Failed to send low battery notification:', e);
     return false;
   }
 }
@@ -63,19 +66,20 @@ export async function sendDisconnectAlert(
   deviceName: string,
   locationText?: string | null
 ): Promise<boolean> {
+  const safeName = sanitizeDeviceName(deviceName);
   if (!notificationsModule) {
-    console.log(`[Notifications TEST STUB] Disconnect Alert: ${deviceName} disconnected. Location: ${locationText ?? 'Saved'}`);
+    safeLog.log(`[Notifications TEST STUB] Disconnect Alert: ${safeName} disconnected. Location: ${locationText ?? 'Saved'}`);
     return true;
   }
 
   try {
     const body = locationText
-      ? `${deviceName} has disconnected near ${locationText}. Tap to view on map.`
-      : `${deviceName} has disconnected. Last known location saved in Find My Device.`;
+      ? `${safeName} has disconnected near ${locationText}. Tap to view on map.`
+      : `${safeName} has disconnected. Last known location saved in Find My Device.`;
 
     await notificationsModule.scheduleNotificationAsync({
       content: {
-        title: `⚠️ ${deviceName} Disconnected`,
+        title: `${safeName} Disconnected`,
         body,
         sound: true,
         priority: notificationsModule.AndroidNotificationPriority.HIGH,
@@ -83,10 +87,10 @@ export async function sendDisconnectAlert(
       trigger: null,
     });
 
-    console.log(`[Notifications] Disconnect alert delivered for ${deviceName}`);
+    safeLog.log(`[Notifications] Disconnect alert delivered for ${safeName}`);
     return true;
   } catch (e) {
-    console.error('[Notifications] Failed to send disconnect alert:', e);
+    safeLog.error('[Notifications] Failed to send disconnect alert:', e);
     return false;
   }
 }

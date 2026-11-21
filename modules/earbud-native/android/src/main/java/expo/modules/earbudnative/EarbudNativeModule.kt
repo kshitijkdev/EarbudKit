@@ -86,29 +86,35 @@ class EarbudNativeModule : Module() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             result ?: return
             val dev = result.device ?: return
-            val address = dev.address ?: return
-            val devName = try { dev.name ?: "" } catch (_: SecurityException) { "" } catch (_: Exception) { "" }
+            val rawAddress = dev.address ?: return
+            val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(rawAddress) ?: return
+            val rawName = try { dev.name ?: "" } catch (_: SecurityException) { "" } catch (_: Exception) { "" }
+            val cleanName = EarbudSecurityUtils.sanitizeDeviceName(rawName)
             val target = targetScanAddress ?: return
+            val cleanTarget = EarbudSecurityUtils.sanitizeMacAddress(target) ?: target.trim()
 
-            val matchesAddress = address.equals(target, ignoreCase = true)
-            val matchesName = devName.isNotEmpty() && (target.contains(devName, ignoreCase = true) || devName.contains(target, ignoreCase = true))
+            val matchesAddress = cleanAddress.equals(cleanTarget, ignoreCase = true)
+            val matchesName = cleanName.isNotEmpty() && (cleanTarget.contains(cleanName, ignoreCase = true) || cleanName.contains(cleanTarget, ignoreCase = true))
 
             if (matchesAddress || matchesName) {
-                val rssi = result.rssi
-                Log.d(TAG, "BLE Scan RSSI for ${dev.address} ($devName): $rssi dBm")
+                val clampedRssi = EarbudSecurityUtils.clampRssi(result.rssi)
+                if (BuildConfig.DEBUG) {
+                    val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+                    Log.d(TAG, "BLE Scan RSSI for $masked: $clampedRssi dBm")
+                }
                 try {
                     sendEvent("onBleRssiScanned", mapOf(
-                        "address" to target,
-                        "rssi" to rssi
+                        "address" to cleanAddress,
+                        "rssi" to clampedRssi
                     ))
                 } catch (e: Exception) {
-                    Log.w(TAG, "Could not send RSSI event: ${e.message}")
+                    if (BuildConfig.DEBUG) Log.w(TAG, "Could not send RSSI event: ${e.message}")
                 }
             }
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Log.w(TAG, "BLE Scan failed with error code: $errorCode")
+            if (BuildConfig.DEBUG) Log.w(TAG, "BLE Scan failed with error code: $errorCode")
             isScanningRssi = false
         }
     }
@@ -133,20 +139,27 @@ class EarbudNativeModule : Module() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent ?: return
             val action = intent.action ?: return
+            if (!EarbudSecurityUtils.ALLOWED_BROADCAST_ACTIONS.contains(action)) {
+                return
+            }
 
             when (action) {
                 BluetoothDevice.ACTION_ACL_CONNECTED,
                 BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
-                    val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    val device: BluetoothDevice? = try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                        }
+                    } catch (e: Exception) {
+                        null
                     }
 
-                    device?.let { dev ->
+                    if (device != null && EarbudSecurityUtils.isValidMacAddress(device.address)) {
                         val isConnected = (action == BluetoothDevice.ACTION_ACL_CONNECTED)
-                        handleDeviceConnectionEvent(dev, isConnected)
+                        handleDeviceConnectionEvent(device, isConnected)
                     }
                 }
 
@@ -161,19 +174,24 @@ class EarbudNativeModule : Module() {
                 }
 
                 ACTION_BATTERY_LEVEL_CHANGED -> {
-                    val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    val device: BluetoothDevice? = try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                        }
+                    } catch (e: Exception) {
+                        null
                     }
 
-                    val level = intent.getIntExtra(EXTRA_BATTERY_LEVEL, -1)
-                    device?.address?.let { address ->
-                        if (level in 0..100) {
-                            batteryCache[address.uppercase()] = level
-                            handleBatteryLevelEvent(address, level)
-                        }
+                    val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(device?.address)
+                    val rawLevel = intent.getIntExtra(EXTRA_BATTERY_LEVEL, -1)
+                    val validLevel = EarbudSecurityUtils.clampBattery(rawLevel)
+
+                    if (cleanAddress != null && validLevel != null) {
+                        batteryCache[cleanAddress] = validLevel
+                        handleBatteryLevelEvent(cleanAddress, validLevel)
                     }
                 }
             }
@@ -181,48 +199,57 @@ class EarbudNativeModule : Module() {
     }
 
     fun handleDeviceConnectionEvent(device: BluetoothDevice, isConnected: Boolean) {
-        val address = device.address ?: ""
-        val name = try {
+        val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(device.address) ?: return
+        val rawName = try {
             if (hasConnectPermission()) device.name ?: "Unknown" else "Unknown"
         } catch (e: SecurityException) {
             "Unknown"
         }
+        val cleanName = EarbudSecurityUtils.sanitizeDeviceName(rawName)
 
         val isScreenOn = powerManager?.isInteractive ?: true
-        Log.d(TAG, "Device connection event: $address ($name) connected=$isConnected isScreenOn=$isScreenOn")
+        if (BuildConfig.DEBUG) {
+            val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+            Log.d(TAG, "Device connection event: $masked ($cleanName) connected=$isConnected isScreenOn=$isScreenOn")
+        }
 
         try {
             sendEvent("onDeviceConnectionChanged", mapOf(
-                "address" to address,
-                "name" to name,
+                "address" to cleanAddress,
+                "name" to cleanName,
                 "connected" to isConnected,
                 "isScreenOn" to isScreenOn
             ))
         } catch (e: Exception) {
-            Log.w(TAG, "Could not send connection event to JS: ${e.message}")
+            if (BuildConfig.DEBUG) Log.w(TAG, "Could not send connection event to JS: ${e.message}")
         }
     }
 
     fun handleBluetoothStateEvent(isEnabled: Boolean) {
-        Log.d(TAG, "Bluetooth state changed: enabled=$isEnabled")
+        if (BuildConfig.DEBUG) Log.d(TAG, "Bluetooth state changed: enabled=$isEnabled")
         try {
             sendEvent("onBluetoothStateChanged", mapOf(
                 "enabled" to isEnabled
             ))
         } catch (e: Exception) {
-            Log.w(TAG, "Could not send bluetooth state event to JS: ${e.message}")
+            if (BuildConfig.DEBUG) Log.w(TAG, "Could not send bluetooth state event to JS: ${e.message}")
         }
     }
 
     fun handleBatteryLevelEvent(address: String, level: Int?) {
-        Log.d(TAG, "Battery level update for $address: $level")
+        val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(address) ?: return
+        val validLevel = EarbudSecurityUtils.clampBattery(level)
+        if (BuildConfig.DEBUG) {
+            val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+            Log.d(TAG, "Battery level update for $masked: $validLevel")
+        }
         try {
             sendEvent("onBatteryLevelChanged", mapOf(
-                "address" to address,
-                "batteryLevel" to level
+                "address" to cleanAddress,
+                "batteryLevel" to validLevel
             ))
         } catch (e: Exception) {
-            Log.w(TAG, "Could not send battery event to JS: ${e.message}")
+            if (BuildConfig.DEBUG) Log.w(TAG, "Could not send battery event to JS: ${e.message}")
         }
     }
 
@@ -380,10 +407,10 @@ class EarbudNativeModule : Module() {
                 val range = eq.bandLevelRange
                 val clamped = levelMB.coerceIn(range[0].toInt(), range[1].toInt()).toShort()
                 eq.setBandLevel(band.toShort(), clamped)
-                Log.d(TAG, "Set EQ band $band to $clamped mB")
+                if (BuildConfig.DEBUG) Log.d(TAG, "Set EQ band $band to $clamped mB")
                 true
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to set EQ band level", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to set EQ band level", e)
                 false
             }
         }
@@ -395,10 +422,10 @@ class EarbudNativeModule : Module() {
             try {
                 val eq = getOrCreateEqualizer() ?: return@Function false
                 eq.enabled = enabled
-                Log.d(TAG, "Set Equalizer enabled: $enabled")
+                if (BuildConfig.DEBUG) Log.d(TAG, "Set Equalizer enabled: $enabled")
                 true
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to set equalizer enabled", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to set equalizer enabled", e)
                 false
             }
         }
@@ -436,10 +463,10 @@ class EarbudNativeModule : Module() {
                 val clamped = volumePercent.coerceIn(0, 100)
                 val targetIndex = (clamped * maxVolume) / 100
                 am.setStreamVolume(AudioManager.STREAM_MUSIC, targetIndex, 0)
-                Log.d(TAG, "Set media volume to $clamped% (index $targetIndex / $maxVolume)")
+                if (BuildConfig.DEBUG) Log.d(TAG, "Set media volume to $clamped% (index $targetIndex / $maxVolume)")
                 true
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to set media volume", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to set media volume", e)
                 false
             }
         }
@@ -452,7 +479,7 @@ class EarbudNativeModule : Module() {
                 val current = am.getStreamVolume(AudioManager.STREAM_MUSIC)
                 (current * 100) / maxVolume
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to get media volume", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to get media volume", e)
                 50
             }
         }
@@ -484,29 +511,46 @@ class EarbudNativeModule : Module() {
                     am.abandonAudioFocus(null)
                 }
 
-                Log.d(TAG, "Dispatched pause media events successfully")
+                if (BuildConfig.DEBUG) Log.d(TAG, "Dispatched pause media events successfully")
                 true
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to pause media", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to pause media", e)
                 false
             }
         }
 
         Function("launchApp") { packageName: String ->
+            if (!EarbudSecurityUtils.isValidPackageName(packageName)) {
+                if (BuildConfig.DEBUG) Log.w(TAG, "Invalid package name format: $packageName")
+                return@Function false
+            }
             try {
                 val pm = context.packageManager
+                // Verify package exists before launching
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    pm.getPackageInfo(packageName, 0)
+                }
                 val intent = pm.getLaunchIntentForPackage(packageName)
                 if (intent != null) {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(intent)
-                    Log.d(TAG, "Launched app package: $packageName")
+                    if (BuildConfig.DEBUG) Log.d(TAG, "Launched app package: $packageName")
                     true
                 } else {
-                    Log.w(TAG, "No launch intent for package: $packageName")
+                    if (BuildConfig.DEBUG) Log.w(TAG, "No launch intent for package: $packageName")
                     false
                 }
+            } catch (e: PackageManager.NameNotFoundException) {
+                if (BuildConfig.DEBUG) Log.w(TAG, "Package not found: $packageName")
+                false
+            } catch (e: android.content.ActivityNotFoundException) {
+                if (BuildConfig.DEBUG) Log.w(TAG, "Activity not found for package: $packageName")
+                false
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to launch app $packageName", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to launch app $packageName", e)
                 false
             }
         }
@@ -547,17 +591,17 @@ class EarbudNativeModule : Module() {
                             NotificationManager.INTERRUPTION_FILTER_ALL
                         }
                         nm.setInterruptionFilter(filter)
-                        Log.d(TAG, "Set DND filter: enable=$enable")
+                        if (BuildConfig.DEBUG) Log.d(TAG, "Set DND filter: enable=$enable")
                         true
                     } else {
-                        Log.w(TAG, "DND permission not granted")
+                        if (BuildConfig.DEBUG) Log.w(TAG, "DND permission not granted")
                         false
                     }
                 } else {
                     false
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to set DND filter", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to set DND filter", e)
                 false
             }
         }
@@ -571,16 +615,20 @@ class EarbudNativeModule : Module() {
             val adapter = bluetoothAdapter ?: return@AsyncFunction result
 
             if (!hasConnectPermission()) {
-                Log.w(TAG, "BLUETOOTH_CONNECT permission not granted")
+                if (BuildConfig.DEBUG) Log.w(TAG, "BLUETOOTH_CONNECT permission not granted")
                 return@AsyncFunction result
             }
 
             try {
                 val bonded = adapter.bondedDevices ?: emptySet()
                 for (device in bonded) {
+                    val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(device.address) ?: continue
                     if (isAudioDevice(device)) {
                         val isConnected = checkDeviceConnected(device)
-                        val battery = getBatteryReflection(device) ?: batteryCache[device.address.uppercase()]
+                        val rawBattery = getBatteryReflection(device) ?: batteryCache[cleanAddress]
+                        val cleanBattery = EarbudSecurityUtils.clampBattery(rawBattery)
+                        val rawName = try { if (hasConnectPermission()) device.name else "Unknown Device" } catch (e: SecurityException) { "Unknown Device" }
+                        val cleanName = EarbudSecurityUtils.sanitizeDeviceName(rawName)
 
                         val deviceType = when (device.type) {
                             BluetoothDevice.DEVICE_TYPE_CLASSIC -> "classic"
@@ -592,10 +640,10 @@ class EarbudNativeModule : Module() {
 
                         result.add(
                             mapOf(
-                                "name" to (device.name ?: "Unknown Device"),
-                                "address" to device.address,
+                                "name" to cleanName,
+                                "address" to cleanAddress,
                                 "isConnected" to isConnected,
-                                "batteryLevel" to battery,
+                                "batteryLevel" to cleanBattery,
                                 "codec" to (if (isConnected) getAudioCodec(device) else "Unknown"),
                                 "type" to deviceType,
                                 "majorDeviceClass" to (btClass?.majorDeviceClass ?: 0),
@@ -605,9 +653,9 @@ class EarbudNativeModule : Module() {
                     }
                 }
             } catch (e: SecurityException) {
-                Log.e(TAG, "SecurityException reading bonded devices", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "SecurityException reading bonded devices", e)
             } catch (e: Exception) {
-                Log.e(TAG, "Exception reading bonded devices", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Exception reading bonded devices", e)
             }
 
             result
@@ -630,7 +678,7 @@ class EarbudNativeModule : Module() {
             isEqSupported = true
             eq
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to initialize Equalizer: ${e.message}")
+            if (BuildConfig.DEBUG) Log.w(TAG, "Failed to initialize Equalizer: ${e.message}")
             isEqSupported = false
             null
         }
@@ -641,21 +689,22 @@ class EarbudNativeModule : Module() {
             nativeEqualizer?.release()
             nativeEqualizer = null
         } catch (e: Exception) {
-            Log.w(TAG, "Error releasing Equalizer: ${e.message}")
+            if (BuildConfig.DEBUG) Log.w(TAG, "Error releasing Equalizer: ${e.message}")
         }
     }
 
     private fun startBleRssiScan(address: String): Boolean {
+        val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(address) ?: return false
         val adapter = bluetoothAdapter ?: return false
         if (!hasScanPermissionInternal()) {
-            Log.w(TAG, "Scan permission missing for RSSI scan")
+            if (BuildConfig.DEBUG) Log.w(TAG, "Scan permission missing for RSSI scan")
             return false
         }
 
         val scanner = adapter.bluetoothLeScanner ?: return false
         stopBleRssiScan()
 
-        targetScanAddress = address.uppercase()
+        targetScanAddress = cleanAddress
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
             .build()
@@ -664,10 +713,13 @@ class EarbudNativeModule : Module() {
             // Pass null filters so all surrounding BLE beacons and devices are captured
             scanner.startScan(null, settings, bleScanCallback)
             isScanningRssi = true
-            Log.d(TAG, "Started BLE RSSI scan for $address")
+            if (BuildConfig.DEBUG) {
+                val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+                Log.d(TAG, "Started BLE RSSI scan for $masked")
+            }
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start BLE RSSI scan", e)
+            if (BuildConfig.DEBUG) Log.e(TAG, "Failed to start BLE RSSI scan", e)
             isScanningRssi = false
             return false
         }
@@ -684,10 +736,10 @@ class EarbudNativeModule : Module() {
                 }
                 isScanningRssi = false
                 targetScanAddress = null
-                Log.d(TAG, "Stopped BLE RSSI scan")
+                if (BuildConfig.DEBUG) Log.d(TAG, "Stopped BLE RSSI scan")
                 return true
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to stop BLE RSSI scan", e)
+                if (BuildConfig.DEBUG) Log.e(TAG, "Failed to stop BLE RSSI scan", e)
             }
         }
         return false
@@ -732,16 +784,17 @@ class EarbudNativeModule : Module() {
                 else -> "Unknown"
             }
         } catch (e: Exception) {
-            Log.d(TAG, "Audio codec detection via reflection not available: ${e.message}")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Audio codec detection via reflection not available: ${e.message}")
             return "Unknown"
         }
     }
 
     private fun getAudioCodecByAddress(address: String): String {
+        val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(address) ?: return "Unknown"
         val adapter = bluetoothAdapter ?: return "Unknown"
         if (!hasConnectPermission()) return "Unknown"
         return try {
-            val device = adapter.getRemoteDevice(address) ?: return "Unknown"
+            val device = adapter.getRemoteDevice(cleanAddress) ?: return "Unknown"
             getAudioCodec(device)
         } catch (e: Exception) {
             "Unknown"
@@ -749,29 +802,39 @@ class EarbudNativeModule : Module() {
     }
 
     private fun getDeviceBattery(address: String): Int? {
+        val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(address) ?: return null
         val adapter = bluetoothAdapter ?: return null
         if (!hasConnectPermission()) return null
 
         val device = try {
-            adapter.getRemoteDevice(address)
+            adapter.getRemoteDevice(cleanAddress)
         } catch (e: Exception) {
             null
         } ?: return null
 
-        val reflectionLevel = getBatteryReflection(device)
-        if (reflectionLevel != null && reflectionLevel in 0..100) {
-            Log.d(TAG, "Battery for $address via reflection: $reflectionLevel%")
-            batteryCache[address.uppercase()] = reflectionLevel
+        val reflectionLevel = EarbudSecurityUtils.clampBattery(getBatteryReflection(device))
+        if (reflectionLevel != null) {
+            if (BuildConfig.DEBUG) {
+                val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+                Log.d(TAG, "Battery for $masked via reflection: $reflectionLevel%")
+            }
+            batteryCache[cleanAddress] = reflectionLevel
             return reflectionLevel
         }
 
-        val cached = batteryCache[address.uppercase()]
-        if (cached != null && cached in 0..100) {
-            Log.d(TAG, "Battery for $address via broadcast cache: $cached%")
+        val cached = EarbudSecurityUtils.clampBattery(batteryCache[cleanAddress])
+        if (cached != null) {
+            if (BuildConfig.DEBUG) {
+                val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+                Log.d(TAG, "Battery for $masked via broadcast cache: $cached%")
+            }
             return cached
         }
 
-        Log.d(TAG, "Battery for $address unavailable")
+        if (BuildConfig.DEBUG) {
+            val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+            Log.d(TAG, "Battery for $masked unavailable")
+        }
         return null
     }
 
@@ -779,7 +842,7 @@ class EarbudNativeModule : Module() {
         return try {
             val method = device.javaClass.getMethod("getBatteryLevel")
             val level = method.invoke(device) as? Int
-            if (level != null && level >= 0) level else null
+            EarbudSecurityUtils.clampBattery(level)
         } catch (_: Exception) {
             null
         }
@@ -910,9 +973,9 @@ class EarbudNativeModule : Module() {
                 ContextCompat.RECEIVER_EXPORTED
             )
             isReceiverRegistered = true
-            Log.d(TAG, "Bluetooth receiver registered in module with battery & RSSI support")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Bluetooth receiver registered in module with battery & RSSI support")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to register Bluetooth receiver", e)
+            if (BuildConfig.DEBUG) Log.e(TAG, "Failed to register Bluetooth receiver", e)
         }
     }
 
@@ -921,9 +984,9 @@ class EarbudNativeModule : Module() {
         try {
             context.unregisterReceiver(bluetoothReceiver)
             isReceiverRegistered = false
-            Log.d(TAG, "Bluetooth receiver unregistered from module")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Bluetooth receiver unregistered from module")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to unregister Bluetooth receiver", e)
+            if (BuildConfig.DEBUG) Log.e(TAG, "Failed to unregister Bluetooth receiver", e)
         }
     }
 }

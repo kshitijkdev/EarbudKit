@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { Linking, Platform } from 'react-native';
 import { DeviceLocation } from '../store/deviceStore';
+import { isValidCoordinate, safeLog } from '../utils/security';
 
 /**
  * Request location permission with context and rationale.
@@ -15,7 +16,7 @@ export async function requestLocationPermissions(): Promise<boolean> {
     const { status } = await Location.requestForegroundPermissionsAsync();
     return status === 'granted';
   } catch (e) {
-    console.warn('[Location] Error requesting location permissions:', e);
+    safeLog.warn('[Location] Error requesting location permissions:', e);
     return false;
   }
 }
@@ -27,7 +28,7 @@ export async function captureCurrentLocation(): Promise<DeviceLocation | null> {
   try {
     const hasPerm = await requestLocationPermissions();
     if (!hasPerm) {
-      console.warn('[Location] Location permission denied, cannot record disconnect coordinates');
+      safeLog.warn('[Location] Location permission denied, cannot record disconnect coordinates');
       return null;
     }
 
@@ -35,11 +36,17 @@ export async function captureCurrentLocation(): Promise<DeviceLocation | null> {
       accuracy: Location.Accuracy.Balanced,
     });
 
+    const { latitude, longitude, accuracy } = location.coords;
+    if (!isValidCoordinate(latitude, longitude)) {
+      safeLog.warn('[Location] Received invalid coordinates from provider');
+      return null;
+    }
+
     let addressText: string | null = null;
     try {
       const geocoded = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        latitude,
+        longitude,
       });
 
       if (geocoded.length > 0) {
@@ -56,30 +63,38 @@ export async function captureCurrentLocation(): Promise<DeviceLocation | null> {
     }
 
     const result: DeviceLocation = {
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      accuracy: location.coords.accuracy,
+      latitude,
+      longitude,
+      accuracy,
       timestamp: location.timestamp || Date.now(),
       addressText,
     };
 
-    console.log('[Location] Recorded disconnect location:', result);
+    safeLog.log('[Location] Recorded disconnect location successfully');
     return result;
   } catch (e) {
-    console.error('[Location] Failed to capture location on disconnect:', e);
+    safeLog.error('[Location] Failed to capture location on disconnect:', e);
     return null;
   }
 }
 
 /**
  * Opens Google Maps Navigation directly to the coordinates.
+ * Validates coordinate ranges and encodes parameters to prevent injection.
  */
 export async function openGoogleMapsNavigation(
   latitude: number,
   longitude: number
 ): Promise<boolean> {
-  const googleMapsAppUrl = `google.navigation:q=${latitude},${longitude}`;
-  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+  if (!isValidCoordinate(latitude, longitude)) {
+    safeLog.warn('[Location] Invalid coordinates passed to openGoogleMapsNavigation');
+    return false;
+  }
+
+  const latStr = encodeURIComponent(latitude.toFixed(6));
+  const lngStr = encodeURIComponent(longitude.toFixed(6));
+  const googleMapsAppUrl = `google.navigation:q=${latStr},${lngStr}`;
+  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${latStr},${lngStr}`;
 
   try {
     if (Platform.OS === 'android') {
@@ -92,7 +107,7 @@ export async function openGoogleMapsNavigation(
     await Linking.openURL(webUrl);
     return true;
   } catch (e) {
-    console.error('[Location] Failed to open Google Maps:', e);
+    safeLog.error('[Location] Failed to open Google Maps:', e);
     return false;
   }
 }

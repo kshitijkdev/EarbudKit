@@ -12,3 +12,32 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+
+# Expo Modules and EarbudNative
+-keep class expo.modules.earbudnative.** { *; }
+-keepclassmembers class expo.modules.earbudnative.** { *; }
+-keep class expo.modules.kotlin.** { *; }
+-keepclassmembers class expo.modules.kotlin.** { *; }
+
+# Keep Bluetooth reflection targets and methods so R8 does not strip them
+-keepclassmembers class android.bluetooth.BluetoothDevice {
+    public int getBatteryLevel();
+    public boolean isConnected();
+}
+
+-keepclassmembers class android.bluetooth.BluetoothA2dp {
+    public *;
+}
+
+-dontwarn android.bluetooth.BluetoothCodecStatus
+-keep class android.bluetooth.BluetoothCodecStatus { *; }
+-keepclassmembers class android.bluetooth.BluetoothCodecStatus { *; }
+
+-dontwarn android.bluetooth.BluetoothCodecConfig
+-keep class android.bluetooth.BluetoothCodecConfig { *; }
+-keepclassmembers class android.bluetooth.BluetoothCodecConfig { *; }
+
+# AudioFx Hardware Equalizer
+-keep class android.media.audiofx.Equalizer { *; }
+-keepclassmembers class android.media.audiofx.Equalizer { *; }
+

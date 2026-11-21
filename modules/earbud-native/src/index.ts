@@ -88,6 +88,48 @@ try {
   // In development/test mock
 }
 
+const MAC_REGEX = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
+const CONTROL_CHARS_REGEX = /[\x00-\x1F\x7F]/g;
+const PACKAGE_NAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/;
+
+export function isValidMac(address: unknown): boolean {
+  if (typeof address !== 'string') return false;
+  return MAC_REGEX.test(address.trim());
+}
+
+export function maskMac(address: unknown): string {
+  if (typeof address !== 'string') return 'XX:XX:XX:XX:XX:XX';
+  const trimmed = address.trim();
+  if (!MAC_REGEX.test(trimmed)) return 'XX:XX:XX:XX:XX:XX';
+  const parts = trimmed.split(':');
+  return `XX:XX:XX:XX:${parts[4]}:${parts[5]}`.toUpperCase();
+}
+
+export function sanitizeDeviceName(name: unknown): string {
+  if (typeof name !== 'string') return 'Unknown Device';
+  const cleaned = name.replace(CONTROL_CHARS_REGEX, '').trim();
+  if (cleaned.length === 0) return 'Unknown Device';
+  return cleaned.length > 64 ? cleaned.slice(0, 64) : cleaned;
+}
+
+const devLog = {
+  log: (...args: any[]) => {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.log(...args);
+    }
+  },
+  warn: (...args: any[]) => {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn(...args);
+    }
+  },
+  error: (...args: any[]) => {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.error(...args);
+    }
+  },
+};
+
 /**
  * Check if the app has required Bluetooth permissions.
  * On Android 12+ (API 31+), checks BLUETOOTH_CONNECT.
@@ -97,7 +139,7 @@ export function hasBluetoothPermission(): boolean {
   try {
     return NativeModule?.hasBluetoothPermission() ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error checking bluetooth permission:', e);
+    devLog.warn('[EarbudNative] Error checking bluetooth permission:', e);
     return false;
   }
 }
@@ -110,7 +152,7 @@ export function isBluetoothEnabled(): boolean {
   try {
     return NativeModule?.isBluetoothEnabled() ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error checking bluetooth enabled:', e);
+    devLog.warn('[EarbudNative] Error checking bluetooth enabled:', e);
     return false;
   }
 }
@@ -134,7 +176,7 @@ export function isScreenInteractive(): boolean {
  */
 export async function requestBluetoothPermissions(): Promise<boolean> {
   if (Platform.OS !== 'android') {
-    console.log('[EarbudNative] Bluetooth features are not supported on iOS');
+    devLog.log('[EarbudNative] Bluetooth features are not supported on iOS');
     return false;
   }
 
@@ -162,7 +204,7 @@ export async function requestBluetoothPermissions(): Promise<boolean> {
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
   } catch (err) {
-    console.warn('[EarbudNative] Error requesting bluetooth permissions:', err);
+    devLog.warn('[EarbudNative] Error requesting bluetooth permissions:', err);
     return false;
   }
 }
@@ -181,7 +223,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
     }
     return true;
   } catch (e) {
-    console.warn('[EarbudNative] Error requesting notification permission:', e);
+    devLog.warn('[EarbudNative] Error requesting notification permission:', e);
     return false;
   }
 }
@@ -194,7 +236,7 @@ export function isDeviceWatcherServiceRunning(): boolean {
   try {
     return NativeModule?.isWatcherServiceRunning() ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error checking service running:', e);
+    devLog.warn('[EarbudNative] Error checking service running:', e);
     return false;
   }
 }
@@ -205,7 +247,7 @@ export function isDeviceWatcherServiceRunning(): boolean {
  */
 export async function startDeviceWatcherService(): Promise<boolean> {
   if (Platform.OS !== 'android') {
-    console.log('[EarbudNative] Foreground service not supported on iOS');
+    devLog.log('[EarbudNative] Foreground service not supported on iOS');
     return false;
   }
 
@@ -213,7 +255,7 @@ export async function startDeviceWatcherService(): Promise<boolean> {
     await requestNotificationPermission();
     return (await NativeModule?.startWatcherService()) ?? false;
   } catch (e) {
-    console.error('[EarbudNative] Failed to start device watcher service:', e);
+    devLog.error('[EarbudNative] Failed to start device watcher service:', e);
     return false;
   }
 }
@@ -226,7 +268,7 @@ export async function stopDeviceWatcherService(): Promise<boolean> {
   try {
     return (await NativeModule?.stopWatcherService()) ?? false;
   } catch (e) {
-    console.error('[EarbudNative] Failed to stop device watcher service:', e);
+    devLog.error('[EarbudNative] Failed to stop device watcher service:', e);
     return false;
   }
 }
@@ -236,21 +278,22 @@ export async function stopDeviceWatcherService(): Promise<boolean> {
  * (a) BluetoothDevice.getBatteryLevel reflection
  * (b) BATTERY_LEVEL_CHANGED broadcast cache
  * (c) BLE Battery Service GATT (0x180F/0x2A19)
- * Returns null if none work.
+ * Returns null if none work or if address is invalid.
  */
 export async function getDeviceBatteryLevel(
   address: string
 ): Promise<number | null> {
   if (Platform.OS !== 'android') return null;
+  if (!isValidMac(address)) return null;
 
   try {
-    const level = await NativeModule?.getDeviceBatteryLevel(address);
+    const level = await NativeModule?.getDeviceBatteryLevel(address.toUpperCase());
     if (typeof level === 'number' && level >= 0 && level <= 100) {
-      return level;
+      return Math.round(level);
     }
     return null;
   } catch (e) {
-    console.warn(`[EarbudNative] Error fetching battery for ${address}:`, e);
+    devLog.warn(`[EarbudNative] Error fetching battery for ${maskMac(address)}:`, e);
     return null;
   }
 }
@@ -260,10 +303,11 @@ export async function getDeviceBatteryLevel(
  */
 export function startRssiScan(address: string): boolean {
   if (Platform.OS !== 'android') return false;
+  if (!isValidMac(address)) return false;
   try {
-    return NativeModule?.startRssiScan(address) ?? false;
+    return NativeModule?.startRssiScan(address.toUpperCase()) ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error starting RSSI scan:', e);
+    devLog.warn('[EarbudNative] Error starting RSSI scan:', e);
     return false;
   }
 }
@@ -276,7 +320,7 @@ export function stopRssiScan(): boolean {
   try {
     return NativeModule?.stopRssiScan() ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error stopping RSSI scan:', e);
+    devLog.warn('[EarbudNative] Error stopping RSSI scan:', e);
     return false;
   }
 }
@@ -299,9 +343,10 @@ export function isRssiScanning(): boolean {
 export function setMediaVolume(volumePercent: number): boolean {
   if (Platform.OS !== 'android') return false;
   try {
-    return NativeModule?.setMediaVolume(Math.round(volumePercent)) ?? true;
+    const clamped = Math.max(0, Math.min(100, Math.round(volumePercent)));
+    return NativeModule?.setMediaVolume(clamped) ?? true;
   } catch (e) {
-    console.warn('[EarbudNative] Error setting media volume:', e);
+    devLog.warn('[EarbudNative] Error setting media volume:', e);
     return false;
   }
 }
@@ -314,7 +359,7 @@ export function getMediaVolume(): number {
   try {
     return NativeModule?.getMediaVolume() ?? 50;
   } catch (e) {
-    console.warn('[EarbudNative] Error getting media volume:', e);
+    devLog.warn('[EarbudNative] Error getting media volume:', e);
     return 50;
   }
 }
@@ -327,7 +372,7 @@ export function pauseMedia(): boolean {
   try {
     return NativeModule?.pauseMedia() ?? true;
   } catch (e) {
-    console.warn('[EarbudNative] Error pausing media:', e);
+    devLog.warn('[EarbudNative] Error pausing media:', e);
     return false;
   }
 }
@@ -337,13 +382,18 @@ export function pauseMedia(): boolean {
  */
 export function launchApp(packageName: string): boolean {
   if (Platform.OS !== 'android') {
-    console.log(`[EarbudNative] App launching for ${packageName} not supported on iOS`);
+    devLog.log(`[EarbudNative] App launching for ${packageName} not supported on iOS`);
+    return false;
+  }
+  const trimmed = (packageName || '').trim();
+  if (!PACKAGE_NAME_REGEX.test(trimmed)) {
+    devLog.warn(`[EarbudNative] Invalid package name format: ${packageName}`);
     return false;
   }
   try {
-    return NativeModule?.launchApp(packageName) ?? true;
+    return NativeModule?.launchApp(trimmed) ?? true;
   } catch (e) {
-    console.warn(`[EarbudNative] Error launching app ${packageName}:`, e);
+    devLog.warn(`[EarbudNative] Error launching app ${trimmed}:`, e);
     return false;
   }
 }
@@ -356,7 +406,7 @@ export function isDndPermissionGranted(): boolean {
   try {
     return NativeModule?.isDndPermissionGranted() ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error checking DND permission:', e);
+    devLog.warn('[EarbudNative] Error checking DND permission:', e);
     return false;
   }
 }
@@ -369,7 +419,7 @@ export async function openDndSettings(): Promise<boolean> {
   try {
     return (await NativeModule?.openDndSettings()) ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error opening DND settings:', e);
+    devLog.warn('[EarbudNative] Error opening DND settings:', e);
     return false;
   }
 }
@@ -382,7 +432,7 @@ export function setDndEnabled(enable: boolean): boolean {
   try {
     return NativeModule?.setDndEnabled(enable) ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error setting DND mode:', e);
+    devLog.warn('[EarbudNative] Error setting DND mode:', e);
     return false;
   }
 }
@@ -395,7 +445,7 @@ export async function openBluetoothSettings(): Promise<boolean> {
   try {
     return (await NativeModule?.openBluetoothSettings()) ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error opening bluetooth settings:', e);
+    devLog.warn('[EarbudNative] Error opening bluetooth settings:', e);
     return false;
   }
 }
@@ -408,7 +458,7 @@ export async function openAppSettings(): Promise<boolean> {
   try {
     return (await NativeModule?.openAppSettings()) ?? false;
   } catch (e) {
-    console.warn('[EarbudNative] Error opening app settings:', e);
+    devLog.warn('[EarbudNative] Error opening app settings:', e);
     return false;
   }
 }
@@ -418,20 +468,30 @@ export async function openAppSettings(): Promise<boolean> {
  */
 export async function getBondedAudioDevices(): Promise<BondedDevice[]> {
   if (Platform.OS !== 'android') {
-    console.log('[EarbudNative] Bluetooth audio scanning is not supported on iOS');
+    devLog.log('[EarbudNative] Bluetooth audio scanning is not supported on iOS');
     return [];
   }
 
   try {
     if (!hasBluetoothPermission()) {
-      console.warn('[EarbudNative] BLUETOOTH_CONNECT permission not granted');
+      devLog.warn('[EarbudNative] BLUETOOTH_CONNECT permission not granted');
       return [];
     }
 
     const devices = await NativeModule?.getBondedAudioDevices();
-    return devices ?? [];
+    if (!Array.isArray(devices)) return [];
+    return devices
+      .filter((d: any) => isValidMac(d?.address))
+      .map((d: any) => ({
+        ...d,
+        name: sanitizeDeviceName(d.name),
+        address: d.address.toUpperCase(),
+        batteryLevel: typeof d.batteryLevel === 'number' && d.batteryLevel >= 0 && d.batteryLevel <= 100
+          ? Math.round(d.batteryLevel)
+          : null,
+      }));
   } catch (e) {
-    console.error('[EarbudNative] Failed to get bonded audio devices:', e);
+    devLog.error('[EarbudNative] Failed to get bonded audio devices:', e);
     return [];
   }
 }
@@ -448,7 +508,14 @@ export function addConnectionListener(
 
   const subscription: EventSubscription = emitter.addListener(
     'onDeviceConnectionChanged',
-    callback
+    (event: ConnectionChangeEvent) => {
+      if (!isValidMac(event?.address)) return;
+      callback({
+        ...event,
+        name: sanitizeDeviceName(event.name),
+        address: event.address.toUpperCase(),
+      });
+    }
   );
 
   return {
@@ -514,7 +581,20 @@ export function addBatteryListener(
 
   const subscription: EventSubscription = emitter.addListener(
     'onBatteryLevelChanged',
-    callback
+    (event: BatteryChangeEvent) => {
+      if (!isValidMac(event?.address)) return;
+      const level =
+        typeof event.batteryLevel === 'number' &&
+        event.batteryLevel >= 0 &&
+        event.batteryLevel <= 100
+          ? Math.round(event.batteryLevel)
+          : null;
+      callback({
+        ...event,
+        address: event.address.toUpperCase(),
+        batteryLevel: level,
+      });
+    }
   );
 
   return {
@@ -536,7 +616,17 @@ export function addRssiListener(
 
   const subscription: EventSubscription = emitter.addListener(
     'onBleRssiScanned',
-    callback
+    (event: BleRssiEvent) => {
+      if (!isValidMac(event?.address)) return;
+      const clampedRssi =
+        typeof event.rssi === 'number'
+          ? Math.max(-100, Math.min(-20, Math.round(event.rssi)))
+          : -70;
+      callback({
+        address: event.address.toUpperCase(),
+        rssi: clampedRssi,
+      });
+    }
   );
 
   return {
@@ -599,8 +689,9 @@ export function setEqualizerEnabled(enabled: boolean): boolean {
  */
 export async function getActiveAudioCodec(address: string): Promise<string> {
   if (Platform.OS !== 'android') return 'Unknown';
+  if (!isValidMac(address)) return 'Unknown';
   try {
-    return (await NativeModule?.getActiveAudioCodec(address)) ?? 'Unknown';
+    return (await NativeModule?.getActiveAudioCodec(address.toUpperCase())) ?? 'Unknown';
   } catch (e) {
     return 'Unknown';
   }

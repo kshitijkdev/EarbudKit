@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeLog, maskMac } from '../utils/security';
 
 export interface DeviceListeningStats {
   totalSeconds: number;
@@ -78,7 +79,7 @@ export const useStatsStore = create<StatsState>()(
             },
           },
         });
-        console.log(`[StatsStore] Started listening session for ${addr}`);
+        safeLog.log(`[StatsStore] Started listening session for ${maskMac(addr)}`);
       },
 
       stopListeningSession: (address: string) => {
@@ -108,7 +109,7 @@ export const useStatsStore = create<StatsState>()(
             },
           },
         });
-        console.log(`[StatsStore] Stopped session for ${addr}. Added ${durationSec}s. Total: ${current.totalSeconds + durationSec}s`);
+        safeLog.log(`[StatsStore] Stopped session for ${maskMac(addr)}. Added ${durationSec}s`);
       },
 
       recordListeningDuration: (address: string, seconds: number) => {

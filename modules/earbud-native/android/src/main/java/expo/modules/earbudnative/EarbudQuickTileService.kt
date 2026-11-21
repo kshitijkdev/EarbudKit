@@ -24,7 +24,7 @@ class EarbudQuickTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        Log.d(TAG, "Quick Settings tile clicked")
+        if (BuildConfig.DEBUG) Log.d(TAG, "Quick Settings tile clicked")
 
         try {
             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)

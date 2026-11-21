@@ -292,5 +292,32 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
   - Updated `README.md` and `HANDOFF.md` with complete Soft Studio design tokens, Personal Hearing Calibration (Audiogram / Auto-EQ), Smart Habit Predictor, and full test suite documentation.
   - All 8 unit test suites passing cleanly; TypeScript passing with 0 errors.
 
-## Soft Studio Redesign & New Features Complete (Stages S1–S7)
-All 7 Soft Studio stages (S1–S7) have been implemented, verified, tested, built into a standalone APK, and pushed to GitHub.
+- [x] **Stage S8: Full Security Audit & Hardening Pass**
+  - **Android Manifest, IPC & PendingIntents**:
+    - Component export audit: `EarbudForegroundService` is explicitly `android:exported="false"`. `EarbudQuickTileService` requires `BIND_QUICK_SETTINGS_TILE` with `android:exported="true"`.
+    - Dynamic BroadcastReceivers: `EarbudForegroundService.kt` and `EarbudNativeModule.kt` strictly validate `intent.action` against `ALLOWED_BROADCAST_ACTIONS`, with null/type-checked parcelable extra handling in try/catch blocks.
+    - PendingIntent immutability: `PendingIntent.FLAG_IMMUTABLE` enforced across all notifications and Quick Settings tiles.
+  - **Bluetooth, BLE & Auto-Action Input Validation**:
+    - Created `EarbudSecurityUtils.kt` (Kotlin) and `src/utils/security.ts` (TypeScript).
+    - IEEE 802 MAC-48 regex format validation (`^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$`) on both native and JS sides before passing between layers.
+    - Device name sanitization: stripped control characters and newlines (`[\x00-\x1F\x7F]`) and bounded maximum length to 64 characters with safe fallback to "Unknown Device".
+    - Bound-checked battery percentages (0–100%, else null/Unavailable) and BLE RSSI (-100 to -20 dBm).
+    - Exception resilience: wrapped Bluetooth reflection, battery level reads, and AudioFX Equalizer calls in safe try/catch blocks with graceful degradation.
+    - Package name validation in `launchApp` against Android package regex and verified package existence via `PackageManager` before launching, safely catching `ActivityNotFoundException`.
+    - GPS coordinate validation: bounds checked latitude (`[-90, 90]`) and longitude (`[-180, 180]`) and URL-encoded navigation parameters to prevent injection.
+  - **Local Storage, Backups & Privacy**:
+    - Backup protection: configured `android:allowBackup="false"`, `android:dataExtractionRules="@xml/data_extraction_rules"`, and `android:fullBackupContent="@xml/backup_rules"` with full exclusion across all storage domains (`root`, `file`, `database`, `sharedpref`, `external`) to prevent cloud and ADB backup leakage of unencrypted AsyncStorage GPS coordinates and MACs.
+    - Least-privilege permissions: stripped `android.permission.INTERNET` and `android.permission.SYSTEM_ALERT_WINDOW` from release manifest, gating them strictly to debug builds for Metro/DevMenu.
+    - Production logging hygiene: gated all logs containing MAC addresses, coordinates, and device identifiers behind `BuildConfig.DEBUG` (Kotlin) and `__DEV__` (JS/TS), masking MAC addresses (`XX:XX:XX:XX:12:34`).
+  - **Release Build Hardening & Verification**:
+    - Enabled R8 shrinking and obfuscation (`minifyEnabled true`), resource shrinking (`shrinkResources true`), and `debuggable false` in `android/app/build.gradle` and `android/gradle.properties`.
+    - Configured ProGuard keep rules in `android/app/proguard-rules.pro` for `expo.modules.earbudnative.**`, `BluetoothDevice` reflection, and AudioFX `Equalizer`.
+    - Confirmed zero git-tracked secrets, keystores, or `.env` files.
+    - `npx tsc --noEmit`: 0 errors.
+    - All 8 unit tests passed cleanly.
+    - Android Lint (`lintRelease` / `lintVitalRelease`): 0 errors.
+    - Built standalone hardened release APK (`app-release.apk`, 37.1 MB, ~60% size reduction over debug build).
+    - Copied hardened release APK to `EarbudKit.apk` and `C:\Users\kumar\Downloads\EarbudKit.apk`.
+
+## Soft Studio Redesign, Features & Security Hardening Complete (Stages S1–S8)
+All stages (S1–S8) have been implemented, verified, tested, hardened, built into a standalone release APK (37.1 MB), and copied to Downloads.

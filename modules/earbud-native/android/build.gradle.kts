@@ -11,6 +11,9 @@ android {
     defaultConfig {
         minSdk = 24
     }
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {

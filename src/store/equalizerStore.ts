@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeLog } from '../utils/security';
 
 function getNativeBridge() {
   try {
@@ -86,7 +87,7 @@ export const useEqualizerStore = create<EqualizerState>()(
             }
           }
         } catch (e) {
-          console.warn('[EqualizerStore] Error checking hardware equalizer:', e);
+          safeLog.warn('[EqualizerStore] Error checking hardware equalizer:', e);
           supported = false;
         }
 
@@ -208,7 +209,7 @@ export const useEqualizerStore = create<EqualizerState>()(
           });
           return true;
         } catch (e) {
-          console.warn('[EqualizerStore] Failed to apply EQ to hardware:', e);
+          safeLog.warn('[EqualizerStore] Failed to apply EQ to hardware:', e);
           return false;
         }
       },

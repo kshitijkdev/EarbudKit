@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { safeLog } from '../utils/security';
 
 function getNativeBridge() {
   try {
@@ -57,7 +58,7 @@ export const useSleepTimerStore = create<SleepTimerState>((set, get) => ({
       selectedPreset: [15, 30, 45, 60].includes(minutes) ? minutes : 'custom',
     });
 
-    console.log(`[SleepTimer] Started timer for ${minutes} min (${totalSeconds}s). Initial volume: ${currentVol}%`);
+    safeLog.log(`[SleepTimer] Started timer for ${minutes} min (${totalSeconds}s). Initial volume: ${currentVol}%`);
 
     timerInterval = setInterval(() => {
       get().tick();
@@ -79,7 +80,7 @@ export const useSleepTimerStore = create<SleepTimerState>((set, get) => ({
       selectedPreset: 'custom',
     });
 
-    console.log(`[SleepTimer] Started quick test timer for ${seconds}s. Initial volume: ${currentVol}%`);
+    safeLog.log(`[SleepTimer] Started quick test timer for ${seconds}s. Initial volume: ${currentVol}%`);
 
     timerInterval = setInterval(() => {
       get().tick();
@@ -98,7 +99,7 @@ export const useSleepTimerStore = create<SleepTimerState>((set, get) => ({
       remainingSeconds: 0,
       isFading: false,
     });
-    console.log('[SleepTimer] Timer cancelled');
+    safeLog.log('[SleepTimer] Timer cancelled');
   },
 
   tick: () => {
@@ -119,7 +120,7 @@ export const useSleepTimerStore = create<SleepTimerState>((set, get) => ({
     // Start 10-second fade out when remaining <= 10
     if (nextRemaining <= 10 && !isFading) {
       set({ isFading: true, remainingSeconds: nextRemaining });
-      console.log('[SleepTimer] Entering 10-second volume fade-out phase');
+      safeLog.log('[SleepTimer] Entering 10-second volume fade-out phase');
       const initVol = get().initialVolume;
       const stepVol = Math.max(0, Math.round((initVol * nextRemaining) / 10));
       bridge.setMediaVolume(stepVol);
@@ -134,7 +135,7 @@ export const useSleepTimerStore = create<SleepTimerState>((set, get) => ({
   },
 
   triggerFadeAndFinish: async () => {
-    console.log('[SleepTimer] Finalizing: fading volume to 0 and pausing media...');
+    safeLog.log('[SleepTimer] Finalizing: fading volume to 0 and pausing media...');
     set({ isFading: true, remainingSeconds: 0 });
     const bridge = getNativeBridge();
 
@@ -143,7 +144,7 @@ export const useSleepTimerStore = create<SleepTimerState>((set, get) => ({
 
     // Pause media playback
     const paused = bridge.pauseMedia();
-    console.log(`[SleepTimer] Media paused: ${paused}`);
+    safeLog.log(`[SleepTimer] Media paused: ${paused}`);
 
     if (timerInterval) clearInterval(timerInterval);
     if (fadeInterval) clearInterval(fadeInterval);
@@ -157,7 +158,7 @@ export const useSleepTimerStore = create<SleepTimerState>((set, get) => ({
         remainingSeconds: 0,
         isFading: false,
       });
-      console.log('[SleepTimer] Sleep timer finished successfully');
+      safeLog.log('[SleepTimer] Sleep timer finished successfully');
     }, 1000);
   },
 }));

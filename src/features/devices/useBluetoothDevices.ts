@@ -23,6 +23,7 @@ import {
   useStatsStore,
 } from '../../store';
 import { captureCurrentLocation } from '../../services/location';
+import { safeLog, maskMac, sanitizeDeviceName } from '../../utils/security';
 
 export function useBluetoothDevices() {
   const [bondedDevices, setBondedDevices] = useState<BondedDevice[]>([]);
@@ -47,14 +48,14 @@ export function useBluetoothDevices() {
     setBluetoothEnabled(isBtOn);
 
     if (!hasPerm) {
-      console.log('[EarbudKit] Bluetooth permission not granted yet.');
+      safeLog.log('[EarbudKit] Bluetooth permission not granted yet.');
       return;
     }
 
     setIsLoading(true);
     try {
       const devices = await getBondedAudioDevices();
-      console.log(`[EarbudKit] Fetched ${devices.length} bonded audio device(s):`, devices);
+      safeLog.log(`[EarbudKit] Fetched ${devices.length} bonded audio device(s)`);
       setBondedDevices(devices);
       syncWithBondedDevices(devices);
 
@@ -85,7 +86,7 @@ export function useBluetoothDevices() {
         }
       }
     } catch (err) {
-      console.error('[EarbudKit] Error fetching bonded audio devices:', err);
+      safeLog.error('[EarbudKit] Error fetching bonded audio devices:', err);
     } finally {
       setIsLoading(false);
     }
@@ -119,7 +120,7 @@ export function useBluetoothDevices() {
 
     // Listen for live ACL connection changes
     const connSub = addConnectionListener((event) => {
-      console.log(`[EarbudKit LIVE EVENT] ${event.name} (${event.address}) is now ${event.connected ? 'CONNECTED' : 'DISCONNECTED'}`);
+      safeLog.log(`[EarbudKit LIVE EVENT] ${sanitizeDeviceName(event.name)} (${maskMac(event.address)}) is now ${event.connected ? 'CONNECTED' : 'DISCONNECTED'}`);
       setLastEvent(event);
 
       // Update native bonded list
@@ -168,13 +169,13 @@ export function useBluetoothDevices() {
 
     // Listen for live battery level updates
     const batterySub = addBatteryListener((event) => {
-      console.log(`[EarbudKit LIVE BATTERY] ${event.address} battery is now ${event.batteryLevel}%`);
+      safeLog.log(`[EarbudKit LIVE BATTERY] ${maskMac(event.address)} battery is now ${event.batteryLevel}%`);
       setBatteryLevel(event.address, event.batteryLevel);
     });
 
     // Listen for Bluetooth state changes (on/off)
     const btStateSub = addBluetoothStateListener((event) => {
-      console.log(`[EarbudKit BT STATE] Bluetooth is now ${event.enabled ? 'ON' : 'OFF'}`);
+      safeLog.log(`[EarbudKit BT STATE] Bluetooth is now ${event.enabled ? 'ON' : 'OFF'}`);
       setBluetoothEnabled(event.enabled);
       if (event.enabled) {
         checkAndRefresh();
@@ -183,14 +184,14 @@ export function useBluetoothDevices() {
 
     // Listen for bonding state changes (device paired/unpaired)
     const bondSub = addBondStateListener(() => {
-      console.log('[EarbudKit] Bonding state changed, refreshing devices...');
+      safeLog.log('[EarbudKit] Bonding state changed, refreshing devices...');
       checkAndRefresh();
     });
 
     // Listen for AppState changes to re-check permissions when returning from Settings
     const appStateSub = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        console.log('[EarbudKit] App became active, checking Bluetooth permissions...');
+        safeLog.log('[EarbudKit] App became active, checking Bluetooth permissions...');
         checkAndRefresh();
       }
     });

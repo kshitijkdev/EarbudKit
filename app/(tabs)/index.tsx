@@ -24,6 +24,7 @@ import {
   pauseMedia,
 } from '../../modules/earbud-native';
 import { FeedbackToast } from '../../src/components/FeedbackToast';
+import { safeLog } from '../../src/utils/security';
 import {
   GlassCard,
   PillButton,
@@ -117,7 +118,7 @@ export default function HomeScreen() {
         showToast(success ? 'Watcher daemon stopped' : 'Failed to stop service');
       }
     } catch (e) {
-      console.error('[HomeScreen] Error toggling foreground service:', e);
+      safeLog.error('[HomeScreen] Error toggling foreground service:', e);
     } finally {
       setIsServiceLoading(false);
     }

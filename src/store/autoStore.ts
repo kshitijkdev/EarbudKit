@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { safeLog, maskMac } from '../utils/security';
 
 export interface ConnectAction {
   enabled: boolean;
@@ -202,32 +203,32 @@ export const useAutoStore = create<AutoState>()(
         const result = { appLaunched: false, volumeSet: false, dndSet: false };
 
         if (!profile || !profile.onConnect.enabled) {
-          console.log(`[AutoStore] Connect profile disabled or not found for ${addr}`);
+          safeLog.log(`[AutoStore] Connect profile disabled or not found for ${maskMac(addr)}`);
           return result;
         }
 
-        console.log(`[AutoStore] Executing Connect Profile for ${addr}:`, profile.onConnect);
+        safeLog.log(`[AutoStore] Executing Connect Profile for ${maskMac(addr)}`);
         const bridge = getNativeBridge();
 
         // 1. Set media volume
         if (profile.onConnect.setVolume !== null && profile.onConnect.setVolume !== undefined) {
           result.volumeSet = bridge.setMediaVolume(profile.onConnect.setVolume);
-          console.log(`[AutoStore] Set volume to ${profile.onConnect.setVolume}%: ${result.volumeSet}`);
+          safeLog.log(`[AutoStore] Set volume to ${profile.onConnect.setVolume}%: ${result.volumeSet}`);
         }
 
         // 2. Launch chosen app
         if (profile.onConnect.launchAppPackage) {
           result.appLaunched = bridge.launchApp(profile.onConnect.launchAppPackage);
-          console.log(`[AutoStore] Launched ${profile.onConnect.launchAppPackage}: ${result.appLaunched}`);
+          safeLog.log(`[AutoStore] Launched ${profile.onConnect.launchAppPackage}: ${result.appLaunched}`);
         }
 
         // 3. Set Do Not Disturb if requested
         if (profile.onConnect.enableDnd) {
           if (bridge.isDndPermissionGranted()) {
             result.dndSet = bridge.setDndEnabled(true);
-            console.log(`[AutoStore] Enabled DND: ${result.dndSet}`);
+            safeLog.log(`[AutoStore] Enabled DND: ${result.dndSet}`);
           } else {
-            console.warn('[AutoStore] DND requested on connect but permission is not granted');
+            safeLog.warn('[AutoStore] DND requested on connect but permission is not granted');
           }
         }
 
@@ -240,30 +241,30 @@ export const useAutoStore = create<AutoState>()(
         const result = { mediaPaused: false, volumeReset: false, dndReset: false };
 
         if (!profile || !profile.onDisconnect.enabled) {
-          console.log(`[AutoStore] Disconnect profile disabled or not found for ${addr}`);
+          safeLog.log(`[AutoStore] Disconnect profile disabled or not found for ${maskMac(addr)}`);
           return result;
         }
 
-        console.log(`[AutoStore] Executing Disconnect Profile for ${addr}:`, profile.onDisconnect);
+        safeLog.log(`[AutoStore] Executing Disconnect Profile for ${maskMac(addr)}`);
         const bridge = getNativeBridge();
 
         // 1. Pause media on disconnect
         if (profile.onDisconnect.pauseMedia) {
           result.mediaPaused = bridge.pauseMedia();
-          console.log(`[AutoStore] Paused media on disconnect: ${result.mediaPaused}`);
+          safeLog.log(`[AutoStore] Paused media on disconnect: ${result.mediaPaused}`);
         }
 
         // 2. Reset volume if configured
         if (profile.onDisconnect.setVolume !== null && profile.onDisconnect.setVolume !== undefined) {
           result.volumeReset = bridge.setMediaVolume(profile.onDisconnect.setVolume);
-          console.log(`[AutoStore] Reset volume to ${profile.onDisconnect.setVolume}%: ${result.volumeReset}`);
+          safeLog.log(`[AutoStore] Reset volume to ${profile.onDisconnect.setVolume}%: ${result.volumeReset}`);
         }
 
         // 3. Disable Do Not Disturb if configured
         if (profile.onDisconnect.disableDnd) {
           if (bridge.isDndPermissionGranted()) {
             result.dndReset = bridge.setDndEnabled(false);
-            console.log(`[AutoStore] Disabled DND on disconnect: ${result.dndReset}`);
+            safeLog.log(`[AutoStore] Disabled DND on disconnect: ${result.dndReset}`);
           }
         }
 

@@ -49,32 +49,42 @@ class EarbudForegroundService : Service() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent ?: return
             val action = intent.action ?: return
+            if (!EarbudSecurityUtils.ALLOWED_BROADCAST_ACTIONS.contains(action)) {
+                return
+            }
 
             if (action == BluetoothDevice.ACTION_ACL_CONNECTED || action == BluetoothDevice.ACTION_ACL_DISCONNECTED) {
-                val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                val device: BluetoothDevice? = try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                    }
+                } catch (e: Exception) {
+                    null
                 }
 
-                device?.let { dev ->
+                val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(device?.address)
+                if (device != null && cleanAddress != null) {
                     val isConnected = (action == BluetoothDevice.ACTION_ACL_CONNECTED)
-                    val address = dev.address ?: ""
 
                     if (isConnected) {
-                        connectedDevices.add(address)
+                        connectedDevices.add(cleanAddress)
                     } else {
-                        connectedDevices.remove(address)
+                        connectedDevices.remove(cleanAddress)
                     }
 
-                    Log.d(TAG, "Background ACL event: $address connected=$isConnected (total connected: ${connectedDevices.size})")
+                    if (BuildConfig.DEBUG) {
+                        val masked = EarbudSecurityUtils.maskMacAddress(cleanAddress)
+                        Log.d(TAG, "Background ACL event: $masked connected=$isConnected (total connected: ${connectedDevices.size})")
+                    }
 
                     // Update persistent notification text
                     updateNotification()
 
                     // Forward to EarbudNativeModule for JS bridge
-                    EarbudNativeModule.instance?.handleDeviceConnectionEvent(dev, isConnected)
+                    EarbudNativeModule.instance?.handleDeviceConnectionEvent(device, isConnected)
                 }
             } else if (action == BluetoothAdapter.ACTION_STATE_CHANGED) {
                 val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
@@ -85,18 +95,23 @@ class EarbudForegroundService : Service() {
                 }
                 EarbudNativeModule.instance?.handleBluetoothStateEvent(isEnabled)
             } else if (action == ACTION_BATTERY_LEVEL_CHANGED) {
-                val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                }
-                val level = intent.getIntExtra(EXTRA_BATTERY_LEVEL, -1)
-                device?.address?.let { address ->
-                    if (level in 0..100) {
-                        EarbudNativeModule.batteryCache[address.uppercase()] = level
-                        EarbudNativeModule.instance?.handleBatteryLevelEvent(address, level)
+                val device: BluetoothDevice? = try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                     }
+                } catch (e: Exception) {
+                    null
+                }
+                val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(device?.address)
+                val rawLevel = intent.getIntExtra(EXTRA_BATTERY_LEVEL, -1)
+                val level = EarbudSecurityUtils.clampBattery(rawLevel)
+
+                if (cleanAddress != null && level != null) {
+                    EarbudNativeModule.batteryCache[cleanAddress] = level
+                    EarbudNativeModule.instance?.handleBatteryLevelEvent(cleanAddress, level)
                 }
             }
         }
@@ -107,7 +122,7 @@ class EarbudForegroundService : Service() {
         createNotificationChannel()
         registerServiceReceiver()
         isServiceRunning = true
-        Log.d(TAG, "EarbudForegroundService created")
+        if (BuildConfig.DEBUG) Log.d(TAG, "EarbudForegroundService created")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -123,14 +138,14 @@ class EarbudForegroundService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
 
-        Log.d(TAG, "EarbudForegroundService started in foreground")
+        if (BuildConfig.DEBUG) Log.d(TAG, "EarbudForegroundService started in foreground")
         return START_STICKY
     }
 
     override fun onDestroy() {
         unregisterServiceReceiver()
         isServiceRunning = false
-        Log.d(TAG, "EarbudForegroundService destroyed")
+        if (BuildConfig.DEBUG) Log.d(TAG, "EarbudForegroundService destroyed")
         super.onDestroy()
     }
 
@@ -153,11 +168,7 @@ class EarbudForegroundService : Service() {
     private fun buildNotification(): Notification {
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
         val pendingIntent = launchIntent?.let {
-            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
-            }
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             PendingIntent.getActivity(this, 0, it, flags)
         }
 
@@ -199,7 +210,7 @@ class EarbudForegroundService : Service() {
                 ContextCompat.RECEIVER_EXPORTED
             )
             isReceiverRegistered = true
-            Log.d(TAG, "Service background receiver registered")
+            if (BuildConfig.DEBUG) Log.d(TAG, "Service background receiver registered")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to register service receiver", e)
         }
