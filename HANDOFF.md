@@ -317,7 +317,7 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - All 8 unit tests passed cleanly.
     - Android Lint (`lintRelease` / `lintVitalRelease`): 0 errors.
     - Built standalone hardened release APK (`app-release.apk`, 37.1 MB, ~60% size reduction over debug build).
-    - Copied hardened release APK to `EarbudKit.apk` and `C:\Users\kumar\Downloads\EarbudKit.apk`.
+    - Moved hardened release APK to dedicated repository directory `release/EarbudKit.apk` and copied to `C:\Users\kumar\Downloads\EarbudKit.apk`.
 
 ## Soft Studio Redesign, Features & Security Hardening Complete (Stages S1–S8)
 All stages (S1–S8) have been implemented, verified, tested, hardened, built into a standalone release APK (37.1 MB), and copied to Downloads.

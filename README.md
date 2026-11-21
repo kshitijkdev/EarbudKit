@@ -2,6 +2,13 @@
 
 An Android-first companion app for Bluetooth audio devices that have no official companion app. Built with React Native, Expo SDK 58, and a local Kotlin native module using standard Android/Bluetooth APIs.
 
+## Download Release APK
+
+- **Production APK**: [Download release/EarbudKit.apk](release/EarbudKit.apk) (37.15 MB)
+- **Direct GitHub Raw Link**: [Download EarbudKit.apk](https://github.com/kshitijkdev/EarbudKit/raw/main/release/EarbudKit.apk)
+- **Integrity**: SHA-256 `695365F9849391972DA82E0FD159955BEDE0659EFD3692BDF618C104BBE11FD6`
+- See [release/README.md](release/README.md) for full sideloading instructions, security hardening notes, and checksum verification.
+
 ---
 
 ## Target Hardware
