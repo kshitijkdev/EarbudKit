@@ -324,19 +324,33 @@ export default function ToolsScreen() {
   const registerHearingResponse = useHearingCalibrationStore((s) => s.registerHearingResponse);
   const cancelHearingTest = useHearingCalibrationStore((s) => s.cancelTest);
   const toggleHearingProfile = useHearingCalibrationStore((s) => s.toggleProfileEnabled);
+  const resetHearingProfile = useHearingCalibrationStore((s) => s.resetProfile);
 
   const activeHearingProfile = upperAddr ? hearingProfiles[upperAddr] : undefined;
 
   const handleStartHearingTest = () => {
     const target = selectedAddress || activeDeviceAddress || trackedDevices[0]?.address;
     if (!target) {
-      showToast('Track an audio device first to calibrate your hearing curve.');
+      showToast('Track an audio device first to personalize your sound.');
       return;
     }
     if (!selectedAddress) {
       setSelectedAddress(target);
     }
-    startHearingTest(target);
+
+    Alert.alert(
+      'Hearing Safety Warning',
+      'This calibration plays pure acoustic tones at increasing intensities. Please keep your volume at a moderate level in a quiet environment. Stop immediately if any sound feels uncomfortable.\n\nDisclaimer: This is not a diagnostic medical test. Intended solely for personal audio equalization.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start Test',
+          onPress: () => {
+            startHearingTest(target);
+          },
+        },
+      ]
+    );
   };
 
   const handleEqToggle = (val: boolean) => {
@@ -988,7 +1002,7 @@ export default function ToolsScreen() {
               </View>
             </View>
 
-            {/* Personal Hearing Calibration (HearID) Card */}
+            {/* Personal Sound Personalization Card */}
             <View
               style={[
                 styles.card,
@@ -1004,11 +1018,11 @@ export default function ToolsScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <View style={[styles.newBadge, { backgroundColor: colors.primaryContainer }]}>
                       <Text style={[styles.newBadgeText, { color: colors.primary, fontFamily: fonts.label }]}>
-                        HEARID
+                        ACOUSTIC FIT
                       </Text>
                     </View>
                     <Text style={[styles.cardTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
-                      Personal Hearing Calibration
+                      Sound Personalization
                     </Text>
                   </View>
                   <Text style={[styles.cardSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body, marginTop: 4 }]}>
@@ -1016,6 +1030,22 @@ export default function ToolsScreen() {
                   </Text>
                 </View>
                 <Ionicons name="pulse" size={28} color={colors.primary} />
+              </View>
+
+              {/* Disclaimer Notice */}
+              <View
+                style={[
+                  styles.disclaimerBox,
+                  {
+                    backgroundColor: colors.surfaceContainerHigh,
+                    borderColor: colors.hairline,
+                  },
+                ]}
+              >
+                <Ionicons name="information-circle-outline" size={15} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={[styles.disclaimerText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                  Not a diagnostic medical test. For audio personalization only.
+                </Text>
               </View>
 
               {/* Hearing Calibration Curve Status */}
@@ -1038,7 +1068,7 @@ export default function ToolsScreen() {
                       onValueChange={(val) => {
                         if (selectedAddress) {
                           toggleHearingProfile(selectedAddress, val);
-                          showToast(val ? 'Applied HearID Calibration' : 'HearID Bypassed');
+                          showToast(val ? 'Applied Sound Personalization' : 'Personalization Bypassed');
                         }
                       }}
                     />
@@ -1070,22 +1100,37 @@ export default function ToolsScreen() {
                 </View>
               ) : null}
 
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={handleStartHearingTest}
-                style={[
-                  styles.actionButton,
-                  {
-                    backgroundColor: colors.primary,
-                    marginTop: 12,
-                  },
-                ]}
-              >
-                <Ionicons name="ear-outline" size={18} color={colors.onPrimary} style={{ marginRight: 6 }} />
-                <Text numberOfLines={1} style={[styles.actionButtonText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
-                  {activeHearingProfile ? 'Retest Hearing Profile (60s)' : 'Start 60s Hearing Test'}
-                </Text>
-              </TouchableOpacity>
+              {activeHearingProfile ? (
+                <ButtonRow gap={10} equal style={{ marginTop: 12 }}>
+                  <PillButton
+                    label="Reset to Flat"
+                    variant="secondary"
+                    icon={<Ionicons name="refresh-outline" size={16} color={colors.onSurfaceVariant} />}
+                    onPress={async () => {
+                      const target = selectedAddress || activeDeviceAddress || trackedDevices[0]?.address;
+                      if (target) {
+                        await resetHearingProfile(target);
+                        showToast('Reset EQ profile to Flat');
+                      }
+                    }}
+                  />
+                  <PillButton
+                    label="Retest Profile"
+                    variant="primary"
+                    icon={<Ionicons name="ear-outline" size={16} color={colors.onPrimary} />}
+                    onPress={handleStartHearingTest}
+                  />
+                </ButtonRow>
+              ) : (
+                <View style={{ marginTop: 12 }}>
+                  <PillButton
+                    label="Start Sound Personalization (60s)"
+                    variant="primary"
+                    icon={<Ionicons name="ear-outline" size={18} color={colors.onPrimary} />}
+                    onPress={handleStartHearingTest}
+                  />
+                </View>
+              )}
             </View>
 
             {/* Presets and 5-Band Sliders Card */}
@@ -1241,7 +1286,7 @@ export default function ToolsScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="pulse" size={22} color={colors.primary} />
                 <Text style={[styles.hearingModalTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
-                  HearID Calibration
+                  Sound Personalization (Uncalibrated)
                 </Text>
               </View>
               <TouchableOpacity activeOpacity={0.7} onPress={cancelHearingTest}>
@@ -1258,7 +1303,7 @@ export default function ToolsScreen() {
                 {TEST_FREQUENCIES[currentFreqIndex]} Hz
               </Text>
               <Text style={[styles.stepInstructionText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
-                Listen closely through your connected earphones. Do you hear a high-precision tone?
+                Listen closely through your connected earphones. Do you hear a pure sine tone?
               </Text>
             </View>
 
@@ -1318,11 +1363,21 @@ export default function ToolsScreen() {
                   const isLastFreq = currentFreqIndex >= TEST_FREQUENCIES.length - 1;
                   await registerHearingResponse(true, target);
                   if (isLastFreq) {
-                    showToast('HearID calibration complete! Auto-EQ curve applied.');
+                    showToast('Sound personalization complete! Custom EQ curve applied.');
                   }
                 }}
               />
             </ButtonRow>
+
+            {/* Safety & Medical Disclaimer */}
+            <Text
+              style={[
+                styles.modalSafetyDisclaimer,
+                { color: colors.onSurfaceVariant, fontFamily: fonts.label },
+              ]}
+            >
+              Not a diagnostic medical test. Audio intensity capped safely at 45 dB.
+            </Text>
           </View>
         </View>
       </Modal>
@@ -1664,6 +1719,25 @@ const styles = StyleSheet.create({
   newBadgeText: {
     fontSize: 9,
     fontWeight: '700',
+  },
+  disclaimerBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  disclaimerText: {
+    fontSize: 11,
+    flex: 1,
+    lineHeight: 15,
+  },
+  modalSafetyDisclaimer: {
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 12,
   },
   hearIdCurveBox: {
     padding: 12,

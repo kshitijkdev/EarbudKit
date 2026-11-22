@@ -68,6 +68,32 @@ export async function runHearingCalibrationTests() {
   if (disabledEq.preset !== 'Flat') throw new Error('EQ should revert to Flat when disabled');
   console.log('✓ Equalizer cleanly reverted when personal hearing profile is toggled off');
 
+  // Test 6: Safe gain clamping verification
+  const extremeThresholds = {
+    250: 90,
+    500: 90,
+    1000: 10,
+    2000: 90,
+    4000: 90,
+    8000: 90,
+  };
+  const clampedCurve = calculateCompensationCurve(extremeThresholds);
+  clampedCurve.forEach((gain) => {
+    if (gain < -6 || gain > 8) {
+      throw new Error(`Gain ${gain} exceeds safe clamping limits [-6, 8] dB`);
+    }
+  });
+  console.log('✓ Safe gain clamping verified under extreme threshold divergence:', clampedCurve);
+
+  // Test 7: Reset to flat action
+  await useHearingCalibrationStore.getState().resetProfile(testDevice);
+  if (useHearingCalibrationStore.getState().profiles[testDevice]) {
+    throw new Error('resetProfile should remove profile from store');
+  }
+  const resetEq = useEqualizerStore.getState().getDeviceConfig(testDevice);
+  if (resetEq.preset !== 'Flat') throw new Error('resetProfile should revert Equalizer to Flat');
+  console.log('✓ Reset to Flat verified: profile deleted and EQ reverted to Flat');
+
   console.log('✅ ALL PERSONAL HEARING CALIBRATION CHECKS PASSED');
   process.exit(0);
 }

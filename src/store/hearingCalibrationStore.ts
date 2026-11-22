@@ -241,6 +241,11 @@ export const useHearingCalibrationStore = create<HearingCalibrationState>()(
         const profiles = { ...get().profiles };
         delete profiles[addr];
         set({ profiles, activeProfile: null });
+
+        // Reset Equalizer to Flat preset
+        const eq = useEqualizerStore.getState();
+        eq.setDevicePreset(addr, 'Flat');
+        eq.applyToHardware(addr);
       },
     }),
     {

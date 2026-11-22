@@ -349,9 +349,39 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 - [x] Stage S10: Layout QA across ALL screens (shared layout primitives and automated check)
 - [x] Stage S11: Home screen real-time data
 - [x] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
-- [ ] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
+- [x] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
 - [ ] Stage S14: Remove fake data (honesty cleanup)
 - [ ] Stage S15: Release hygiene and final verification
+
+### Stage S13: Sound Personalization & Acoustic Calibration Summary
+- **Audit Findings**:
+  - The feature previously used medicalized and proprietary branding ("HearID", "Clinical Audiogram") without prominent medical disclaimers or volume safety warnings.
+  - Equalizer reset to flat was not exposed as a dedicated 1-tap control.
+- **What Changed**:
+  - `src/store/hearingCalibrationStore.ts`:
+    - Verified pure 16-bit PCM mono sine tone generator in Kotlin native module (`EarbudNativeModule.kt`) playing across 250, 500, 1000, 2000, 4000, and 8000 Hz with 40ms attack/release envelopes to prevent acoustic clicks.
+    - Enforced safe gain clamping on derived 5-band EQ compensation curve ([-6, +8] dB) mapped to hardware bands [60Hz, 230Hz, 910Hz, 3600Hz, 14000Hz].
+    - Updated `resetProfile` to delete the stored calibration and explicitly revert the Android hardware Equalizer to the 'Flat' preset (`eq.setDevicePreset(addr, 'Flat'); eq.applyToHardware(addr)`).
+  - `app/(tabs)/tools.tsx`:
+    - Re-labeled feature with honest consumer terminology: "Sound Personalization" and "ACOUSTIC FIT" badge (replacing "HearID").
+    - Added prominent medical disclaimer box on card and modal: "Not a diagnostic medical test. For audio personalization only."
+    - Added pre-test Safety Warning dialog before test execution, prompting user to check volume levels and test in a quiet environment.
+    - Modal sheet updated to "Sound Personalization (Uncalibrated)" with safety note that test intensity is hard-capped to safe audio levels (max 45 dB).
+    - Added a 1-tap "Reset to Flat" `PillButton` alongside "Retest Profile" when an active personalization profile exists.
+  - `src/store/__tests__/hearingCalibration.test.ts`:
+    - Added unit test coverage for safe gain clamping under extreme threshold divergence, profile deletion, and hardware Equalizer reset to 'Flat'.
+- **Decisions**:
+  - All clinical or proprietary medical terminology is eliminated.
+  - Sound personalization is framed strictly as consumer acoustic equalization.
+- **Known Issues**: None.
+- **NEXT STEP**: Stage S14: Remove fake data (honesty cleanup).
+
+#### Stage S13 Manual Device Test Checklist:
+- [ ] In Tools -> Sound Personalization, tap "Start Sound Personalization (60s)": verify Safety Warning alert appears with medical disclaimer and Cancel/Start options.
+- [ ] Tap "Start Test" with Bluetooth headphones on: verify pure sine tones play at 250Hz, 500Hz, 1000Hz, 2000Hz, 4000Hz, 8000Hz ramping from quiet (10 dB) upward.
+- [ ] Tap "Replay Tone": verify current frequency tone replays at current intensity.
+- [ ] Complete test: verify compensation curve bars render in UI and custom curve applies to hardware Equalizer.
+- [ ] Tap "Reset to Flat": verify profile is removed and Equalizer reverts to 0 dB flat preset.
 
 ### Stage S12: Fix Smart Habit Predictor Summary
 - **Audit Findings**:
