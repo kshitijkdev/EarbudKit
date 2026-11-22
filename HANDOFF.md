@@ -348,10 +348,43 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 - [x] Stage S9: Audit and real-device discovery (foundation for everything else)
 - [x] Stage S10: Layout QA across ALL screens (shared layout primitives and automated check)
 - [x] Stage S11: Home screen real-time data
-- [ ] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
+- [x] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
 - [ ] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
 - [ ] Stage S14: Remove fake data (honesty cleanup)
 - [ ] Stage S15: Release hygiene and final verification
+
+### Stage S12: Fix Smart Habit Predictor Summary
+- **Audit Findings**:
+  - Previously, `habitStore` pre-seeded arbitrary 89–96% confidence scores even on a brand-new installation without any listening history.
+  - Routine application only set volume and DND manually instead of executing the device's On-Connect profile from Auto-Actions.
+- **What Changed**:
+  - `src/store/habitStore.ts`:
+    - Removed all pre-seeded archetype confidence values.
+    - Implemented bounded timestamped connection events (`events: ConnectionEvent[]`), pruned to the last 100 events within a 30-day window (`THIRTY_DAYS_MS`).
+    - Enforced a hard 3-session evidence threshold (`REQUIRED_SESSIONS_THRESHOLD = 3`) for the active device in the current time slot (`morning`, `afternoon`, `evening`, `night`) before unlocking the routine capsule.
+    - Added `learningState: RoutineLearningState` when fewer than 3 events exist, reporting `sessionsNeeded` (e.g. "Learning your routine: 2 more afternoon sessions needed") and progress (`1/3`, `2/3`).
+    - Computed confidence match as an honest empirical ratio: `Math.round((matchingSlotSessions / totalDeviceSessions) * 100)` (e.g. "Based on 3 of your last 4 sessions" -> 75% match).
+    - Integrated `applyRoutine` directly with `useAutoStore.getState().executeConnectProfile(targetAddr)` so applying the routine executes the configured volume, app launch, and DND profile.
+    - Reinforced slot-aware dismissal (`lastDismissedSlot = `${timeSlot}_${date.toDateString()}``) so dismissals persist across the current time quadrant and automatically reset when the quadrant advances.
+    - Added `simulatePastSessions(deviceAddress)` for instant testing without waiting 3 days.
+  - `app/(tabs)/index.tsx`:
+    - Updated Smart Routine capsule to render a subtle learning state when `learningState.currentSessions > 0` and `< 3` sessions exist, and the full routine capsule with real confidence ratio when unlocked.
+  - `app/(tabs)/settings.tsx`:
+    - Added a `__DEV__`-gated "Developer Tools" section with a 1-tap "Simulate 3 Past Sessions" `PillButton` to unlock and test the routine capsule immediately.
+  - `src/store/__tests__/habitStore.test.ts`:
+    - Added comprehensive unit tests covering: clean install empty/learning state, threshold enforcement (1 and 2 sessions remain locked), 3rd session unlocking routine with 100% confidence, honest ratio confidence calculation (75% for 3/4 sessions), slot-aware dismissal, and `simulatePastSessions` verification.
+- **Decisions**:
+  - Zero fake data: if fewer than 3 sessions exist in the current daily quadrant, never surface a high-confidence prediction. Display honest learning progress instead.
+  - Confidence percentage is strictly calculated from empirical session ratios.
+- **Known Issues**: None.
+- **NEXT STEP**: Stage S13: Fix Personal Hearing Calibration / Sound Personalization.
+
+#### Stage S12 Manual Device Test Checklist:
+- [ ] Clean install: verify Home screen shows no fake routine capsule. If 1 or 2 connections are logged, verify the "Adaptive Context Engine" card displays "Learning your routine: N more sessions needed".
+- [ ] In Settings (debug build), tap "Simulate 3 Past Sessions": verify toast confirmation appears.
+- [ ] Return to Home screen: verify Smart Routine capsule unlocks with real confidence match (100% or real ratio) and evidence text (e.g. "Based on 3 of your last 3 sessions").
+- [ ] Tap "Dismiss": verify capsule disappears for the current time slot.
+- [ ] Tap "Apply Routine": verify configured On-Connect profile from Auto-Actions is executed (volume set, app launched, DND enabled).
 
 ### Stage S11: Home Screen Real-Time Data Summary
 - **Audit Findings**:

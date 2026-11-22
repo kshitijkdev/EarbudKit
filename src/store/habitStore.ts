@@ -10,6 +10,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSleepTimerStore } from './sleepTimerStore';
+import { useAutoStore } from './autoStore';
 import { safeLog } from '../utils/security';
 
 function getNativeBridge() {
@@ -37,11 +38,27 @@ export interface HabitPattern {
   frequency: number;
 }
 
+export interface ConnectionEvent {
+  deviceAddress: string;
+  timestamp: number;
+  dayOfWeek: number;
+  hourOfDay: number;
+  timeSlot: TimeSlot;
+}
+
+export interface RoutineLearningState {
+  isLearning: true;
+  sessionsNeeded: number;
+  currentSessions: number;
+  targetSessions: number;
+  timeSlot: TimeSlot;
+}
+
 export interface SmartRoutine {
   id: string;
   title: string;
   subtitle: string;
-  confidenceMatch: number; // e.g. 94 (percentage)
+  confidenceMatch: number; // Real calculated ratio percentage
   timeSlot: TimeSlot;
   app?: string;
   appPackage?: string;
@@ -49,16 +66,20 @@ export interface SmartRoutine {
   targetVolume: number;
   enableDnd: boolean;
   sleepMinutes?: number;
+  evidenceText: string;
 }
 
 interface HabitState {
   matrix: Record<string, Record<string, HabitPattern>>; // deviceAddress -> `${timeSlot}_${dayType}` -> pattern
+  events: ConnectionEvent[]; // Bounded connection history (max 100 events within 30 days)
+  learningState: RoutineLearningState | null;
   activeRoutine: SmartRoutine | null;
   isDismissed: boolean;
   lastDismissedSlot: string | null;
   isApplied: boolean;
 
   // Actions
+  recordConnectionEvent: (deviceAddress: string, timestamp?: number) => void;
   recordSessionEvent: (params: {
     deviceAddress: string;
     app?: string;
@@ -69,6 +90,7 @@ interface HabitState {
   evaluateCurrentRoutine: (deviceAddress?: string) => SmartRoutine | null;
   applyRoutine: (deviceAddress?: string) => Promise<boolean>;
   dismissRoutine: () => void;
+  simulatePastSessions: (deviceAddress?: string) => Promise<void>;
   resetHabits: () => Promise<void>;
 }
 
@@ -88,12 +110,11 @@ export function getDayType(date = new Date()): DayType {
 }
 
 // Preset archetypes tailored to audio listening contexts
-const ROUTINE_ARCHETYPES: Record<
+export const ROUTINE_ARCHETYPES: Record<
   TimeSlot,
   {
     title: string;
     subtitle: string;
-    baseConfidence: number;
     defaultVol: number;
     dnd: boolean;
     sleep?: number;
@@ -104,7 +125,6 @@ const ROUTINE_ARCHETYPES: Record<
   morning: {
     title: 'Morning Commute',
     subtitle: 'Podcast & News Feed',
-    baseConfidence: 91,
     defaultVol: 60,
     dnd: false,
     defaultApp: 'Pocket Casts',
@@ -113,7 +133,6 @@ const ROUTINE_ARCHETYPES: Record<
   afternoon: {
     title: 'Focus Soundstage',
     subtitle: 'Deep Work Acoustics',
-    baseConfidence: 89,
     defaultVol: 55,
     dnd: true,
     defaultApp: 'Spotify',
@@ -122,7 +141,6 @@ const ROUTINE_ARCHETYPES: Record<
   evening: {
     title: 'Evening Workout',
     subtitle: 'High Energy & Peak Isolation',
-    baseConfidence: 94,
     defaultVol: 85,
     dnd: true,
     defaultApp: 'YouTube Music',
@@ -131,7 +149,6 @@ const ROUTINE_ARCHETYPES: Record<
   night: {
     title: 'Late-Night Wind Down',
     subtitle: 'Gentle Fade & Sleep Timer',
-    baseConfidence: 96,
     defaultVol: 35,
     dnd: true,
     sleep: 30,
@@ -140,14 +157,42 @@ const ROUTINE_ARCHETYPES: Record<
   },
 };
 
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const REQUIRED_SESSIONS_THRESHOLD = 3;
+
 export const habitStore = create<HabitState>()(
   persist(
     (set, get) => ({
       matrix: {},
+      events: [],
+      learningState: null,
       activeRoutine: null,
       isDismissed: false,
       lastDismissedSlot: null,
       isApplied: false,
+
+      recordConnectionEvent: (deviceAddress: string, timestamp?: number) => {
+        const cleanAddress = (deviceAddress || 'DEFAULT_DEVICE').toUpperCase();
+        const ts = timestamp ?? Date.now();
+        const date = new Date(ts);
+        const timeSlot = getTimeSlot(date);
+
+        const newEvent: ConnectionEvent = {
+          deviceAddress: cleanAddress,
+          timestamp: ts,
+          dayOfWeek: date.getDay(),
+          hourOfDay: date.getHours(),
+          timeSlot,
+        };
+
+        const now = Date.now();
+        const pruned = [...get().events, newEvent]
+          .filter((e) => now - e.timestamp <= THIRTY_DAYS_MS)
+          .slice(-100);
+
+        set({ events: pruned });
+        get().evaluateCurrentRoutine(cleanAddress);
+      },
 
       recordSessionEvent: async ({ deviceAddress, app, volume = 65, dnd = false, sleepMinutes }) => {
         const cleanAddress = (deviceAddress || 'DEFAULT_DEVICE').toUpperCase();
@@ -176,30 +221,95 @@ export const habitStore = create<HabitState>()(
         };
 
         currentMatrix[cleanAddress] = deviceSlots;
-        set({ matrix: currentMatrix });
+
+        // Also record timestamped connection event
+        const now = Date.now();
+        const date = new Date(now);
+        const newEvent: ConnectionEvent = {
+          deviceAddress: cleanAddress,
+          timestamp: now,
+          dayOfWeek: date.getDay(),
+          hourOfDay: date.getHours(),
+          timeSlot,
+        };
+
+        const prunedEvents = [...get().events, newEvent]
+          .filter((e) => now - e.timestamp <= THIRTY_DAYS_MS)
+          .slice(-100);
+
+        set({ matrix: currentMatrix, events: prunedEvents });
 
         get().evaluateCurrentRoutine(cleanAddress);
       },
 
       evaluateCurrentRoutine: (deviceAddress?: string) => {
+        const now = Date.now();
         const timeSlot = getTimeSlot();
         const dayType = getDayType();
-        const slotKey = `${timeSlot}_${dayType}`;
+        const slotKey = `${timeSlot}_${new Date().toDateString()}`;
 
         const matrix = get().matrix;
-        const targetAddr = deviceAddress ? deviceAddress.toUpperCase() : Object.keys(matrix)[0];
-        const deviceSlots = targetAddr ? matrix[targetAddr] : undefined;
-        const learned = deviceSlots ? deviceSlots[slotKey] : undefined;
-        const archetype = ROUTINE_ARCHETYPES[timeSlot];
+        const events = get().events;
+        const targetAddr = deviceAddress
+          ? deviceAddress.toUpperCase()
+          : events.length > 0
+          ? events[events.length - 1].deviceAddress
+          : Object.keys(matrix)[0];
 
-        // Compute confidence match based on archetype baseline + frequency reinforcement
-        const freqBoost = learned ? Math.min(learned.frequency * 2, 8) : 0;
-        const confidenceMatch = Math.min(archetype.baseConfidence + freqBoost, 99);
+        if (!targetAddr) {
+          set({
+            activeRoutine: null,
+            learningState: null,
+            isDismissed: false,
+          });
+          return null;
+        }
+
+        // Filter events for this device within the last 30 days
+        const recentDeviceEvents = events.filter(
+          (e) => e.deviceAddress === targetAddr && now - e.timestamp <= THIRTY_DAYS_MS
+        );
+
+        const matchingSlotSessions = recentDeviceEvents.filter((e) => e.timeSlot === timeSlot).length;
+        const totalDeviceSessions = recentDeviceEvents.length;
+
+        const isDismissedForSlot = get().lastDismissedSlot === slotKey;
+
+        // Check 3-session evidence threshold
+        if (matchingSlotSessions < REQUIRED_SESSIONS_THRESHOLD) {
+          const sessionsNeeded = REQUIRED_SESSIONS_THRESHOLD - matchingSlotSessions;
+          const learningState: RoutineLearningState = {
+            isLearning: true,
+            sessionsNeeded,
+            currentSessions: matchingSlotSessions,
+            targetSessions: REQUIRED_SESSIONS_THRESHOLD,
+            timeSlot,
+          };
+
+          set({
+            activeRoutine: null,
+            learningState,
+            isDismissed: isDismissedForSlot,
+            isApplied: false,
+          });
+          return null;
+        }
+
+        // Honest ratio confidence calculation
+        const confidenceRatio = totalDeviceSessions > 0
+          ? Math.round((matchingSlotSessions / totalDeviceSessions) * 100)
+          : 100;
+        const confidenceMatch = Math.min(Math.max(confidenceRatio, 1), 100);
+
+        const deviceSlots = matrix[targetAddr];
+        const learned = deviceSlots ? deviceSlots[`${timeSlot}_${dayType}`] : undefined;
+        const archetype = ROUTINE_ARCHETYPES[timeSlot];
+        const evidenceText = `Based on ${matchingSlotSessions} of your last ${totalDeviceSessions} sessions`;
 
         const routine: SmartRoutine = {
           id: `routine_${timeSlot}`,
           title: archetype.title,
-          subtitle: archetype.subtitle,
+          subtitle: `${evidenceText} • ${archetype.subtitle}`,
           confidenceMatch,
           timeSlot,
           app: learned?.app || archetype.defaultApp,
@@ -208,12 +318,12 @@ export const habitStore = create<HabitState>()(
           targetVolume: learned?.volume ?? archetype.defaultVol,
           enableDnd: learned?.dnd ?? archetype.dnd,
           sleepMinutes: learned?.sleepMinutes ?? archetype.sleep,
+          evidenceText,
         };
-
-        const isDismissedForSlot = get().lastDismissedSlot === slotKey;
 
         set({
           activeRoutine: routine,
+          learningState: null,
           isDismissed: isDismissedForSlot,
           isApplied: false,
         });
@@ -224,22 +334,27 @@ export const habitStore = create<HabitState>()(
         const routine = get().activeRoutine;
         if (!routine) return false;
 
-        const bridge = getNativeBridge();
+        const events = get().events;
+        const targetAddr = (
+          deviceAddress ||
+          (events.length > 0 ? events[events.length - 1].deviceAddress : undefined) ||
+          Object.keys(get().matrix)[0] ||
+          'DEFAULT_DEVICE'
+        ).toUpperCase();
 
-        // 1. Set media volume directly to routine target volume
+        // 1. Execute that device's On-Connect profile from Auto-Actions
+        try {
+          await useAutoStore.getState().executeConnectProfile(targetAddr);
+        } catch (e) {
+          safeLog.warn('[HabitStore] Error executing Auto-Actions connect profile:', e);
+        }
+
+        // 2. Set media volume directly to routine target volume (reinforce)
+        const bridge = getNativeBridge();
         try {
           bridge.setMediaVolume(routine.targetVolume);
         } catch (e) {
           safeLog.warn('[HabitStore] Error setting volume:', e);
-        }
-
-        // 2. Set Do Not Disturb if requested
-        try {
-          if (routine.enableDnd && bridge.isDndPermissionGranted()) {
-            bridge.setDndEnabled(true);
-          }
-        } catch (e) {
-          safeLog.warn('[HabitStore] Error setting DND:', e);
         }
 
         // 3. Start Sleep Timer if specified
@@ -251,42 +366,67 @@ export const habitStore = create<HabitState>()(
           }
         }
 
-        // 4. Launch associated app if package is defined
-        if (routine.appPackage) {
-          try {
-            bridge.launchApp(routine.appPackage);
-          } catch (e) {
-            safeLog.warn('[HabitStore] Error launching app:', e);
-          }
-        }
-
-        // 5. Reinforce habit matrix with this execution
-        const targetAddr = deviceAddress || Object.keys(get().matrix)[0] || 'DEFAULT_DEVICE';
-        try {
-          await get().recordSessionEvent({
-            deviceAddress: targetAddr,
-            app: routine.app,
-            volume: routine.targetVolume,
-            dnd: routine.enableDnd,
-            sleepMinutes: routine.sleepMinutes,
-          });
-        } catch (e) {
-          safeLog.warn('[HabitStore] Error recording routine session:', e);
-        }
-
         set({ isApplied: true });
         return true;
       },
 
       dismissRoutine: () => {
         const timeSlot = getTimeSlot();
-        const dayType = getDayType();
-        const slotKey = `${timeSlot}_${dayType}`;
+        const slotKey = `${timeSlot}_${new Date().toDateString()}`;
         set({ isDismissed: true, lastDismissedSlot: slotKey });
       },
 
+      simulatePastSessions: async (deviceAddress?: string) => {
+        const targetAddr = (deviceAddress || '20:74:CF:89:12:01').toUpperCase();
+        const now = Date.now();
+        const timeSlot = getTimeSlot();
+
+        // Simulate 3 past connections in the current time slot over the past 3 days
+        const simEvents: ConnectionEvent[] = [
+          {
+            deviceAddress: targetAddr,
+            timestamp: now - 2 * 24 * 60 * 60 * 1000,
+            dayOfWeek: new Date(now - 2 * 24 * 60 * 60 * 1000).getDay(),
+            hourOfDay: new Date().getHours(),
+            timeSlot,
+          },
+          {
+            deviceAddress: targetAddr,
+            timestamp: now - 1 * 24 * 60 * 60 * 1000,
+            dayOfWeek: new Date(now - 1 * 24 * 60 * 60 * 1000).getDay(),
+            hourOfDay: new Date().getHours(),
+            timeSlot,
+          },
+          {
+            deviceAddress: targetAddr,
+            timestamp: now,
+            dayOfWeek: new Date().getDay(),
+            hourOfDay: new Date().getHours(),
+            timeSlot,
+          },
+        ];
+
+        const existingEvents = get().events.filter((e) => e.deviceAddress !== targetAddr);
+        set({
+          events: [...existingEvents, ...simEvents],
+          isDismissed: false,
+          lastDismissedSlot: null,
+          isApplied: false,
+        });
+
+        get().evaluateCurrentRoutine(targetAddr);
+      },
+
       resetHabits: async () => {
-        set({ matrix: {}, activeRoutine: null, isDismissed: false, lastDismissedSlot: null, isApplied: false });
+        set({
+          matrix: {},
+          events: [],
+          learningState: null,
+          activeRoutine: null,
+          isDismissed: false,
+          lastDismissedSlot: null,
+          isApplied: false,
+        });
       },
     }),
     {
@@ -294,6 +434,7 @@ export const habitStore = create<HabitState>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         matrix: state.matrix,
+        events: state.events,
         lastDismissedSlot: state.lastDismissedSlot,
       }),
       onRehydrateStorage: () => (state) => {

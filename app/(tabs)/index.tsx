@@ -64,6 +64,7 @@ export default function HomeScreen() {
 
   // Smart Habit Predictor
   const activeRoutine = habitStore((s) => s.activeRoutine);
+  const learningState = habitStore((s) => s.learningState);
   const isRoutineDismissed = habitStore((s) => s.isDismissed);
   const isRoutineApplied = habitStore((s) => s.isApplied);
   const evaluateCurrentRoutine = habitStore((s) => s.evaluateCurrentRoutine);
@@ -442,7 +443,7 @@ export default function HomeScreen() {
         )}
 
         {/* Smart Routine Capsule (Adaptive Context Engine / Smart Handshake) */}
-        {activeRoutine && !isRoutineDismissed && (
+        {activeRoutine && !isRoutineDismissed ? (
           <View
             style={[
               styles.routineCard,
@@ -520,7 +521,59 @@ export default function HomeScreen() {
               />
             </ButtonRow>
           </View>
-        )}
+        ) : learningState && !isRoutineDismissed && learningState.currentSessions > 0 ? (
+          <View
+            style={[
+              styles.routineCard,
+              {
+                backgroundColor: colors.surfaceContainer,
+                borderColor: colors.hairline,
+                borderRadius: borderRadius.lg,
+              },
+            ]}
+          >
+            <View style={styles.routineHeader}>
+              <View style={styles.routineHeaderLeft}>
+                <View
+                  style={[
+                    styles.routineIconBadge,
+                    {
+                      backgroundColor: colors.surfaceContainerHighest,
+                    },
+                  ]}
+                >
+                  <Ionicons name="sparkles-outline" size={16} color={colors.onSurfaceVariant} />
+                </View>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.routineTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}
+                  >
+                    Adaptive Context Engine
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.routineSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}
+                  >
+                    Learning your routine: {learningState.sessionsNeeded} more {learningState.timeSlot} {learningState.sessionsNeeded === 1 ? 'session' : 'sessions'} needed
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={[
+                  styles.autoIqChip,
+                  {
+                    backgroundColor: colors.surfaceContainerHigh,
+                  },
+                ]}
+              >
+                <Text style={[styles.autoIqText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                  {learningState.currentSessions}/3
+                </Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         {/* Quick Command Action Pills Shelf */}
         <View style={styles.quickActionsSection}>

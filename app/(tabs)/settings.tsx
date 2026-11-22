@@ -24,6 +24,7 @@ import {
 } from '../../src/components/ui';
 import { useDeviceStore } from '../../src/store/deviceStore';
 import { useStatsStore } from '../../src/store/statsStore';
+import { habitStore } from '../../src/store/habitStore';
 
 const POLLING_STORAGE_KEY = '@earbudkit/polling-interval';
 
@@ -35,6 +36,8 @@ export default function SettingsScreen() {
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => setToastMessage(msg);
+
+  const activeDeviceAddress = useDeviceStore((s) => s.activeDeviceAddress);
 
   // Polling interval state
   const [pollingInterval, setPollingInterval] = useState<'15s' | '5s' | '1s'>('5s');
@@ -576,6 +579,34 @@ export default function SettingsScreen() {
               <Text style={[styles.rowValue, { color: colors.onSurfaceVariant }]}>v1.0-soft</Text>
             </View>
           </GlassCard>
+
+          {/* Developer & Simulation Tools (__DEV__ Only) */}
+          {__DEV__ && (
+            <View style={{ marginTop: 24 }}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
+                  Developer Tools
+                </Text>
+                <Text style={[styles.sectionBadge, { color: colors.primary }]}>
+                  DEBUG ONLY
+                </Text>
+              </View>
+              <GlassCard style={styles.card}>
+                <Text style={[styles.privacyDescription, { color: colors.onSurfaceVariant, marginBottom: 12 }]}>
+                  Simulate 3 timestamped listening sessions for the active device in the current time slot to verify the Smart Habit routine capsule without waiting 3 days.
+                </Text>
+                <PillButton
+                  label="Simulate 3 Past Sessions"
+                  variant="primary"
+                  icon={<Ionicons name="sparkles-outline" size={18} color={colors.onPrimary} />}
+                  onPress={async () => {
+                    await habitStore.getState().simulatePastSessions(activeDeviceAddress || '20:74:CF:89:12:01');
+                    showToast('Simulated 3 sessions! Check Home capsule.');
+                  }}
+                />
+              </GlassCard>
+            </View>
+          )}
 
           {/* Destructive Action Button */}
           <View style={styles.destructiveArea}>
