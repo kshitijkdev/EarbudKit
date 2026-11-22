@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme';
 import { useBluetoothDevices } from '../../src/features/devices/useBluetoothDevices';
+import { formatLastSeen } from '../../src/features/devices/formatLastSeen';
 import { useDeviceStore, TrackedDevice } from '../../src/store';
 import { useStatsStore, formatDuration } from '../../src/store/statsStore';
 import { useSleepTimerStore } from '../../src/store/sleepTimerStore';
@@ -44,7 +45,7 @@ export default function HomeScreen() {
   const showToast = (msg: string) => setToastMessage(msg);
 
   // Bluetooth & live events hook
-  const { bluetoothEnabled } = useBluetoothDevices();
+  const { bluetoothEnabled, openSettings } = useBluetoothDevices();
 
   // Tracked devices from Zustand store
   const trackedDevicesMap = useDeviceStore((s) => s.trackedDevices);
@@ -128,25 +129,9 @@ export default function HomeScreen() {
 
   const connectedCount = trackedDevices.filter((d) => d.isConnected).length;
 
-  // Active / Hero Device
-  const activeDevice =
-    trackedDevices.find((d) => d.address === activeDeviceAddress) ||
-    trackedDevices.find((d) => d.isConnected) ||
-    trackedDevices[0];
-
-  const isConnected = Boolean(activeDevice?.isConnected);
-
-  const formatLastSeen = (dev: TrackedDevice) => {
-    if (dev.isConnected) return 'Active Now';
-    const ts = dev.lastDisconnectedAt || dev.lastLocation?.timestamp;
-    if (!ts) return 'Offline';
-    const diffMin = Math.round((Date.now() - ts) / 60000);
-    if (diffMin < 1) return 'Seen just now';
-    if (diffMin < 60) return `Seen ${diffMin}m ago`;
-    const diffHours = Math.floor(diffMin / 60);
-    if (diffHours < 24) return `Seen ${diffHours}h ago`;
-    return `Seen ${Math.floor(diffHours / 24)}d ago`;
-  };
+  // Active / Connected Device strictly from live reconcile
+  const connectedDevice = trackedDevices.find((d) => d.isConnected);
+  const isConnected = Boolean(connectedDevice);
 
   if (Platform.OS !== 'android') {
     return (
@@ -183,7 +168,7 @@ export default function HomeScreen() {
         <View style={styles.topHeader}>
           <View>
             <Text style={[styles.screenTitle, { color: colors.onSurface, fontFamily: fonts.display }]}>
-              Home
+              Hey User
             </Text>
           </View>
           <View style={styles.topHeaderActions}>
@@ -235,7 +220,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Hero "Now Connected" Showcase Card */}
-        {activeDevice ? (
+        {connectedDevice ? (
           <View
             style={[
               styles.heroCard,
@@ -266,12 +251,8 @@ export default function HomeScreen() {
                       style={[
                         styles.connectedChip,
                         {
-                          backgroundColor: activeDevice.isConnected
-                            ? 'rgba(52, 199, 89, 0.14)'
-                            : colors.surfaceContainerHigh,
-                          borderColor: activeDevice.isConnected
-                            ? '#34C759'
-                            : colors.hairline,
+                          backgroundColor: 'rgba(52, 199, 89, 0.14)',
+                          borderColor: '#34C759',
                         },
                       ]}
                     >
@@ -279,9 +260,7 @@ export default function HomeScreen() {
                         style={[
                           styles.microDot,
                           {
-                            backgroundColor: activeDevice.isConnected
-                              ? '#34C759'
-                              : colors.outline,
+                            backgroundColor: '#34C759',
                           },
                         ]}
                       />
@@ -289,14 +268,12 @@ export default function HomeScreen() {
                         style={[
                           styles.chipText,
                           {
-                            color: activeDevice.isConnected
-                              ? '#34C759'
-                              : colors.onSurfaceVariant,
+                            color: '#34C759',
                             fontFamily: fonts.label,
                           },
                         ]}
                       >
-                        {activeDevice.isConnected ? 'Connected' : 'Offline'}
+                        Connected
                       </Text>
                     </View>
 
@@ -310,7 +287,7 @@ export default function HomeScreen() {
                       ]}
                     >
                       <Text style={[styles.codecText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                        {activeDevice.audioCodec || 'AAC'}
+                        {connectedDevice.audioCodec || 'Unknown'}
                       </Text>
                     </View>
                   </View>
@@ -319,17 +296,17 @@ export default function HomeScreen() {
                     numberOfLines={1}
                     style={[styles.heroDeviceName, { color: colors.onSurface, fontFamily: fonts.headline }]}
                   >
-                    {activeDevice.nickname || activeDevice.name}
+                    {connectedDevice.nickname || connectedDevice.name}
                   </Text>
                   <Text style={[styles.heroMac, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
-                    {activeDevice.address}
+                    {connectedDevice.address}
                   </Text>
                 </View>
 
                 {/* Battery Gauge Component with centered vector icon */}
                 <View style={styles.heroBatteryWrapper}>
                   <BatteryRing
-                    battery={activeDevice.batteryLevel}
+                    battery={connectedDevice.batteryLevel}
                     size={64}
                     strokeWidth={6}
                     centerMode="icon"
@@ -338,15 +315,31 @@ export default function HomeScreen() {
                     style={[
                       styles.batteryTextUnder,
                       {
-                        color: activeDevice.batteryLevel !== null ? colors.onSurface : colors.outline,
+                        color: connectedDevice.batteryLevel !== null ? colors.onSurface : colors.outline,
                         fontFamily: fonts.label,
                       },
                     ]}
                   >
-                    {activeDevice.batteryLevel !== null ? `${activeDevice.batteryLevel}%` : 'Unavailable'}
+                    {connectedDevice.batteryLevel !== null ? `${connectedDevice.batteryLevel}%` : 'Unavailable'}
                   </Text>
                 </View>
               </View>
+
+              {/* Friendly note when device battery reporting is unavailable */}
+              {connectedDevice.batteryLevel === null && (
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.batteryNoteText,
+                    {
+                      color: colors.onSurfaceVariant,
+                      fontFamily: fonts.label,
+                    },
+                  ]}
+                >
+                  Device does not report battery over Bluetooth A2DP/HFP
+                </Text>
+              )}
 
               {/* Minimalist Acoustic Hardware Centerpiece */}
               <View style={styles.artworkCenterpiece}>
@@ -360,7 +353,7 @@ export default function HomeScreen() {
                   ]}
                 >
                   <Ionicons
-                    name={activeDevice.icon === 'headphones' ? 'headset' : 'headset-outline'}
+                    name={connectedDevice.icon === 'headphones' ? 'headset' : 'headset-outline'}
                     size={72}
                     color={colors.primary}
                   />
@@ -374,7 +367,7 @@ export default function HomeScreen() {
                     ]}
                   >
                     <Text style={[styles.artworkTagText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
-                      {activeDevice.icon === 'headphones' ? 'Over-Ear • High Res' : 'In-Ear TWS • Low Latency'}
+                      {connectedDevice.icon === 'headphones' ? 'Over-Ear • Active' : 'In-Ear TWS • Active'}
                     </Text>
                   </View>
                 </View>
@@ -383,7 +376,7 @@ export default function HomeScreen() {
               {/* Action Buttons inside Hero */}
               <ButtonRow gap={10} equal style={{ marginTop: 16 }}>
                 <PillButton
-                  label={activeDevice.isConnected ? 'Disconnect' : 'Connect'}
+                  label="Disconnect"
                   variant="secondary"
                   icon={
                     <Ionicons
@@ -394,10 +387,10 @@ export default function HomeScreen() {
                   }
                   onPress={() => {
                     useDeviceStore.getState().setConnectionState(
-                      activeDevice.address,
-                      !activeDevice.isConnected
+                      connectedDevice.address,
+                      false
                     );
-                    showToast(activeDevice.isConnected ? 'Device disconnected' : 'Device connected');
+                    showToast('Device disconnected');
                   }}
                 />
                 <PillButton
@@ -418,11 +411,31 @@ export default function HomeScreen() {
         ) : (
           <GlassCard style={{ padding: 16 }}>
             <EmptyState
-              icon={<Ionicons name="headset-outline" size={44} color={colors.outline} />}
-              title="No Tracked Devices"
-              description="Connect your Bluetooth audio gear or scan paired accessories in Devices."
+              icon={<Ionicons name="bluetooth-outline" size={44} color={colors.outline} />}
+              title="No Device Connected"
+              description={
+                bluetoothEnabled
+                  ? 'Turn on your Bluetooth headphones or connect a paired audio device in settings to view live telemetry.'
+                  : 'Bluetooth radio is turned off. Turn on Bluetooth to discover and connect your audio gear.'
+              }
               actionPrimary={
-                <PillButton label="Go to Devices" size="sm" onPress={() => router.push('/(tabs)/devices' as any)} />
+                <PillButton
+                  label="Bluetooth Settings"
+                  size="sm"
+                  variant="primary"
+                  icon={<Ionicons name="settings-outline" size={16} color={colors.onPrimary} />}
+                  onPress={openSettings}
+                />
+              }
+              actionSecondary={
+                trackedDevices.length > 0 ? (
+                  <PillButton
+                    label="Manage Devices"
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => router.push('/(tabs)/devices' as any)}
+                  />
+                ) : undefined
               }
             />
           </GlassCard>
@@ -501,7 +514,7 @@ export default function HomeScreen() {
                   />
                 }
                 onPress={async () => {
-                  await applyRoutineAction(activeDevice?.address);
+                  await applyRoutineAction(connectedDevice?.address || activeDeviceAddress || undefined);
                   showToast(`Applied ${activeRoutine.title} (${activeRoutine.targetVolume}% vol)`);
                 }}
               />
@@ -732,7 +745,7 @@ export default function HomeScreen() {
           {/* Horizontal Shelf Cards */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fleetShelf}>
             {trackedDevices.map((dev) => {
-              const isItemActive = dev.address === activeDevice?.address;
+              const isItemActive = dev.address === connectedDevice?.address || dev.address === activeDeviceAddress;
               return (
                 <TouchableOpacity
                   key={dev.address}
@@ -784,7 +797,7 @@ export default function HomeScreen() {
                         style={{ marginRight: 2 }}
                       />
                       <Text numberOfLines={1} style={[styles.fleetBatteryText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
-                        {dev.batteryLevel !== null ? `${dev.batteryLevel}%` : 'N/A'}
+                        {dev.batteryLevel !== null ? `${dev.batteryLevel}%` : 'Unavailable'}
                       </Text>
                     </View>
                   </View>
@@ -816,7 +829,7 @@ export default function HomeScreen() {
                       numberOfLines={1}
                       style={[styles.fleetCardSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}
                     >
-                      {dev.icon === 'headphones' ? 'Over-Ear' : 'In-Ear TWS'} • {dev.audioCodec || 'AAC'}
+                      {dev.icon === 'headphones' ? 'Over-Ear' : 'In-Ear TWS'} • {dev.audioCodec || 'Unknown'}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -858,7 +871,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Frosted Floating Mini-Player Bar (Sticky Above Global Bottom Navigation) */}
-      {isConnected && activeDevice && (
+      {connectedDevice && (
         <View
           pointerEvents="box-none"
           style={[
@@ -894,7 +907,7 @@ export default function HomeScreen() {
                 ]}
               >
                 <Ionicons
-                  name={activeDevice.icon === 'headphones' ? 'headset' : 'headset-outline'}
+                  name={connectedDevice.icon === 'headphones' ? 'headset' : 'headset-outline'}
                   size={18}
                   color={colors.primary}
                 />
@@ -906,17 +919,17 @@ export default function HomeScreen() {
                     numberOfLines={1}
                     style={[styles.miniPlayerDeviceName, { color: colors.onSurface, fontFamily: fonts.headline }]}
                   >
-                    {activeDevice.nickname || activeDevice.name}
+                    {connectedDevice.nickname || connectedDevice.name}
                   </Text>
                   <View style={styles.miniConnectedDot} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Text numberOfLines={1} style={[styles.miniPlayerMeta, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
-                    {activeDevice.batteryLevel !== null ? `${activeDevice.batteryLevel}%` : 'Unavailable'}
+                    {connectedDevice.batteryLevel !== null ? `${connectedDevice.batteryLevel}%` : 'Unavailable'}
                   </Text>
                   <Text numberOfLines={1} style={{ color: colors.outline, fontSize: 10 }}>•</Text>
                   <Text numberOfLines={1} style={[styles.miniPlayerCodec, { color: colors.primary, fontFamily: fonts.label }]}>
-                    {activeDevice.audioCodec || 'AAC'}
+                    {connectedDevice.audioCodec || 'Unknown'}
                   </Text>
                 </View>
               </View>
@@ -1125,6 +1138,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     marginTop: 4,
+  },
+  batteryNoteText: {
+    fontSize: 11,
+    marginTop: 6,
+    textAlign: 'center',
   },
   artworkCenterpiece: {
     alignItems: 'center',

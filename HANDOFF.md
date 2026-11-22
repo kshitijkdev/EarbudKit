@@ -347,11 +347,41 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 ## Fix Pass S9-S15 Checklist
 - [x] Stage S9: Audit and real-device discovery (foundation for everything else)
 - [x] Stage S10: Layout QA across ALL screens (shared layout primitives and automated check)
-- [ ] Stage S11: Home screen real-time data
+- [x] Stage S11: Home screen real-time data
 - [ ] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
 - [ ] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
 - [ ] Stage S14: Remove fake data (honesty cleanup)
 - [ ] Stage S15: Release hygiene and final verification
+
+### Stage S11: Home Screen Real-Time Data Summary
+- **Audit Findings**:
+  - Previously, if devices were in `deviceStore` but disconnected, `activeDevice` fell back to `trackedDevices[0]` and displayed a Hero card showing "Offline", which gave the false impression of an active session.
+  - Codec badges defaulted to fake 'AAC' fallback string instead of 'Unknown' or actual detected A2DP codec.
+  - Mini-player bar was conditionally bound to `activeDevice` even when disconnected.
+- **What Changed**:
+  - `app/(tabs)/index.tsx`:
+    - Updated Hero card condition to strictly use `connectedDevice = trackedDevices.find((d) => d.isConnected)`.
+    - If no device is connected, displays a clean `EmptyState` informing the user to turn on Bluetooth headphones or connect via system Bluetooth settings with a 1-tap "Bluetooth Settings" `PillButton` (`openSettings`).
+    - When connected, displays real device name, real codec (`connectedDevice.audioCodec || 'Unknown'`), and real battery (`connectedDevice.batteryLevel !== null ? `${connectedDevice.batteryLevel}%` : 'Unavailable'`).
+    - Added friendly hardware notice when battery level is null: "Device does not report battery over Bluetooth A2DP/HFP".
+    - Updated Registered Fleet shelf cards with real relative timestamps via `formatLastSeen` ("Connected now", "Seen just now", "Seen Xm ago", "Seen Xh ago", "Yesterday", "Seen Xd ago", "Never connected"), real battery, and real detected codec.
+    - Bento tiles pull directly from live `statsStore` session tracker (`formatDuration(todayListeningSeconds)`) and actual fleet count (`trackedDevices.length`).
+    - Floating mini-player bar is rendered only when `connectedDevice` exists, showing live connected device name, battery, and detected codec.
+    - Header greeting strictly preserved as "Hey User".
+  - `src/features/devices/formatLastSeen.ts`: Created reusable relative timestamp formatter with sub-minute, minute, hour, yesterday, day, and never-connected derivations.
+  - `src/store/__tests__/homeDerivedState.test.ts`: Added unit test suite covering `formatLastSeen` edge cases, connected device resolution, empty state fallback, codec/battery fallbacks, and mini-player visibility logic.
+- **Decisions**:
+  - If no audio device is currently linked over A2DP/HFP, the Home screen never renders a fake or offline Hero card. It displays a clean empty state with a direct shortcut to system Bluetooth settings.
+  - Fallback codec is strictly 'Unknown' (never assume AAC).
+- **Known Issues**: None.
+- **NEXT STEP**: Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence).
+
+#### Stage S11 Manual Device Test Checklist:
+- [ ] Fresh start with no Bluetooth accessories connected: Home screen displays "No Device Connected" empty state with "Bluetooth Settings" button; mini-player is completely hidden.
+- [ ] Connect a real Bluetooth headset: Hero card appears within 3 seconds showing real device name, real battery (or "Unavailable" with note), real codec, and active audio status.
+- [ ] Disconnect the headset: Home screen immediately transitions back to "No Device Connected" state; fleet shelf card updates to "Seen just now" / "Seen Xm ago".
+- [ ] Verify Bento tiles: "Today's Session" displays actual listening duration; "Tracked Devices" shows actual count.
+- [ ] Verify greeting at top remains "Hey User".
 
 ### Stage S10: Layout QA Across ALL Screens Summary
 - **Audit Findings**:
