@@ -45,9 +45,9 @@ export function PillButton({
   const { colors, fonts, borderRadius } = theme;
 
   const getContainerStyle = (): ViewStyle => {
-    // Soft Studio heights: md = 50px, sm = 36px, lg = 54px
-    const minHeight = size === 'sm' ? 36 : size === 'lg' ? 54 : 50;
-    const paddingHorizontal = size === 'sm' ? 14 : size === 'lg' ? 24 : 20;
+    // Mobile accessibility: minimum 48dp touch target
+    const minHeight = size === 'lg' ? 54 : size === 'md' ? 50 : 48;
+    const paddingHorizontal = size === 'sm' ? 16 : size === 'lg' ? 24 : 20;
 
     let bg = colors.primary;
     let border = 'transparent';
@@ -87,7 +87,7 @@ export function PillButton({
 
   const getLabelStyle = (): TextStyle => {
     let color = '#FFFFFF';
-    const fontSize = size === 'sm' ? 13 : 16;
+    const fontSize = size === 'sm' ? 13 : 15;
 
     switch (variant) {
       case 'primary':
@@ -128,13 +128,15 @@ export function PillButton({
         />
       ) : (
         <View style={styles.contentRow}>
-          {icon && iconPosition === 'left' && (
-            <View style={styles.iconLeft}>{icon}</View>
-          )}
-          <Text style={[getLabelStyle(), labelStyle]}>{label}</Text>
-          {icon && iconPosition === 'right' && (
-            <View style={styles.iconRight}>{icon}</View>
-          )}
+          {icon && iconPosition === 'left' && <View style={styles.icon}>{icon}</View>}
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[getLabelStyle(), labelStyle]}
+          >
+            {label}
+          </Text>
+          {icon && iconPosition === 'right' && <View style={styles.icon}>{icon}</View>}
         </View>
       )}
     </TouchableOpacity>
@@ -151,11 +153,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
   },
-  iconLeft: {
-    marginRight: 8,
-  },
-  iconRight: {
-    marginLeft: 8,
+  icon: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

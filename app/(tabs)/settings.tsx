@@ -15,7 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, StudioAccentKey } from '../../src/theme';
 import { FeedbackToast } from '../../src/components/FeedbackToast';
-import { GlassCard, PillButton, StatusChip } from '../../src/components/ui';
+import {
+  GlassCard,
+  PillButton,
+  StatusChip,
+  ButtonRow,
+  EmptyState,
+} from '../../src/components/ui';
 import { useDeviceStore } from '../../src/store/deviceStore';
 import { useStatsStore } from '../../src/store/statsStore';
 
@@ -158,6 +164,7 @@ export default function SettingsScreen() {
                       activeOpacity={0.7}
                     >
                       <Text
+                        numberOfLines={1}
                         style={[
                           styles.segmentButtonText,
                           {
@@ -338,7 +345,7 @@ export default function SettingsScreen() {
               activeOpacity={0.7}
             >
               <Ionicons name="apps-outline" size={18} color={colors.primary} />
-              <Text style={[styles.tileCtaText, { color: colors.onSurface }]}>
+              <Text numberOfLines={1} style={[styles.tileCtaText, { color: colors.onSurface }]}>
                 Open System Tile Manager
               </Text>
             </TouchableOpacity>
@@ -450,6 +457,7 @@ export default function SettingsScreen() {
                       activeOpacity={0.7}
                     >
                       <Text
+                        numberOfLines={1}
                         style={[
                           styles.segmentButtonText,
                           {
@@ -527,7 +535,7 @@ export default function SettingsScreen() {
             >
               <View style={styles.navRowLeft}>
                 <Ionicons name="bar-chart-outline" size={18} color={colors.primary} />
-                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.onSurface }]}>
                   Listening Statistics & Codecs
                 </Text>
               </View>
@@ -548,7 +556,7 @@ export default function SettingsScreen() {
             >
               <View style={styles.navRowLeft}>
                 <Ionicons name="code-slash-outline" size={18} color={colors.onSurfaceVariant} />
-                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.onSurface }]}>
                   Source Code on GitHub
                 </Text>
               </View>
@@ -561,7 +569,7 @@ export default function SettingsScreen() {
             <View style={styles.navRow}>
               <View style={styles.navRowLeft}>
                 <Ionicons name="document-text-outline" size={18} color={colors.onSurfaceVariant} />
-                <Text style={[styles.rowTitle, { color: colors.onSurface }]}>
+                <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.onSurface }]}>
                   Acoustic Profiles Changelog
                 </Text>
               </View>
@@ -571,17 +579,12 @@ export default function SettingsScreen() {
 
           {/* Destructive Action Button */}
           <View style={styles.destructiveArea}>
-            <TouchableOpacity
-              style={[
-                styles.destructiveBtn,
-                { backgroundColor: colors.surfaceContainer },
-              ]}
+            <PillButton
+              label="Clear Local Device Storage"
+              variant="danger"
+              icon={<Ionicons name="trash-outline" size={18} color={colors.error} />}
               onPress={handleClearStorage}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="trash-outline" size={18} color="#FF453A" />
-              <Text style={styles.destructiveBtnText}>Clear Local Device Storage</Text>
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </ScrollView>
@@ -661,7 +664,7 @@ const styles = StyleSheet.create({
   },
   segmentButton: {
     flex: 1,
-    paddingVertical: 8,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 9999,
@@ -765,9 +768,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   tilePowerBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

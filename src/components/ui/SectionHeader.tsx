@@ -77,6 +77,7 @@ export function SectionHeader({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text
+            numberOfLines={1}
             style={[
               styles.actionText,
               {

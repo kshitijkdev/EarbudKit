@@ -60,7 +60,7 @@ export default function ShowcaseScreen() {
           onPress={toggleTheme}
           style={[styles.themeBtn, { borderColor: colors.outlineVariant, backgroundColor: colors.surfaceContainer }]}
         >
-          <Text style={{ fontSize: 16 }}>{theme.dark ? '☀️ Light' : '🌙 Dark'}</Text>
+          <Text numberOfLines={1} style={{ fontSize: 16 }}>{theme.dark ? '☀️ Light' : '🌙 Dark'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -223,10 +223,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   themeBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderRadius: 24,
     borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     paddingHorizontal: 16,

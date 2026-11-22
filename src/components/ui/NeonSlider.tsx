@@ -147,7 +147,7 @@ export function NeonSlider({
               },
             ]}
           >
-            <Text style={[styles.stepBtnText, { color: colors.onSurface }]}>
+            <Text numberOfLines={1} style={[styles.stepBtnText, { color: colors.onSurface }]}>
               −
             </Text>
           </TouchableOpacity>
@@ -219,7 +219,7 @@ export function NeonSlider({
               },
             ]}
           >
-            <Text style={[styles.stepBtnText, { color: colors.onSurface }]}>
+            <Text numberOfLines={1} style={[styles.stepBtnText, { color: colors.onSurface }]}>
               +
             </Text>
           </TouchableOpacity>
@@ -262,9 +262,9 @@ const styles = StyleSheet.create({
     height: 48,
   },
   stepBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     borderWidth: 0.5,
     alignItems: 'center',
     justifyContent: 'center',

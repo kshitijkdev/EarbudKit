@@ -40,7 +40,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "prebuild": "expo prebuild",
-    "typecheck": "npx tsc --noEmit"
+    "typecheck": "npx tsc --noEmit",
+    "layout:check": "npx tsx scripts/layout-check.ts"
   },
   "private": true
 }

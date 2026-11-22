@@ -30,6 +30,8 @@ import {
   PillButton,
   StatusChip,
   BatteryRing,
+  ButtonRow,
+  EmptyState,
 } from '../../src/components/ui';
 
 export default function HomeScreen() {
@@ -206,7 +208,7 @@ export default function HomeScreen() {
                   },
                 ]}
               />
-              <Text style={[styles.watcherText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.watcherText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 {isServiceActive ? 'Watcher: ON' : 'Watcher: OFF'}
               </Text>
             </TouchableOpacity>
@@ -275,7 +277,7 @@ export default function HomeScreen() {
                     >
                       <View
                         style={[
-                          styles.chipDot,
+                          styles.microDot,
                           {
                             backgroundColor: activeDevice.isConnected
                               ? '#34C759'
@@ -379,9 +381,17 @@ export default function HomeScreen() {
               </View>
 
               {/* Action Buttons inside Hero */}
-              <View style={styles.heroActionsRow}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
+              <ButtonRow gap={10} equal style={{ marginTop: 16 }}>
+                <PillButton
+                  label={activeDevice.isConnected ? 'Disconnect' : 'Connect'}
+                  variant="secondary"
+                  icon={
+                    <Ionicons
+                      name="power-outline"
+                      size={18}
+                      color={colors.onSurfaceVariant}
+                    />
+                  }
                   onPress={() => {
                     useDeviceStore.getState().setConnectionState(
                       activeDevice.address,
@@ -389,65 +399,32 @@ export default function HomeScreen() {
                     );
                     showToast(activeDevice.isConnected ? 'Device disconnected' : 'Device connected');
                   }}
-                  style={[
-                    styles.heroSecondaryBtn,
-                    {
-                      backgroundColor: colors.surfaceContainerHigh,
-                      borderColor: colors.hairline,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="power-outline"
-                    size={18}
-                    color={colors.onSurfaceVariant}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text style={[styles.heroBtnText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                    {activeDevice.isConnected ? 'Disconnect' : 'Connect'}
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.85}
+                />
+                <PillButton
+                  label="Audio Controls"
+                  variant="primary"
+                  icon={
+                    <Ionicons
+                      name="options-outline"
+                      size={18}
+                      color={colors.onPrimary}
+                    />
+                  }
                   onPress={() => router.push('/(tabs)/tools')}
-                  style={[
-                    styles.heroPrimaryBtn,
-                    {
-                      backgroundColor: colors.primary,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="options-outline"
-                    size={18}
-                    color={colors.onPrimary}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text style={[styles.heroBtnText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
-                    Audio Controls
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                />
+              </ButtonRow>
             </View>
           </View>
         ) : (
-          <GlassCard style={{ padding: 24, alignItems: 'center' }}>
-            <Ionicons name="headset-outline" size={44} color={colors.outline} />
-            <Text style={[styles.emptyTitle, { color: colors.onSurface, fontFamily: fonts.headline, marginTop: 12 }]}>
-              No Tracked Devices
-            </Text>
-            <Text
-              style={[
-                styles.emptySubtitle,
-                { color: colors.onSurfaceVariant, fontFamily: fonts.body, textAlign: 'center', marginBottom: 16 },
-              ]}
-            >
-              Connect your Bluetooth audio gear or scan paired accessories in Devices.
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <PillButton label="Go to Devices" size="sm" onPress={() => router.push('/(tabs)/devices' as any)} />
-            </View>
+          <GlassCard style={{ padding: 16 }}>
+            <EmptyState
+              icon={<Ionicons name="headset-outline" size={44} color={colors.outline} />}
+              title="No Tracked Devices"
+              description="Connect your Bluetooth audio gear or scan paired accessories in Devices."
+              actionPrimary={
+                <PillButton label="Go to Devices" size="sm" onPress={() => router.push('/(tabs)/devices' as any)} />
+              }
+            />
           </GlassCard>
         )}
 
@@ -504,42 +481,31 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <View style={styles.routineActions}>
-              <TouchableOpacity
-                activeOpacity={0.7}
+            <ButtonRow gap={10} align="stretch" equal style={{ marginTop: 12 }}>
+              <PillButton
+                label="Dismiss"
+                variant="secondary"
+                size="sm"
                 onPress={() => dismissRoutineAction()}
-                style={styles.routineDismissBtn}
-              >
-                <Text style={[styles.routineDismissText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
-                  Dismiss
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
+              />
+              <PillButton
+                label={isRoutineApplied ? 'Applied' : 'Apply Routine'}
+                variant="primary"
+                size="sm"
+                disabled={isRoutineApplied}
+                icon={
+                  <Ionicons
+                    name={isRoutineApplied ? 'checkmark' : 'play'}
+                    size={14}
+                    color="#FFFFFF"
+                  />
+                }
                 onPress={async () => {
                   await applyRoutineAction(activeDevice?.address);
                   showToast(`Applied ${activeRoutine.title} (${activeRoutine.targetVolume}% vol)`);
                 }}
-                disabled={isRoutineApplied}
-                style={[
-                  styles.routineApplyBtn,
-                  {
-                    backgroundColor: isRoutineApplied ? '#34C759' : colors.primary,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={isRoutineApplied ? 'checkmark' : 'play'}
-                  size={14}
-                  color="#FFFFFF"
-                  style={{ marginRight: 4 }}
-                />
-                <Text style={[styles.routineApplyText, { color: '#FFFFFF', fontFamily: fonts.label }]}>
-                  {isRoutineApplied ? 'Applied' : 'Apply Routine'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+              />
+            </ButtonRow>
           </View>
         )}
 
@@ -564,7 +530,7 @@ export default function HomeScreen() {
               ]}
             >
               <Ionicons name="timer-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-              <Text style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 Sleep 30m
               </Text>
             </TouchableOpacity>
@@ -581,7 +547,7 @@ export default function HomeScreen() {
               ]}
             >
               <Ionicons name="options-outline" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
-              <Text style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 Equalizer
               </Text>
             </TouchableOpacity>
@@ -598,7 +564,7 @@ export default function HomeScreen() {
               ]}
             >
               <Ionicons name="navigate-outline" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
-              <Text style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 Find Device
               </Text>
             </TouchableOpacity>
@@ -615,7 +581,7 @@ export default function HomeScreen() {
               ]}
             >
               <Ionicons name="flash-outline" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
-              <Text style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 Auto-Actions
               </Text>
             </TouchableOpacity>
@@ -632,7 +598,7 @@ export default function HomeScreen() {
               ]}
             >
               <Ionicons name="pulse-outline" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
-              <Text style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.quickPillText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 Hearing Test
               </Text>
             </TouchableOpacity>
@@ -669,10 +635,10 @@ export default function HomeScreen() {
             </View>
 
             <View style={{ marginTop: 12 }}>
-              <Text style={[styles.bentoTileLabel, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.bentoTileLabel, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
                 Today's Session
               </Text>
-              <Text style={[styles.bentoTileValue, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+              <Text numberOfLines={1} style={[styles.bentoTileValue, { color: colors.onSurface, fontFamily: fonts.headline }]}>
                 {formatDuration(todayListeningSeconds)}
               </Text>
             </View>
@@ -722,22 +688,22 @@ export default function HomeScreen() {
             </View>
 
             <View style={{ marginTop: 12 }}>
-              <Text style={[styles.bentoTileLabel, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.bentoTileLabel, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
                 Tracked Devices
               </Text>
-              <Text style={[styles.bentoTileValue, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+              <Text numberOfLines={1} style={[styles.bentoTileValue, { color: colors.onSurface, fontFamily: fonts.headline }]}>
                 {trackedDevices.length} {trackedDevices.length === 1 ? 'Device' : 'Devices'}
               </Text>
             </View>
 
             <View style={styles.fleetTagsRow}>
               <View style={[styles.fleetTag, { backgroundColor: colors.surfaceContainerHigh }]}>
-                <Text style={[styles.fleetTagText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                <Text numberOfLines={1} style={[styles.fleetTagText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                   {connectedCount} Active
                 </Text>
               </View>
               <View style={[styles.fleetTag, { backgroundColor: colors.surfaceContainerLowest }]}>
-                <Text style={[styles.fleetTagText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                <Text numberOfLines={1} style={[styles.fleetTagText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
                   {trackedDevices.length - connectedCount} Paired
                 </Text>
               </View>
@@ -756,7 +722,7 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/devices')}
               style={styles.manageLink}
             >
-              <Text style={[styles.manageLinkText, { color: colors.primary, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.manageLinkText, { color: colors.primary, fontFamily: fonts.label }]}>
                 Manage
               </Text>
               <Ionicons name="chevron-forward" size={14} color={colors.primary} />
@@ -797,6 +763,7 @@ export default function HomeScreen() {
                       ]}
                     >
                       <Text
+                        numberOfLines={1}
                         style={[
                           styles.fleetStatusText,
                           {
@@ -816,7 +783,7 @@ export default function HomeScreen() {
                         color={dev.batteryLevel !== null && dev.batteryLevel <= 20 ? colors.error : '#34C759'}
                         style={{ marginRight: 2 }}
                       />
-                      <Text style={[styles.fleetBatteryText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                      <Text numberOfLines={1} style={[styles.fleetBatteryText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
                         {dev.batteryLevel !== null ? `${dev.batteryLevel}%` : 'N/A'}
                       </Text>
                     </View>
@@ -879,10 +846,10 @@ export default function HomeScreen() {
               >
                 <Ionicons name="add" size={24} color={colors.onSurface} />
               </View>
-              <Text style={[styles.addCardTitle, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.addCardTitle, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 Add Device
               </Text>
-              <Text style={[styles.addCardSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+              <Text numberOfLines={1} style={[styles.addCardSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
                 Pair or Scan
               </Text>
             </TouchableOpacity>
@@ -944,11 +911,11 @@ export default function HomeScreen() {
                   <View style={styles.miniConnectedDot} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Text style={[styles.miniPlayerMeta, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                  <Text numberOfLines={1} style={[styles.miniPlayerMeta, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
                     {activeDevice.batteryLevel !== null ? `${activeDevice.batteryLevel}%` : 'Unavailable'}
                   </Text>
-                  <Text style={{ color: colors.outline, fontSize: 10 }}>•</Text>
-                  <Text style={[styles.miniPlayerCodec, { color: colors.primary, fontFamily: fonts.label }]}>
+                  <Text numberOfLines={1} style={{ color: colors.outline, fontSize: 10 }}>•</Text>
+                  <Text numberOfLines={1} style={[styles.miniPlayerCodec, { color: colors.primary, fontFamily: fonts.label }]}>
                     {activeDevice.audioCodec || 'AAC'}
                   </Text>
                 </View>
@@ -983,6 +950,7 @@ export default function HomeScreen() {
                   style={{ marginRight: 4 }}
                 />
                 <Text
+                  numberOfLines={1}
                   style={[
                     styles.miniTimerText,
                     {
@@ -1042,13 +1010,14 @@ const styles = StyleSheet.create({
   topHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
   watcherPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
-    paddingHorizontal: 12,
+    minHeight: 48,
+    paddingHorizontal: 14,
     borderRadius: 9999,
     borderWidth: 0.5,
   },
@@ -1065,9 +1034,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     borderWidth: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1114,7 +1083,7 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
     borderWidth: 0.5,
   },
-  chipDot: {
+  microDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
@@ -1187,6 +1156,7 @@ const styles = StyleSheet.create({
   },
   heroActionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginTop: 4,
   },
@@ -1255,6 +1225,7 @@ const styles = StyleSheet.create({
   },
   routineActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     alignItems: 'center',
     gap: 12,
@@ -1296,8 +1267,8 @@ const styles = StyleSheet.create({
   quickPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 38,
-    paddingHorizontal: 14,
+    minHeight: 48,
+    paddingHorizontal: 16,
     borderRadius: 9999,
     borderWidth: 0.5,
   },
@@ -1519,14 +1490,15 @@ const styles = StyleSheet.create({
   },
   miniPlayerActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 8,
   },
   miniTimerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 32,
-    paddingHorizontal: 10,
+    minHeight: 48,
+    paddingHorizontal: 14,
     borderRadius: 9999,
     borderWidth: 0.5,
   },
@@ -1535,9 +1507,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   miniMuteBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

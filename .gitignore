@@ -58,4 +58,7 @@ yarn-error.*
 *.apk
 *.aab
 !EarbudKit.apk
+
+# QA Screenshots
+qa/screens/
 !release/*.apk

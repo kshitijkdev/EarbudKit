@@ -346,12 +346,45 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 
 ## Fix Pass S9-S15 Checklist
 - [x] Stage S9: Audit and real-device discovery (foundation for everything else)
-- [ ] Stage S10: Layout QA across ALL screens (shared layout primitives and automated check)
+- [x] Stage S10: Layout QA across ALL screens (shared layout primitives and automated check)
 - [ ] Stage S11: Home screen real-time data
 - [ ] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
 - [ ] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
 - [ ] Stage S14: Remove fake data (honesty cleanup)
 - [ ] Stage S15: Release hygiene and final verification
+
+### Stage S10: Layout QA Across ALL Screens Summary
+- **Audit Findings**:
+  - Permission card action buttons ("Grant Bluetooth Access" and "App Settings") on `devices.tsx` were overflowing and clipping at the right boundary due to ad-hoc styling without responsive wrapping.
+  - Multiple screens had buttons below 48dp touch target, missing `numberOfLines={1}` text wrapping protection, and inconsistent horizontal margin spacing instead of container `gap`.
+- **What Changed**:
+  - `src/components/ui/ButtonRow.tsx`: Built shared layout primitive with `flexDirection: 'row'`, `flexWrap: 'wrap'`, configurable `gap`, `align`, and `equal` width support.
+  - `src/components/ui/ActionStack.tsx`: Built shared vertical container with standard spacing.
+  - `src/components/ui/EmptyState.tsx`: Built standardized empty state primitive with icon, headline, description, and primary/secondary actions.
+  - `src/components/ui/PillButton.tsx`: Enforced 48dp minimum touch target across all button sizes (`minHeight: 48`), single-line text truncation (`numberOfLines={1}` + `ellipsizeMode="tail"`), and consistent icon spacing (`gap: 8`).
+  - Screen Refactoring:
+    - `devices.tsx`: Replaced permission card actions with `ButtonRow` + `PillButton` (resolving the reported screenshot bug), tracked hardware empty state with `EmptyState`, edit modal actions with `ButtonRow`, and updated all buttons to >= 48dp touch targets.
+    - `index.tsx`: Replaced Hero card buttons with `ButtonRow` + `PillButton`, empty state with `EmptyState`, Smart Routine capsule with `ButtonRow` + `PillButton`, and added single-line bounds and >= 48dp targets to Quick Actions, bento tiles, and mini player.
+    - `auto.tsx`: Enforced 48dp targets on volume presets and device selector chips; replaced simulate actions with `PillButton` and `flexWrap: 'wrap'`.
+    - `tools.tsx`: Enforced 48dp targets on segmented dock tabs, sleep presets, stepper buttons, EQ presets, and quick fade test; replaced HearID modal actions with `ButtonRow` + `PillButton`.
+    - `settings.tsx`: Enforced 48dp targets on theme switcher, polling intervals, and Quick Settings tile buttons; replaced clear storage with `PillButton variant="danger"`.
+    - `stats.tsx`: Enforced 48dp targets on timeframe switcher and back button; replaced simulation buttons with `ButtonRow` + `PillButton`.
+    - `NeonSlider.tsx` & `SectionHeader.tsx`: Updated stepper buttons and action text to 48dp targets and single-line bounds.
+  - `scripts/layout-check.ts`: Implemented automated static checker running across all 21 `.tsx` files in `app/` and `src/components/`, checking button widths, missing flexWrap, touch targets < 48dp, missing single-line text, and inline button margins.
+  - Added `"layout:check": "npx tsx scripts/layout-check.ts"` to `package.json`. Result: `All 21 files passed layout QA with zero violations!`.
+  - Added `scripts/layout-sweep.sh` and `qa/README.md`; added `qa/screens/` to `.gitignore`.
+- **Decisions**:
+  - All interactive buttons must have a minimum touch target of 48dp for accessibility.
+  - Action button rows must use `ButtonRow` or `flexWrap: 'wrap'` with `gap` to prevent clipping on small screen widths (320-360dp).
+- **Known Issues**: None.
+- **NEXT STEP**: Stage S11: Home screen real-time data.
+
+#### Stage S10 Manual Device Test Checklist:
+- [ ] Open Devices screen on small screen / portrait phone: "Grant Bluetooth Access" and "App Settings" buttons wrap cleanly without overflowing or clipping.
+- [ ] Check Empty State on Devices and Home: icons, titles, descriptions, and action buttons are centered and readable.
+- [ ] Check Sleep Timer custom stepper (+/-) and preset chips: buttons are easily tappable with >= 48dp touch targets.
+- [ ] Check HearID calibration modal: "I Don't Hear It" and "I Hear It!" buttons are equal-width and fit comfortably side-by-side.
+- [ ] Run `npm run layout:check`: passes with 0 violations.
 
 ### Stage S9: Audit and Real-Device Discovery Summary
 - **Audit Findings**:

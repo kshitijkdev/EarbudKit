@@ -24,6 +24,8 @@ import {
   GlassCard,
   PillButton,
   StatusChip,
+  ButtonRow,
+  EmptyState,
 } from '../../src/components/ui';
 
 export default function DevicesScreen() {
@@ -228,38 +230,20 @@ export default function DevicesScreen() {
               </View>
             </View>
 
-            <View style={styles.permissionActionsRow}>
-              <TouchableOpacity
-                activeOpacity={0.85}
+            <ButtonRow gap={10} align="start" style={{ marginTop: 14 }}>
+              <PillButton
+                label="Grant Bluetooth Access"
                 onPress={requestPermission}
-                style={[
-                  styles.grantBtn,
-                  {
-                    backgroundColor: colors.primary,
-                  },
-                ]}
-              >
-                <Text style={[styles.grantBtnText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
-                  Grant Bluetooth Access
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.8}
+                size="sm"
+                variant="primary"
+              />
+              <PillButton
+                label="App Settings"
                 onPress={openSettings}
-                style={[
-                  styles.settingsBtn,
-                  {
-                    backgroundColor: colors.surfaceContainerHigh,
-                    borderColor: colors.hairline,
-                  },
-                ]}
-              >
-                <Text style={[styles.settingsBtnText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                  App Settings
-                </Text>
-              </TouchableOpacity>
-            </View>
+                size="sm"
+                variant="secondary"
+              />
+            </ButtonRow>
           </View>
         )}
 
@@ -285,15 +269,27 @@ export default function DevicesScreen() {
             ]}
           >
             {trackedDevices.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="headset-outline" size={36} color={colors.outline} />
-                <Text style={[styles.emptyGroupTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
-                  No Tracked Devices Yet
-                </Text>
-                <Text style={[styles.emptyGroupSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
-                  Scan paired Bluetooth devices below or use a quick preset.
-                </Text>
-              </View>
+              <EmptyState
+                icon={<Ionicons name="headset-outline" size={44} color={colors.outline} />}
+                title="No Tracked Devices Yet"
+                description="Scan paired Bluetooth devices below or connect an audio accessory."
+                actionPrimary={
+                  <PillButton
+                    label="Scan Devices"
+                    size="sm"
+                    variant="primary"
+                    onPress={refresh}
+                  />
+                }
+                actionSecondary={
+                  <PillButton
+                    label="Bluetooth Settings"
+                    size="sm"
+                    variant="secondary"
+                    onPress={openSettings}
+                  />
+                }
+              />
             ) : (
               trackedDevices.map((dev, idx) => {
                 const isSelected = dev.address === activeDeviceAddress;
@@ -352,6 +348,7 @@ export default function DevicesScreen() {
                               ]}
                             >
                               <Text
+                                numberOfLines={1}
                                 style={[
                                   styles.statusPillText,
                                   {
@@ -365,7 +362,7 @@ export default function DevicesScreen() {
                             </View>
                           </View>
 
-                          <Text style={[styles.deviceMac, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                          <Text numberOfLines={1} style={[styles.deviceMac, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
                             {dev.address}
                           </Text>
 
@@ -392,7 +389,7 @@ export default function DevicesScreen() {
                                 ]}
                               />
                             </View>
-                            <Text style={[styles.batteryPercentText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                            <Text numberOfLines={1} style={[styles.batteryPercentText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                               {dev.batteryLevel !== null ? `${dev.batteryLevel}%` : 'Unavailable'}
                             </Text>
                           </View>
@@ -492,7 +489,7 @@ export default function DevicesScreen() {
                 },
               ]}
             >
-              <Text style={[styles.refreshBtnText, { color: colors.primary, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.refreshBtnText, { color: colors.primary, fontFamily: fonts.label }]}>
                 Refresh
               </Text>
             </TouchableOpacity>
@@ -505,7 +502,7 @@ export default function DevicesScreen() {
               Need to pair a new device?
             </Text>
             <TouchableOpacity activeOpacity={0.7} onPress={openSettings} style={styles.settingsLink}>
-              <Text style={[styles.settingsLinkText, { color: colors.primary, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.settingsLinkText, { color: colors.primary, fontFamily: fonts.label }]}>
                 Bluetooth Settings
               </Text>
               <Ionicons name="arrow-forward" size={14} color={colors.primary} />
@@ -586,7 +583,7 @@ export default function DevicesScreen() {
                         ]}
                       >
                         <Ionicons name="add" size={16} color={colors.onPrimary} style={{ marginRight: 2 }} />
-                        <Text style={[styles.trackBtnText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                        <Text numberOfLines={1} style={[styles.trackBtnText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
                           Track
                         </Text>
                       </TouchableOpacity>
@@ -689,6 +686,7 @@ export default function DevicesScreen() {
                     style={{ marginRight: 6 }}
                   />
                   <Text
+                    numberOfLines={1}
                     style={[
                       styles.segmentText,
                       {
@@ -718,6 +716,7 @@ export default function DevicesScreen() {
                     style={{ marginRight: 6 }}
                   />
                   <Text
+                    numberOfLines={1}
                     style={[
                       styles.segmentText,
                       {
@@ -757,6 +756,7 @@ export default function DevicesScreen() {
                     ]}
                   >
                     <Text
+                      numberOfLines={1}
                       style={[
                         styles.threshBtnText,
                         {
@@ -786,44 +786,24 @@ export default function DevicesScreen() {
               ]}
             >
               <Ionicons name="notifications-outline" size={18} color={colors.primary} style={{ marginRight: 6 }} />
-              <Text style={[styles.testAlertText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.testAlertText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 {isTestingAlert ? 'Sending Alert...' : 'Test Low Battery Notification'}
               </Text>
             </TouchableOpacity>
 
             {/* Modal Actions */}
-            <View style={styles.modalActionsRow}>
-              <TouchableOpacity
-                activeOpacity={0.8}
+            <ButtonRow gap={10} equal style={{ marginTop: 20 }}>
+              <PillButton
+                label="Discard"
+                variant="secondary"
                 onPress={() => setEditingDevice(null)}
-                style={[
-                  styles.modalSecondaryBtn,
-                  {
-                    backgroundColor: colors.surfaceContainerHigh,
-                    borderColor: colors.hairline,
-                  },
-                ]}
-              >
-                <Text style={[styles.modalActionText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                  Discard
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
+              />
+              <PillButton
+                label="Save Changes"
+                variant="primary"
                 onPress={saveEdit}
-                style={[
-                  styles.modalPrimaryBtn,
-                  {
-                    backgroundColor: colors.primary,
-                  },
-                ]}
-              >
-                <Text style={[styles.modalActionText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
-                  Save Changes
-                </Text>
-              </TouchableOpacity>
-            </View>
+              />
+            </ButtonRow>
           </View>
         </View>
       </Modal>
@@ -868,12 +848,13 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     borderWidth: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1051,12 +1032,13 @@ const styles = StyleSheet.create({
   },
   deviceRowActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   rowActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     borderWidth: 0.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1098,8 +1080,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   refreshBtn: {
-    height: 34,
-    paddingHorizontal: 12,
+    minHeight: 48,
+    paddingHorizontal: 16,
     borderRadius: 9999,
     borderWidth: 0.5,
     alignItems: 'center',
@@ -1162,8 +1144,8 @@ const styles = StyleSheet.create({
   trackBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 34,
-    paddingHorizontal: 14,
+    minHeight: 48,
+    paddingHorizontal: 16,
     borderRadius: 9999,
   },
   trackBtnText: {
@@ -1247,7 +1229,7 @@ const styles = StyleSheet.create({
   },
   segmentedWell: {
     flexDirection: 'row',
-    height: 46,
+    minHeight: 48,
     borderRadius: 9999,
     borderWidth: 0.5,
     padding: 3,
@@ -1257,6 +1239,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 48,
     borderRadius: 9999,
   },
   segmentText: {
@@ -1269,11 +1252,12 @@ const styles = StyleSheet.create({
   },
   thresholdGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   threshBtn: {
     flex: 1,
-    height: 42,
+    minHeight: 48,
     borderRadius: 9999,
     borderWidth: 0.5,
     alignItems: 'center',
@@ -1287,7 +1271,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 44,
+    minHeight: 48,
     borderRadius: 9999,
     borderWidth: 0.5,
     marginVertical: 8,
@@ -1298,6 +1282,7 @@ const styles = StyleSheet.create({
   },
   modalActionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginTop: 12,
   },

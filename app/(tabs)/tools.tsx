@@ -44,6 +44,9 @@ import {
   PillButton,
   Toggle,
   NeonSlider,
+  ButtonRow,
+  ActionStack,
+  EmptyState,
 } from '../../src/components/ui';
 
 type ToolTab = 'find' | 'sleep' | 'eq';
@@ -446,6 +449,7 @@ export default function ToolsScreen() {
                 style={{ marginRight: 6 }}
               />
               <Text
+                numberOfLines={1}
                 style={[
                   styles.segmentItemText,
                   {
@@ -476,6 +480,7 @@ export default function ToolsScreen() {
                 style={{ marginRight: 6 }}
               />
               <Text
+                numberOfLines={1}
                 style={[
                   styles.segmentItemText,
                   {
@@ -506,6 +511,7 @@ export default function ToolsScreen() {
                 style={{ marginRight: 6 }}
               />
               <Text
+                numberOfLines={1}
                 style={[
                   styles.segmentItemText,
                   {
@@ -613,6 +619,7 @@ export default function ToolsScreen() {
                   style={{ marginRight: 6 }}
                 />
                 <Text
+                  numberOfLines={1}
                   style={[
                     styles.actionButtonText,
                     {
@@ -720,7 +727,7 @@ export default function ToolsScreen() {
                   color={colors.onPrimary}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[styles.radarTriggerText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                <Text numberOfLines={1} style={[styles.radarTriggerText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
                   {isScanning ? 'Stop Proximity Scan' : 'Start Radar Scan'}
                 </Text>
               </TouchableOpacity>
@@ -757,23 +764,13 @@ export default function ToolsScreen() {
                 />
               </View>
 
-              <View style={styles.dropAlertActions}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
+              <View style={{ marginTop: 14 }}>
+                <PillButton
+                  label="Test Alert Notification"
+                  variant="secondary"
+                  icon={<Ionicons name="notifications-outline" size={14} color={colors.onSurfaceVariant} />}
                   onPress={handleTestDisconnectAlert}
-                  style={[
-                    styles.testDropBtn,
-                    {
-                      backgroundColor: colors.surfaceContainerHigh,
-                      borderColor: colors.hairline,
-                    },
-                  ]}
-                >
-                  <Ionicons name="notifications-outline" size={14} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                  <Text style={[styles.testDropText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
-                    Test Alert Notification
-                  </Text>
-                </TouchableOpacity>
+                />
               </View>
             </View>
           </View>
@@ -898,6 +895,7 @@ export default function ToolsScreen() {
                       ]}
                     >
                       <Text
+                        numberOfLines={1}
                         style={[
                           styles.sleepPresetText,
                           {
@@ -914,64 +912,46 @@ export default function ToolsScreen() {
               </View>
 
               {/* Primary Action Button */}
-              {isTimerActive ? (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    cancelTimer();
-                    showToast('Sleep timer cancelled');
-                  }}
-                  style={[
-                    styles.actionButton,
-                    {
-                      backgroundColor: colors.error,
-                      marginTop: 16,
-                      width: '100%',
-                    },
-                  ]}
-                >
-                  <Ionicons name="close-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                  <Text style={[styles.actionButtonText, { color: '#FFFFFF', fontFamily: fonts.label }]}>
-                    Cancel Sleep Timer
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    startTimer(customMinutes);
-                    showToast(`Started ${customMinutes}m sleep timer`);
-                  }}
-                  style={[
-                    styles.actionButton,
-                    {
-                      backgroundColor: colors.primary,
-                      marginTop: 16,
-                      width: '100%',
-                    },
-                  ]}
-                >
-                  <Ionicons name="play" size={18} color={colors.onPrimary} style={{ marginRight: 6 }} />
-                  <Text style={[styles.actionButtonText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
-                    Start {customMinutes}m Sleep Timer
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <View style={{ marginTop: 16, width: '100%' }}>
+                {isTimerActive ? (
+                  <PillButton
+                    label="Cancel Sleep Timer"
+                    variant="danger"
+                    icon={<Ionicons name="close-circle-outline" size={18} color="#FFFFFF" />}
+                    onPress={() => {
+                      cancelTimer();
+                      showToast('Sleep timer cancelled');
+                    }}
+                  />
+                ) : (
+                  <PillButton
+                    label={`Start ${customMinutes}m Sleep Timer`}
+                    variant="primary"
+                    icon={<Ionicons name="play" size={18} color={colors.onPrimary} />}
+                    onPress={() => {
+                      startTimer(customMinutes);
+                      showToast(`Started ${customMinutes}m sleep timer`);
+                    }}
+                  />
+                )}
+              </View>
 
               {/* 15s Quick Fade Test */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  startQuickTestTimer(15);
-                  showToast('Running 15s volume fade quick test...');
-                }}
-                style={styles.quickFadeBtn}
-              >
-                <Ionicons name="play-circle-outline" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
-                <Text style={[styles.quickFadeText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
-                  15s Fade-Out Quick Test
-                </Text>
-              </TouchableOpacity>
+              <View style={{ marginTop: 8, width: '100%', alignItems: 'center' }}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    startQuickTestTimer(15);
+                    showToast('Running 15s volume fade quick test...');
+                  }}
+                  style={styles.quickFadeBtn}
+                >
+                  <Ionicons name="play-circle-outline" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
+                  <Text numberOfLines={1} style={[styles.quickFadeText, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                    15s Fade-Out Quick Test
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         )}
@@ -1102,7 +1082,7 @@ export default function ToolsScreen() {
                 ]}
               >
                 <Ionicons name="ear-outline" size={18} color={colors.onPrimary} style={{ marginRight: 6 }} />
-                <Text style={[styles.actionButtonText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                <Text numberOfLines={1} style={[styles.actionButtonText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
                   {activeHearingProfile ? 'Retest Hearing Profile (60s)' : 'Start 60s Hearing Test'}
                 </Text>
               </TouchableOpacity>
@@ -1137,6 +1117,7 @@ export default function ToolsScreen() {
                       ]}
                     >
                       <Text
+                        numberOfLines={1}
                         style={[
                           styles.eqPresetText,
                           {
@@ -1312,35 +1293,26 @@ export default function ToolsScreen() {
               ]}
             >
               <Ionicons name="volume-medium" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-              <Text style={[styles.replayToneText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              <Text numberOfLines={1} style={[styles.replayToneText, { color: colors.onSurface, fontFamily: fonts.label }]}>
                 Replay Tone
               </Text>
             </TouchableOpacity>
 
             {/* Response Pill Buttons */}
-            <View style={styles.hearingResponseRow}>
-              <TouchableOpacity
-                activeOpacity={0.8}
+            <ButtonRow gap={10} equal style={{ marginTop: 16 }}>
+              <PillButton
+                label="I Don't Hear It"
+                variant="secondary"
+                icon={<Ionicons name="close-circle-outline" size={18} color={colors.onSurfaceVariant} />}
                 onPress={() => {
                   const target = selectedAddress || activeDeviceAddress || trackedDevices[0]?.address || 'DEFAULT_DEVICE';
                   registerHearingResponse(false, target);
                 }}
-                style={[
-                  styles.responseBtnNo,
-                  {
-                    backgroundColor: colors.surfaceContainerHigh,
-                    borderColor: colors.hairline,
-                  },
-                ]}
-              >
-                <Ionicons name="close-circle-outline" size={18} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
-                <Text style={[styles.responseBtnTextNo, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                  I Don't Hear It
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.85}
+              />
+              <PillButton
+                label="I Hear It!"
+                variant="primary"
+                icon={<Ionicons name="checkmark-circle-outline" size={18} color={colors.onPrimary} />}
                 onPress={async () => {
                   const target = selectedAddress || activeDeviceAddress || trackedDevices[0]?.address || 'DEFAULT_DEVICE';
                   const isLastFreq = currentFreqIndex >= TEST_FREQUENCIES.length - 1;
@@ -1349,19 +1321,8 @@ export default function ToolsScreen() {
                     showToast('HearID calibration complete! Auto-EQ curve applied.');
                   }
                 }}
-                style={[
-                  styles.responseBtnYes,
-                  {
-                    backgroundColor: colors.primary,
-                  },
-                ]}
-              >
-                <Ionicons name="checkmark-circle-outline" size={18} color={colors.onPrimary} style={{ marginRight: 6 }} />
-                <Text style={[styles.responseBtnTextYes, { color: colors.onPrimary, fontFamily: fonts.label }]}>
-                  I Hear It!
-                </Text>
-              </TouchableOpacity>
-            </View>
+              />
+            </ButtonRow>
           </View>
         </View>
       </Modal>
@@ -1397,7 +1358,7 @@ const styles = StyleSheet.create({
   },
   segmentedBar: {
     flexDirection: 'row',
-    height: 46,
+    minHeight: 52,
     borderRadius: 9999,
     borderWidth: 0.5,
     padding: 3,
@@ -1407,6 +1368,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 48,
     borderRadius: 9999,
     borderWidth: 0.5,
   },
@@ -1589,6 +1551,7 @@ const styles = StyleSheet.create({
   },
   dropAlertActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     marginTop: 10,
   },
@@ -1638,17 +1601,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: 180,
-    height: 42,
+    minWidth: 180,
+    minHeight: 48,
     borderRadius: 9999,
     borderWidth: 0.5,
-    paddingHorizontal: 6,
+    paddingHorizontal: 12,
     marginVertical: 8,
   },
   stepperBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1664,7 +1627,7 @@ const styles = StyleSheet.create({
   },
   sleepPresetChip: {
     flex: 1,
-    height: 38,
+    minHeight: 48,
     borderRadius: 9999,
     borderWidth: 0.5,
     alignItems: 'center',
@@ -1678,8 +1641,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 48,
     marginTop: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
   },
   quickFadeText: {
     fontSize: 13,
@@ -1742,8 +1706,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   eqPresetChip: {
-    height: 34,
-    paddingHorizontal: 14,
+    minHeight: 48,
+    paddingHorizontal: 16,
     borderRadius: 9999,
     borderWidth: 0.5,
     alignItems: 'center',
@@ -1787,9 +1751,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   miniStepBtn: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    minWidth: 28,
+    minHeight: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1875,7 +1839,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 38,
+    minHeight: 48,
+    paddingHorizontal: 20,
     borderRadius: 9999,
     borderWidth: 0.5,
     marginBottom: 14,

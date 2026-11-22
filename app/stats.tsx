@@ -14,7 +14,7 @@ import { useTheme } from '../src/theme';
 import { useDeviceStore } from '../src/store';
 import { useStatsStore, formatDuration } from '../src/store/statsStore';
 import { FeedbackToast } from '../src/components/FeedbackToast';
-import { GlassCard, PillButton } from '../src/components/ui';
+import { GlassCard, PillButton, ButtonRow } from '../src/components/ui';
 
 export default function StatsScreen() {
   const router = useRouter();
@@ -120,7 +120,7 @@ export default function StatsScreen() {
           activeOpacity={0.7}
         >
           <Ionicons name="chevron-back" size={20} color={colors.onSurface} />
-          <Text style={[styles.backText, { color: colors.onSurface }]}>Back</Text>
+          <Text numberOfLines={1} style={[styles.backText, { color: colors.onSurface }]}>Back</Text>
         </TouchableOpacity>
 
         <Text style={[styles.screenHeading, { color: colors.onSurface }]}>
@@ -184,6 +184,7 @@ export default function StatsScreen() {
                 activeOpacity={0.7}
               >
                 <Text
+                  numberOfLines={1}
                   style={[
                     styles.timeframeText,
                     {
@@ -577,34 +578,29 @@ export default function StatsScreen() {
             Stats Verification & Telemetry
           </Text>
 
-          <View style={styles.simButtonsRow}>
-            <TouchableOpacity
-              style={[styles.simBtn, { backgroundColor: colors.surfaceContainerHigh }]}
+          <ButtonRow gap={10} equal>
+            <PillButton
+              label="+15m Session"
+              variant="secondary"
+              size="sm"
+              icon={<Ionicons name="add" size={14} color={colors.primary} />}
               onPress={() => handleSimulateTime(900)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add" size={14} color={colors.primary} />
-              <Text style={[styles.simBtnText, { color: colors.onSurface }]}>+15m Session</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.simBtn, { backgroundColor: colors.surfaceContainerHigh }]}
+            />
+            <PillButton
+              label="+1h Session"
+              variant="secondary"
+              size="sm"
+              icon={<Ionicons name="add" size={14} color={colors.primary} />}
               onPress={() => handleSimulateTime(3600)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add" size={14} color={colors.primary} />
-              <Text style={[styles.simBtnText, { color: colors.onSurface }]}>+1h Session</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.simBtn, { backgroundColor: colors.surfaceContainerHigh }]}
+            />
+            <PillButton
+              label="Reset"
+              variant="danger"
+              size="sm"
+              icon={<Ionicons name="refresh-outline" size={14} color={colors.error} />}
               onPress={handleResetStats}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="refresh-outline" size={14} color="#FF453A" />
-              <Text style={[styles.simBtnText, { color: '#FF453A' }]}>Reset</Text>
-            </TouchableOpacity>
-          </View>
+            />
+          </ButtonRow>
         </GlassCard>
       </ScrollView>
     </View>
@@ -645,9 +641,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerActionBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -662,7 +658,7 @@ const styles = StyleSheet.create({
   },
   timeframeBtn: {
     flex: 1,
-    paddingVertical: 8,
+    minHeight: 48,
     borderRadius: 9999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1004,6 +1000,7 @@ const styles = StyleSheet.create({
   },
   simButtonsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
   },
   simBtn: {
@@ -1012,7 +1009,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 10,
+    minHeight: 48,
     borderRadius: 9999,
   },
   simBtnText: {

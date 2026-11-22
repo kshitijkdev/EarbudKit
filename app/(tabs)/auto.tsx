@@ -28,6 +28,8 @@ import {
   PillButton,
   Toggle,
   NeonSlider,
+  ButtonRow,
+  EmptyState,
 } from '../../src/components/ui';
 
 export default function AutoScreen() {
@@ -236,6 +238,7 @@ export default function AutoScreen() {
                     style={{ marginRight: 6 }}
                   />
                   <Text
+                    numberOfLines={1}
                     style={[
                       styles.deviceChipText,
                       {
@@ -468,6 +471,7 @@ export default function AutoScreen() {
                       ]}
                     >
                       <Text
+                        numberOfLines={1}
                         style={[
                           styles.volPresetText,
                           {
@@ -513,23 +517,13 @@ export default function AutoScreen() {
             </View>
 
             {/* Quiet Action: Test Connect */}
-            <View style={styles.quietActionRow}>
-              <TouchableOpacity
-                activeOpacity={0.8}
+            <View style={{ marginTop: 14 }}>
+              <PillButton
+                label="Simulate Connect Handshake"
+                variant="secondary"
+                icon={<Ionicons name="play" size={14} color={colors.primary} />}
                 onPress={handleTestConnect}
-                style={[
-                  styles.quietBtn,
-                  {
-                    backgroundColor: colors.surfaceContainerHigh,
-                    borderColor: colors.hairline,
-                  },
-                ]}
-              >
-                <Ionicons name="play" size={14} color={colors.primary} style={{ marginRight: 4 }} />
-                <Text style={[styles.quietBtnText, { color: colors.primary, fontFamily: fonts.label }]}>
-                  Simulate Connect Handshake
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         </View>
@@ -627,6 +621,7 @@ export default function AutoScreen() {
                       ]}
                     >
                       <Text
+                        numberOfLines={1}
                         style={[
                           styles.volPresetText,
                           {
@@ -669,23 +664,13 @@ export default function AutoScreen() {
             </View>
 
             {/* Quiet Action: Test Disconnect */}
-            <View style={styles.quietActionRow}>
-              <TouchableOpacity
-                activeOpacity={0.8}
+            <View style={{ marginTop: 14 }}>
+              <PillButton
+                label="Simulate Disconnect Flow"
+                variant="secondary"
+                icon={<Ionicons name="refresh" size={14} color={colors.onSurfaceVariant} />}
                 onPress={handleTestDisconnect}
-                style={[
-                  styles.quietBtn,
-                  {
-                    backgroundColor: colors.surfaceContainerHigh,
-                    borderColor: colors.hairline,
-                  },
-                ]}
-              >
-                <Ionicons name="refresh" size={14} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                <Text style={[styles.quietBtnText, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
-                  Simulate Disconnect Flow
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         </View>
@@ -749,8 +734,8 @@ const styles = StyleSheet.create({
   deviceChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 38,
-    paddingHorizontal: 14,
+    minHeight: 48,
+    paddingHorizontal: 16,
     borderRadius: 9999,
     borderWidth: 0.5,
   },
@@ -877,12 +862,14 @@ const styles = StyleSheet.create({
   },
   presetChipsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 8,
   },
   volPresetChip: {
     flex: 1,
-    height: 34,
+    minHeight: 48,
+    minWidth: 50,
     borderRadius: 9999,
     borderWidth: 0.5,
     alignItems: 'center',
@@ -894,6 +881,7 @@ const styles = StyleSheet.create({
   },
   quietActionRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     marginTop: 14,
   },
