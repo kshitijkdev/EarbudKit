@@ -697,4 +697,32 @@ export async function getActiveAudioCodec(address: string): Promise<string> {
   }
 }
 
+/**
+ * Personal Hearing Calibration (HearID): Play acoustic sine tone
+ */
+export function playCalibrationTone(
+  frequencyHz: number,
+  durationMs: number = 800,
+  volumeDb: number = 20
+): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.playCalibrationTone(frequencyHz, durationMs, volumeDb) ?? false;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Personal Hearing Calibration (HearID): Stop playing acoustic sine tone
+ */
+export function stopCalibrationTone(): boolean {
+  if (Platform.OS !== 'android') return false;
+  try {
+    return NativeModule?.stopCalibrationTone() ?? false;
+  } catch (e) {
+    return false;
+  }
+}
+
 

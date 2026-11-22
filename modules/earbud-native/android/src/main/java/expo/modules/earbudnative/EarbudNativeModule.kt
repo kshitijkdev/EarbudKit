@@ -21,7 +21,9 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
+import android.media.AudioFormat
 import android.media.AudioManager
+import android.media.AudioTrack
 import android.media.audiofx.Equalizer
 import android.os.Build
 import android.os.PowerManager
@@ -274,6 +276,7 @@ class EarbudNativeModule : Module() {
             if (instance === this@EarbudNativeModule) {
                 instance = null
             }
+            stopSineTone()
             releaseEqualizer()
             stopBleRssiScan()
             unregisterBluetoothReceiver()
@@ -428,6 +431,17 @@ class EarbudNativeModule : Module() {
                 if (BuildConfig.DEBUG) Log.e(TAG, "Failed to set equalizer enabled", e)
                 false
             }
+        }
+
+        /**
+         * Personal Hearing Calibration (HearID): Play acoustic test sine tone
+         */
+        Function("playCalibrationTone") { frequencyHz: Int, durationMs: Int, volumeDb: Int ->
+            playSineTone(frequencyHz, durationMs, volumeDb)
+        }
+
+        Function("stopCalibrationTone") {
+            stopSineTone()
         }
 
         /**
@@ -690,6 +704,83 @@ class EarbudNativeModule : Module() {
             nativeEqualizer = null
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.w(TAG, "Error releasing Equalizer: ${e.message}")
+        }
+    }
+
+    private var activeToneTrack: AudioTrack? = null
+
+    private fun playSineTone(frequencyHz: Int, durationMs: Int = 800, volumeDb: Int = 20): Boolean {
+        return try {
+            stopSineTone()
+            val sampleRate = 44100
+            val validDuration = durationMs.coerceIn(200, 3000)
+            val numSamples = (sampleRate * (validDuration / 1000.0)).toInt()
+            val buffer = ShortArray(numSamples)
+
+            val gainFactor = Math.pow(10.0, (volumeDb - 45.0) / 25.0)
+            val amplitude = (gainFactor * 24000.0).coerceIn(500.0, 28000.0)
+
+            val attackSamples = (sampleRate * 0.04).toInt()
+            val releaseSamples = (sampleRate * 0.04).toInt()
+
+            for (i in 0 until numSamples) {
+                val angle = 2.0 * Math.PI * i / (sampleRate / frequencyHz.toDouble())
+                var sample = Math.sin(angle) * amplitude
+                if (i < attackSamples) {
+                    sample *= (i.toDouble() / attackSamples)
+                } else if (i > numSamples - releaseSamples) {
+                    sample *= ((numSamples - i).toDouble() / releaseSamples)
+                }
+                buffer[i] = sample.toInt().toShort()
+            }
+
+            val minBufferSize = AudioTrack.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+
+            val track = AudioTrack.Builder()
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .build()
+                )
+                .setBufferSizeInBytes(Math.max(buffer.size * 2, minBufferSize))
+                .setTransferMode(AudioTrack.MODE_STATIC)
+                .build()
+
+            track.write(buffer, 0, buffer.size)
+            track.play()
+            activeToneTrack = track
+            true
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.e(TAG, "Failed to play calibration tone", e)
+            false
+        }
+    }
+
+    private fun stopSineTone(): Boolean {
+        return try {
+            activeToneTrack?.let {
+                if (it.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    it.stop()
+                }
+                it.release()
+            }
+            activeToneTrack = null
+            true
+        } catch (e: Exception) {
+            activeToneTrack = null
+            false
         }
     }
 

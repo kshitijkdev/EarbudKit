@@ -319,5 +319,30 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - Built standalone hardened release APK (`app-release.apk`, 37.1 MB, ~60% size reduction over debug build).
     - Moved hardened release APK to dedicated repository directory `release/EarbudKit.apk` and copied to `C:\Users\kumar\Downloads\EarbudKit.apk`.
 
-## Soft Studio Redesign, Features & Security Hardening Complete (Stages S1–S8)
-All stages (S1–S8) have been implemented, verified, tested, hardened, built into a standalone release APK (37.1 MB), and copied to Downloads.
+- [x] **Stage S9: UI Alignment Fixes, Smart Habit Predictor & HearID Tone Engine**
+  - **Devices Screen UI Alignment Fixes (`app/(tabs)/devices.tsx`)**:
+    - Fixed "Nearby Devices Permission" and "REQUIRED" header text collision by wrapping "REQUIRED" in a distinct rounded badge (`requiredBadge`) with `marginLeft: 8`, `gap: 8`, and muted container background.
+    - Repositioned the action buttons ("Grant Bluetooth Access" and "App Settings") onto a full-width dedicated row with `flexWrap: 'wrap'` and `gap: 10`, completely eliminating horizontal button clipping where "App Settings" overflowed the card and screen boundaries.
+    - Updated `DEVICE PROFILES CATALOG` to `flexWrap: 'wrap'` so all 3 preset pills (`Noise Buds Vector`, `realme Studio H1`, `Generic BLE Audio`) wrap cleanly onto two rows with zero clipping.
+  - **Smart Habit Predictor Fix (`src/store/habitStore.ts` & `app/(tabs)/index.tsx`)**:
+    - Migrated `habitStore.ts` to Zustand `persist` middleware with AsyncStorage (`@earbudkit/habit-matrix`), auto-rehydrating on app startup.
+    - Updated `ROUTINE_ARCHETYPES` with Android package names (`com.spotify.music`, `com.google.android.apps.youtube.music`, `au.com.shiftyjelly.pocketcasts`, `com.apple.android.music`).
+    - Implemented actual 1-tap Smart Handshake routine execution in `applyRoutine()`: sets media volume directly via native bridge, enables Do Not Disturb mode, starts sleep timer, launches target music/podcast app, and reinforces the habit matrix with session data.
+    - Connected session event recording and contextual routine evaluation to live Bluetooth ACL connection events in `useBluetoothDevices.ts`.
+    - Made routine dismissal slot-aware (`lastDismissedSlot`), persisting dismissals for the current time quadrant and automatically surfacing fresh contextual routines as daily quadrants advance.
+  - **Personal Hearing Calibration (HearID) Fix (`src/store/hearingCalibrationStore.ts`, `modules/earbud-native`, `app/(tabs)/tools.tsx`)**:
+    - Implemented a standard Android `AudioTrack` 16-bit PCM mono sine tone generator in Kotlin (`playCalibrationTone` / `stopCalibrationTone`) in `EarbudNativeModule.kt` covering 250Hz, 500Hz, 1000Hz, 2000Hz, 4000Hz, and 8000Hz with a 40ms attack/release envelope to eliminate audio clicks.
+    - Exported `playCalibrationTone` and `stopCalibrationTone` through the Expo native module wrapper (`modules/earbud-native/src/index.ts`).
+    - Migrated `hearingCalibrationStore.ts` to Zustand `persist` middleware with AsyncStorage (`@earbudkit/hearing-calibration`).
+    - Added automated acoustic tone playback across all test frequencies (250Hz to 8kHz) and volume ramps (10dB to 45dB).
+    - Added a "Replay Tone" button in the calibration modal so users can replay the tone at any point during testing.
+    - Handled fallback target device address resolution so calibration never fails if a device was unselected.
+    - Synchronized the calibrated 5-band compensation curve directly to the hardware equalizer (`applyToHardware`) on completion.
+  - **Verification & Release Build**:
+    - TypeScript: `npx tsc --noEmit` passed with 0 errors.
+    - Unit tests: All 8 test suites passed with 100% success.
+    - R8 Release Build: `./gradlew.bat app:assembleRelease -PreactNativeArchitectures=arm64-v8a` completed successfully in 1m 34s.
+    - Production APK updated: `release/EarbudKit.apk` and `C:\Users\kumar\Downloads\EarbudKit.apk` (37.15 MB, SHA-256: `12355E6C71722FE79C2C6FBAF1E084AF8439BAA15B5223C091A2DAF3606DAE0B`).
+
+## Soft Studio Redesign, Features, Security Hardening & Bug Fixes Complete (Stages S1–S9)
+All stages (S1–S9) have been implemented, verified, tested, hardened, built into a standalone release APK (37.15 MB), and copied to Downloads.

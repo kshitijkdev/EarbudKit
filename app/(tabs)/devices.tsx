@@ -251,47 +251,49 @@ export default function DevicesScreen() {
                   <Text style={[styles.permissionTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
                     Nearby Devices Permission
                   </Text>
-                  <Text style={[styles.permissionReqText, { color: colors.primary, fontFamily: fonts.label }]}>
-                    REQUIRED
-                  </Text>
+                  <View style={[styles.requiredBadge, { backgroundColor: 'rgba(250, 45, 72, 0.15)' }]}>
+                    <Text style={[styles.permissionReqText, { color: colors.primary, fontFamily: fonts.label }]}>
+                      REQUIRED
+                    </Text>
+                  </View>
                 </View>
                 <Text style={[styles.permissionBody, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
                   Android requires active scanning permissions to read live battery levels and acoustic telemetry directly from bonded accessories.
                 </Text>
-
-                <View style={styles.permissionActionsRow}>
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    onPress={requestPermission}
-                    style={[
-                      styles.grantBtn,
-                      {
-                        backgroundColor: colors.primary,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.grantBtnText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
-                      Grant Bluetooth Access
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={openSettings}
-                    style={[
-                      styles.settingsBtn,
-                      {
-                        backgroundColor: colors.surfaceContainerHigh,
-                        borderColor: colors.hairline,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.settingsBtnText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                      App Settings
-                    </Text>
-                  </TouchableOpacity>
-                </View>
               </View>
+            </View>
+
+            <View style={styles.permissionActionsRow}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={requestPermission}
+                style={[
+                  styles.grantBtn,
+                  {
+                    backgroundColor: colors.primary,
+                  },
+                ]}
+              >
+                <Text style={[styles.grantBtnText, { color: colors.onPrimary, fontFamily: fonts.label }]}>
+                  Grant Bluetooth Access
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={openSettings}
+                style={[
+                  styles.settingsBtn,
+                  {
+                    backgroundColor: colors.surfaceContainerHigh,
+                    borderColor: colors.hairline,
+                  },
+                ]}
+              >
+                <Text style={[styles.settingsBtnText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                  App Settings
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -637,7 +639,7 @@ export default function DevicesScreen() {
           <Text style={[styles.sectionCaption, { color: colors.onSurfaceVariant, fontFamily: fonts.label, marginBottom: 8 }]}>
             DEVICE PROFILES CATALOG
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presetsShelf}>
+          <View style={styles.presetsShelf}>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => handleAddPreset('noise')}
@@ -688,7 +690,7 @@ export default function DevicesScreen() {
                 Generic BLE Audio
               </Text>
             </TouchableOpacity>
-          </ScrollView>
+          </View>
         </View>
       </ScrollView>
 
@@ -989,13 +991,20 @@ const styles = StyleSheet.create({
   },
   permissionTitleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 6,
   },
   permissionTitle: {
     fontSize: 16,
     fontWeight: '700',
+    flexShrink: 1,
+  },
+  requiredBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
+    borderRadius: 6,
   },
   permissionReqText: {
     fontSize: 10,
@@ -1008,8 +1017,9 @@ const styles = StyleSheet.create({
   },
   permissionActionsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
-    marginTop: 12,
+    marginTop: 14,
   },
   grantBtn: {
     height: 40,
@@ -1024,7 +1034,7 @@ const styles = StyleSheet.create({
   },
   settingsBtn: {
     height: 40,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     borderRadius: 9999,
     borderWidth: 0.5,
     alignItems: 'center',
@@ -1254,6 +1264,7 @@ const styles = StyleSheet.create({
   },
   presetsShelf: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     paddingVertical: 2,
   },

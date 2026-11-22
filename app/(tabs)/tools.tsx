@@ -317,11 +317,24 @@ export default function ToolsScreen() {
   const currentFreqIndex = useHearingCalibrationStore((s) => s.currentFreqIndex);
   const currentTestVolumeDb = useHearingCalibrationStore((s) => s.currentTestVolumeDb);
   const startHearingTest = useHearingCalibrationStore((s) => s.startTest);
+  const replayCurrentTone = useHearingCalibrationStore((s) => s.replayCurrentTone);
   const registerHearingResponse = useHearingCalibrationStore((s) => s.registerHearingResponse);
   const cancelHearingTest = useHearingCalibrationStore((s) => s.cancelTest);
   const toggleHearingProfile = useHearingCalibrationStore((s) => s.toggleProfileEnabled);
 
   const activeHearingProfile = upperAddr ? hearingProfiles[upperAddr] : undefined;
+
+  const handleStartHearingTest = () => {
+    const target = selectedAddress || activeDeviceAddress || trackedDevices[0]?.address;
+    if (!target) {
+      showToast('Track an audio device first to calibrate your hearing curve.');
+      return;
+    }
+    if (!selectedAddress) {
+      setSelectedAddress(target);
+    }
+    startHearingTest(target);
+  };
 
   const handleEqToggle = (val: boolean) => {
     if (!upperAddr) return;
@@ -1079,7 +1092,7 @@ export default function ToolsScreen() {
 
               <TouchableOpacity
                 activeOpacity={0.85}
-                onPress={startHearingTest}
+                onPress={handleStartHearingTest}
                 style={[
                   styles.actionButton,
                   {
@@ -1286,14 +1299,31 @@ export default function ToolsScreen() {
               </View>
             </View>
 
+            {/* Replay Tone Button */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={replayCurrentTone}
+              style={[
+                styles.replayToneBtn,
+                {
+                  backgroundColor: colors.surfaceContainerHigh,
+                  borderColor: colors.hairline,
+                },
+              ]}
+            >
+              <Ionicons name="volume-medium" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+              <Text style={[styles.replayToneText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                Replay Tone
+              </Text>
+            </TouchableOpacity>
+
             {/* Response Pill Buttons */}
             <View style={styles.hearingResponseRow}>
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
-                  if (selectedAddress) {
-                    registerHearingResponse(false, selectedAddress);
-                  }
+                  const target = selectedAddress || activeDeviceAddress || trackedDevices[0]?.address || 'DEFAULT_DEVICE';
+                  registerHearingResponse(false, target);
                 }}
                 style={[
                   styles.responseBtnNo,
@@ -1311,9 +1341,12 @@ export default function ToolsScreen() {
 
               <TouchableOpacity
                 activeOpacity={0.85}
-                onPress={() => {
-                  if (selectedAddress) {
-                    registerHearingResponse(true, selectedAddress);
+                onPress={async () => {
+                  const target = selectedAddress || activeDeviceAddress || trackedDevices[0]?.address || 'DEFAULT_DEVICE';
+                  const isLastFreq = currentFreqIndex >= TEST_FREQUENCIES.length - 1;
+                  await registerHearingResponse(true, target);
+                  if (isLastFreq) {
+                    showToast('HearID calibration complete! Auto-EQ curve applied.');
                   }
                 }}
                 style={[
@@ -1836,6 +1869,19 @@ const styles = StyleSheet.create({
   },
   currentLevelText: {
     fontSize: 11,
+    fontWeight: '600',
+  },
+  replayToneBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 38,
+    borderRadius: 9999,
+    borderWidth: 0.5,
+    marginBottom: 14,
+  },
+  replayToneText: {
+    fontSize: 13,
     fontWeight: '600',
   },
   hearingResponseRow: {

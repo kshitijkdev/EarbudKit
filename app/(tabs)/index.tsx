@@ -545,8 +545,8 @@ export default function HomeScreen() {
               <TouchableOpacity
                 activeOpacity={0.85}
                 onPress={async () => {
-                  await applyRoutineAction();
-                  showToast(`Applied ${activeRoutine.title}`);
+                  await applyRoutineAction(activeDevice?.address);
+                  showToast(`Applied ${activeRoutine.title} (${activeRoutine.targetVolume}% vol)`);
                 }}
                 disabled={isRoutineApplied}
                 style={[

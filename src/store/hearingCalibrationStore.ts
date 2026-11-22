@@ -6,8 +6,22 @@
  */
 
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEqualizerStore } from './equalizerStore';
+import { safeLog } from '../utils/security';
+
+function getNativeBridge() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require('../../modules/earbud-native');
+  } catch (_e) {
+    return {
+      playCalibrationTone: () => true,
+      stopCalibrationTone: () => true,
+    };
+  }
+}
 
 export const TEST_FREQUENCIES = [250, 500, 1000, 2000, 4000, 8000] as const;
 
@@ -23,18 +37,18 @@ interface HearingCalibrationState {
   profiles: Record<string, HearingProfile>; // MAC -> Profile
   isTesting: boolean;
   currentFreqIndex: number;
-  currentTestVolumeDb: number; // starts soft, ramps up
+  currentTestVolumeDb: number; // starts soft, ramps up (10 to 45 dB)
   tempThresholds: Record<number, number>;
   activeProfile: HearingProfile | null;
 
   // Actions
-  startTest: () => void;
+  startTest: (deviceAddress?: string) => void;
   registerHearingResponse: (heard: boolean, deviceAddress: string) => Promise<void>;
+  replayCurrentTone: () => void;
   cancelTest: () => void;
   applyProfile: (deviceAddress: string) => Promise<boolean>;
   toggleProfileEnabled: (deviceAddress: string, enabled: boolean) => Promise<void>;
   resetProfile: (deviceAddress: string) => Promise<void>;
-  loadFromStorage: () => Promise<void>;
 }
 
 export const HEARING_STORAGE_KEY = '@earbudkit/hearing-calibration';
@@ -66,144 +80,176 @@ export function calculateCompensationCurve(thresholds: Record<number, number>): 
   return [band0_60Hz, band1_230Hz, band2_910Hz, band3_3600Hz, band4_14000Hz];
 }
 
-export const useHearingCalibrationStore = create<HearingCalibrationState>((set, get) => ({
-  profiles: {},
-  isTesting: false,
-  currentFreqIndex: 0,
-  currentTestVolumeDb: 10,
-  tempThresholds: {},
-  activeProfile: null,
-
-  loadFromStorage: async () => {
-    try {
-      const raw = await AsyncStorage.getItem(HEARING_STORAGE_KEY);
-      if (raw) {
-        const profiles = JSON.parse(raw);
-        set({ profiles });
-      }
-    } catch {
-      // Memory fallback
-    }
-  },
-
-  startTest: () => {
-    set({
-      isTesting: true,
-      currentFreqIndex: 0,
-      currentTestVolumeDb: 10,
-      tempThresholds: {},
-    });
-  },
-
-  registerHearingResponse: async (heard: boolean, deviceAddress: string) => {
-    const { currentFreqIndex, currentTestVolumeDb, tempThresholds } = get();
-    const freq = TEST_FREQUENCIES[currentFreqIndex];
-
-    if (!heard && currentTestVolumeDb < 45) {
-      // User didn't hear tone yet: ramp volume up by 10dB
-      set({ currentTestVolumeDb: currentTestVolumeDb + 10 });
-      return;
-    }
-
-    // Tone was heard or max volume reached: record threshold for current frequency
-    const updatedThresholds = {
-      ...tempThresholds,
-      [freq]: currentTestVolumeDb,
-    };
-
-    if (currentFreqIndex < TEST_FREQUENCIES.length - 1) {
-      // Proceed to next test frequency
-      set({
-        currentFreqIndex: currentFreqIndex + 1,
-        currentTestVolumeDb: 10,
-        tempThresholds: updatedThresholds,
-      });
-    } else {
-      // Calibration completed across all frequencies! Compute compensation curve.
-      const curve = calculateCompensationCurve(updatedThresholds);
-      const profile: HearingProfile = {
-        deviceAddress: deviceAddress.toUpperCase(),
-        calibratedAt: Date.now(),
-        thresholds: updatedThresholds,
-        compensationCurve: curve,
-        enabled: true,
-      };
-
-      const profiles = {
-        ...get().profiles,
-        [profile.deviceAddress]: profile,
-      };
-
-      set({
-        profiles,
-        activeProfile: profile,
-        isTesting: false,
-        currentFreqIndex: 0,
-      });
-
-      try {
-        await AsyncStorage.setItem(HEARING_STORAGE_KEY, JSON.stringify(profiles));
-      } catch {
-        // Ephemeral
-      }
-
-      // Automatically apply to hardware equalizer
-      await get().applyProfile(deviceAddress);
-    }
-  },
-
-  cancelTest: () => {
-    set({
+export const useHearingCalibrationStore = create<HearingCalibrationState>()(
+  persist(
+    (set, get) => ({
+      profiles: {},
       isTesting: false,
       currentFreqIndex: 0,
       currentTestVolumeDb: 10,
       tempThresholds: {},
-    });
-  },
+      activeProfile: null,
 
-  applyProfile: async (deviceAddress: string) => {
-    const addr = deviceAddress.toUpperCase();
-    const profile = get().profiles[addr];
-    if (!profile || !profile.enabled) return false;
+      startTest: (deviceAddress?: string) => {
+        const bridge = getNativeBridge();
+        set({
+          isTesting: true,
+          currentFreqIndex: 0,
+          currentTestVolumeDb: 10,
+          tempThresholds: {},
+        });
+        // Play the first frequency tone (250Hz at 10dB)
+        try {
+          bridge.playCalibrationTone(TEST_FREQUENCIES[0], 850, 10);
+        } catch (e) {
+          safeLog.warn('[HearID] Error playing start tone:', e);
+        }
+      },
 
-    // Apply 5 bands to equalizerStore
-    const eq = useEqualizerStore.getState();
-    profile.compensationCurve.forEach((gainDb, index) => {
-      // equalizerStore uses milliBels (1 dB = 100 mB)
-      eq.setDeviceBandLevel(addr, index, gainDb * 100);
-    });
-    eq.setDevicePreset(addr, 'Custom');
-    eq.setDeviceEqEnabled(addr, true);
+      replayCurrentTone: () => {
+        const { currentFreqIndex, currentTestVolumeDb } = get();
+        const freq = TEST_FREQUENCIES[currentFreqIndex] || 250;
+        const bridge = getNativeBridge();
+        try {
+          bridge.playCalibrationTone(freq, 850, currentTestVolumeDb);
+        } catch (e) {
+          safeLog.warn('[HearID] Error replaying tone:', e);
+        }
+      },
 
-    return true;
-  },
+      registerHearingResponse: async (heard: boolean, deviceAddress: string) => {
+        const { currentFreqIndex, currentTestVolumeDb, tempThresholds } = get();
+        const freq = TEST_FREQUENCIES[currentFreqIndex];
+        const bridge = getNativeBridge();
 
-  toggleProfileEnabled: async (deviceAddress: string, enabled: boolean) => {
-    const addr = deviceAddress.toUpperCase();
-    const profile = get().profiles[addr];
-    if (!profile) return;
+        if (!heard && currentTestVolumeDb < 45) {
+          // User didn't hear tone yet: ramp volume up by 10dB and replay tone
+          const nextDb = currentTestVolumeDb + 10;
+          set({ currentTestVolumeDb: nextDb });
+          try {
+            bridge.playCalibrationTone(freq, 850, nextDb);
+          } catch (e) {
+            safeLog.warn('[HearID] Error playing ramped tone:', e);
+          }
+          return;
+        }
 
-    const updatedProfile = { ...profile, enabled };
-    const profiles = { ...get().profiles, [addr]: updatedProfile };
-    set({ profiles, activeProfile: updatedProfile });
+        // Tone was heard or max volume reached: record threshold for current frequency
+        const updatedThresholds = {
+          ...tempThresholds,
+          [freq]: currentTestVolumeDb,
+        };
 
-    try {
-      await AsyncStorage.setItem(HEARING_STORAGE_KEY, JSON.stringify(profiles));
-    } catch {}
+        if (currentFreqIndex < TEST_FREQUENCIES.length - 1) {
+          // Proceed to next test frequency at baseline volume
+          const nextFreqIndex = currentFreqIndex + 1;
+          const nextFreq = TEST_FREQUENCIES[nextFreqIndex];
+          set({
+            currentFreqIndex: nextFreqIndex,
+            currentTestVolumeDb: 10,
+            tempThresholds: updatedThresholds,
+          });
+          try {
+            bridge.playCalibrationTone(nextFreq, 850, 10);
+          } catch (e) {
+            safeLog.warn('[HearID] Error playing next frequency tone:', e);
+          }
+        } else {
+          // Calibration completed across all frequencies! Stop tone & compute compensation curve.
+          try {
+            bridge.stopCalibrationTone();
+          } catch {}
 
-    if (enabled) {
-      await get().applyProfile(addr);
-    } else {
-      // Reset EQ to Flat
-      useEqualizerStore.getState().setDevicePreset(addr, 'Flat');
+          const curve = calculateCompensationCurve(updatedThresholds);
+          const targetAddress = (deviceAddress || 'DEFAULT_DEVICE').toUpperCase();
+          const profile: HearingProfile = {
+            deviceAddress: targetAddress,
+            calibratedAt: Date.now(),
+            thresholds: updatedThresholds,
+            compensationCurve: curve,
+            enabled: true,
+          };
+
+          const profiles = {
+            ...get().profiles,
+            [profile.deviceAddress]: profile,
+          };
+
+          set({
+            profiles,
+            activeProfile: profile,
+            isTesting: false,
+            currentFreqIndex: 0,
+          });
+
+          // Automatically apply to hardware equalizer
+          await get().applyProfile(targetAddress);
+        }
+      },
+
+      cancelTest: () => {
+        try {
+          getNativeBridge().stopCalibrationTone();
+        } catch {}
+        set({
+          isTesting: false,
+          currentFreqIndex: 0,
+          currentTestVolumeDb: 10,
+          tempThresholds: {},
+        });
+      },
+
+      applyProfile: async (deviceAddress: string) => {
+        const addr = (deviceAddress || 'DEFAULT_DEVICE').toUpperCase();
+        const profile = get().profiles[addr];
+        if (!profile || !profile.enabled) return false;
+
+        // Apply 5 bands to equalizerStore
+        const eq = useEqualizerStore.getState();
+        profile.compensationCurve.forEach((gainDb, index) => {
+          // equalizerStore uses milliBels (1 dB = 100 mB)
+          eq.setDeviceBandLevel(addr, index, gainDb * 100);
+        });
+        eq.setDevicePreset(addr, 'Custom');
+        eq.setDeviceEqEnabled(addr, true);
+        eq.applyToHardware(addr);
+
+        return true;
+      },
+
+      toggleProfileEnabled: async (deviceAddress: string, enabled: boolean) => {
+        const addr = (deviceAddress || 'DEFAULT_DEVICE').toUpperCase();
+        const profile = get().profiles[addr];
+        if (!profile) return;
+
+        const updatedProfile = { ...profile, enabled };
+        const profiles = { ...get().profiles, [addr]: updatedProfile };
+        set({ profiles, activeProfile: updatedProfile });
+
+        if (enabled) {
+          await get().applyProfile(addr);
+        } else {
+          // Reset EQ to Flat
+          const eq = useEqualizerStore.getState();
+          eq.setDevicePreset(addr, 'Flat');
+          eq.applyToHardware(addr);
+        }
+      },
+
+      resetProfile: async (deviceAddress: string) => {
+        const addr = (deviceAddress || 'DEFAULT_DEVICE').toUpperCase();
+        const profiles = { ...get().profiles };
+        delete profiles[addr];
+        set({ profiles, activeProfile: null });
+      },
+    }),
+    {
+      name: HEARING_STORAGE_KEY,
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        profiles: state.profiles,
+        activeProfile: state.activeProfile,
+      }),
     }
-  },
-
-  resetProfile: async (deviceAddress: string) => {
-    const addr = deviceAddress.toUpperCase();
-    const profiles = { ...get().profiles };
-    delete profiles[addr];
-    set({ profiles, activeProfile: null });
-    await AsyncStorage.setItem(HEARING_STORAGE_KEY, JSON.stringify(profiles)).catch(() => {});
-  },
-}));
+  )
+);

@@ -21,6 +21,8 @@ import {
   useAutoStore,
   useEqualizerStore,
   useStatsStore,
+  habitStore,
+  useHearingCalibrationStore,
 } from '../../store';
 import { captureCurrentLocation } from '../../services/location';
 import { safeLog, maskMac, sanitizeDeviceName } from '../../utils/security';
@@ -140,6 +142,9 @@ export function useBluetoothDevices() {
         useAutoStore.getState().executeConnectProfile(event.address);
         useEqualizerStore.getState().applyToHardware(event.address);
         useStatsStore.getState().startListeningSession(event.address);
+        habitStore.getState().recordSessionEvent({ deviceAddress: event.address });
+        habitStore.getState().evaluateCurrentRoutine(event.address);
+        useHearingCalibrationStore.getState().applyProfile(event.address);
 
         // Query active codec immediately
         getActiveAudioCodec(event.address).then((codec) => {

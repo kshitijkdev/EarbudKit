@@ -6,7 +6,7 @@ This directory contains the production-hardened standalone Android APK for **Ear
 
 - **Direct Download**: [Download EarbudKit.apk](https://github.com/kshitijkdev/EarbudKit/raw/main/release/EarbudKit.apk)
 - **File Name**: `EarbudKit.apk`
-- **File Size**: `37.15 MB` (37,150,549 bytes)
+- **File Size**: `37.15 MB` (37,153,897 bytes)
 - **Target Architecture**: `arm64-v8a` (64-bit Android)
 - **Minimum Android Version**: Android 7.0 Nougat (API level 24)
 - **Target Android Version**: Android 15 Vanilla Ice Cream (API level 35)
@@ -17,7 +17,7 @@ Verify the APK checksum before installing:
 
 - **SHA-256**:
   ```text
-  695365F9849391972DA82E0FD159955BEDE0659EFD3692BDF618C104BBE11FD6
+  12355E6C71722FE79C2C6FBAF1E084AF8439BAA15B5223C091A2DAF3606DAE0B
   ```
 
 ### Verification Command
