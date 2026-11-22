@@ -904,35 +904,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  permissionActionsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 14,
-  },
-  grantBtn: {
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: 9999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  grantBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  settingsBtn: {
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: 9999,
-    borderWidth: 0.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
   sectionBlock: {
     marginBottom: 20,
   },
@@ -1150,24 +1121,6 @@ const styles = StyleSheet.create({
   },
   trackBtnText: {
     fontSize: 12,
-    fontWeight: '600',
-  },
-  presetsShelf: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingVertical: 2,
-  },
-  presetPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 38,
-    paddingHorizontal: 14,
-    borderRadius: 9999,
-    borderWidth: 0.5,
-  },
-  presetText: {
-    fontSize: 13,
     fontWeight: '600',
   },
   emptyContainer: {

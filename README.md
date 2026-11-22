@@ -2,19 +2,24 @@
 
 An Android-first companion app for Bluetooth audio devices that have no official companion app. Built with React Native, Expo SDK 58, and a local Kotlin native module using standard Android/Bluetooth APIs.
 
-## Download Release APK
+## Download & Installation
 
-- **Production APK**: [Download release/EarbudKit.apk](release/EarbudKit.apk) (37.15 MB)
-- **Direct GitHub Raw Link**: [Download EarbudKit.apk](https://github.com/kshitijkdev/EarbudKit/raw/main/release/EarbudKit.apk)
-- **Integrity**: SHA-256 `695365F9849391972DA82E0FD159955BEDE0659EFD3692BDF618C104BBE11FD6`
-- See [release/README.md](release/README.md) for full sideloading instructions, security hardening notes, and checksum verification.
+- **Official Builds**: Download the signed release APK from [GitHub Releases](https://github.com/kshitijkdev/EarbudKit/releases).
+- **Building Release APK Locally**:
+  ```bash
+  cd android
+  ./gradlew.bat assembleRelease
+  ```
+  The built APK will be located at `android/app/build/outputs/apk/release/app-release.apk`.
+- **Release Signing**:
+  To sign with your production keystore, copy `android/keystore.properties.example` to `android/keystore.properties` and fill in your keystore credentials. When `keystore.properties` is absent, Gradle automatically falls back to signing release builds with the debug keystore for development and CI testing.
 
 ---
 
 ## Target Hardware
-- **Noise Buds Vector**: TWS earbuds, Bluetooth 5.3, Sony LDAC high-resolution audio.
-- **realme TechLife Studio H1**: Over-ear headphones, ANC, 70-hour battery life.
-- **Generic Bluetooth Audio Hardware**: Headphones, earbuds, studio monitors, receivers. Standard Android APIs only; no vendor-proprietary protocols, accounts, or cloud dependencies.
+
+- **Universal Bluetooth Audio**: TWS earbuds, over-ear studio headphones, wireless neckbands, bone conduction headsets, car kits, and Bluetooth audio receivers.
+- **Standards Compliant**: Built strictly on standard Android A2DP, AVRCP, and HFP/HSP profiles. Zero vendor-proprietary protocols, zero cloud accounts, and zero internet permissions.
 
 ---
 
@@ -43,6 +48,7 @@ EarbudKit features the Apple Music-inspired **Soft Studio** design language: cle
   - 20px corner radius for cards, dialog sheets, and album artwork containers.
   - 9999px full-pill geometry for primary action buttons, status chips, and segmented controllers.
   - 0.5px hairline dividers (`rgba(255, 255, 255, 0.08)` / `rgba(0, 0, 0, 0.08)`).
+  - Minimum 48dp touch targets on all interactive controls for mobile accessibility.
   - Frosted translucent mini-player and bottom navigation dock.
   - Dynamic ambient mesh glow behind the hero card tinted from the connected device profile.
 
@@ -50,22 +56,25 @@ EarbudKit features the Apple Music-inspired **Soft Studio** design language: cle
 
 ## Core Features
 
-### 1. Personal Hearing Calibration (Audiogram & Auto-EQ / HearID)
-- **Interactive Audiogram Test**: 6-frequency hearing test spanning 250 Hz, 500 Hz, 1000 Hz, 2000 Hz, 4000 Hz, and 8000 Hz.
-- **Dynamic Compensation Curve**: Normalizes individual hearing thresholds against an acoustic baseline and computes compensatory gain adjustments (-12 dB to +12 dB) across 5 hardware equalizer bands (60 Hz, 230 Hz, 910 Hz, 3.6 kHz, 14 kHz).
-- **Per-Device Equalizer Synchronization**: Automatically applies and saves the calibrated compensation curve to the hardware `android.media.audiofx.Equalizer` keyed to the device MAC address.
-- **Non-Destructive Revert**: Toggle off cleanly restores standard hardware flat or previous custom presets.
+### 1. Sound Personalization (Acoustic Calibration & Auto-EQ)
+- **Medical Disclaimer**: Clearly labeled as an acoustic personalization tool, not a diagnostic medical test. Includes a pre-test safety advisory reminding users to check ambient noise and starting volume.
+- **Pure Tone Generator**: Native 16-bit PCM mono sine tone generator in Kotlin playing across 6 octave frequencies (250 Hz, 500 Hz, 1000 Hz, 2000 Hz, 4000 Hz, 8000 Hz) with 40ms attack/release envelopes to eliminate acoustic pops.
+- **Volume Guardrails**: Tone output is hard-capped to a safe maximum level (max 45 dB) to protect hearing during calibration.
+- **Safe Equalizer Compensation Curve**: Normalizes user hearing thresholds against baseline calibration and maps them to a safe 5-band gain curve clamped between -6 dB and +8 dB on hardware equalizer bands (60 Hz, 230 Hz, 910 Hz, 3.6 kHz, 14 kHz).
+- **1-Tap Reset to Flat**: Dedicated control to delete calibration data and revert the Android hardware Equalizer back to 0 dB flat preset instantly.
 
-### 2. Smart Habit Predictor (Adaptive Context Engine / Smart Handshake)
-- **Zero-Bloat On-Device Frequency Matrix**: Local storage footprint under 5 KB with zero background battery drain.
-- **Time-of-Day Pattern Learning**: Learns user listening routines across 4 daily quadrants (Morning Commute, Afternoon Focus, Evening Workout, Late-Night Wind Down).
-- **1-Tap Routine Capsule**: Surfaces an actionable Smart Handshake capsule on the Home screen with Bayesian confidence matching (85% to 99%).
-- **Privacy Guaranteed**: 100% on-device learning; zero analytics, zero network requests.
+### 2. Smart Habit Predictor (Adaptive Context Engine)
+- **100% On-Device & Zero Bloat**: Local storage footprint under 5 KB with zero background battery drain.
+- **Empirical Learning Threshold**: Requires at least 3 historical listening sessions in a daily quadrant (Morning Commute, Afternoon Focus, Evening Workout, Late-Night Wind Down) before surfacing routine recommendations. Displays honest learning progress ("Learning your routine: N more sessions needed") while building evidence.
+- **Honest Ratio Confidence**: Calculates confidence strictly from empirical session frequency ratios (`matching / total * 100%`), never fabricating synthetic 90%+ scores.
+- **1-Tap Routine Capsule**: Surfaces an actionable capsule on the Home screen that directly triggers the device's configured On-Connect profile from Auto-Actions (volume, app launch, DND).
+- **Slot-Aware Dismissal**: Dismissing a routine respects the current quadrant and automatically resets when the time slot advances.
 
-### 3. Multi-Device Management & Bluetooth Telemetry
-- Keyed by MAC address in a Zustand store persisted to AsyncStorage (`@earbudkit/devices-storage`).
-- Form factor glyph switching (TWS Earbuds vs. Over-Ear Headphones).
-- Untracked bonded Bluetooth device auto-discovery and 1-tap tracking.
+### 3. Real-Device Discovery & Live Telemetry
+- **Live Reconciliation**: Native `getConnectedAudioDevices()` queries active A2DP and HEADSET proxies on startup, app resume, and Bluetooth state transitions.
+- **Zero Fake Devices**: Fresh installations start completely clean. Audio devices are auto-tracked when connected or added manually from the bonded list.
+- **Honest Fallbacks**: Displays real device battery percentage with a clear hardware notice when an accessory does not report battery status over Bluetooth. Codec badges display live detected A2DP codecs (LDAC, aptX, aptX HD, AAC, SBC) or 'Unknown'.
+- **Relative Timestamps**: Real last-seen relative timestamps ("Connected now", "Seen just now", "Seen 15m ago", "Seen 2h ago", "Yesterday").
 
 ### 4. Background Device Watcher Daemon
 - Android Foreground Service (`connectedDevice` type) with persistent notification shade status.
@@ -98,19 +107,22 @@ EarbudKit features the Apple Music-inspired **Soft Studio** design language: cle
 - Presets: `Flat`, `Bass Boost`, `Vocal`, `Treble`, and `Custom`.
 - Graceful degradation: Displays `"EQ unavailable on this device"` banner if hardware AudioFX is unsupported.
 
-### 10. Audio Codec Detection & Listening Statistics Dashboard
-- Detects active A2DP audio codec via `BluetoothCodecStatus` / `BluetoothCodecConfig` reflection: `LDAC`, `aptX`, `aptX HD`, `AAC`, `SBC`, or `Unknown`.
-- Dedicated Statistics screen (`/stats`) with 7-day bar chart, fleet usage distribution, active codec fidelity breakdown, and WHO-compliant decibel exposure meter.
+### 10. Real Listening Statistics & Codec Introspection
+- Dedicated Statistics screen (`/stats`) with 100% real tracked usage time, daily listening durations, and dynamic fleet usage allocation.
+- Codec introspection explaining detected Bluetooth A2DP codecs and dynamic bitrate behaviors.
+- WHO-aligned safe listening guidelines without fabricating unmeasured in-ear SPL decibel values.
 - Native Android **Quick Settings Tile** (`EarbudQuickTileService`) in notification shade for 1-tap status monitoring.
 
 ---
 
 ## Privacy & Security
 
-- **100% On-Device & Air-Gapped**: All data (devices, settings, locations, listening statistics, audiograms) is stored exclusively in local AsyncStorage.
-- **Zero Network Permissions**: The app does not request `android.permission.INTERNET`.
+- **100% On-Device & Air-Gapped**: All data (devices, settings, locations, listening statistics, calibration profiles) is stored exclusively in local AsyncStorage.
+- **Zero Network Permissions**: The app does not declare or request `android.permission.INTERNET`.
 - **No Accounts**: No login or registration required.
 - **Zero Telemetry**: No third-party SDKs, tracking pixels, or cloud sync.
+- **Hardened Backups**: Local storage excluded from cloud and ADB backups (`android:allowBackup="false"`).
+- **Strict IPC**: All internal components use `android:exported="false"`, `FLAG_IMMUTABLE` on all PendingIntents, and strict action allowlists in BroadcastReceivers.
 
 ---
 
@@ -128,28 +140,24 @@ EarbudKit features the Apple Music-inspired **Soft Studio** design language: cle
 
 ---
 
-## Build and Verification
+## Verification & Build Commands
 
 ```bash
 # Type check (0 errors)
 npx tsc --noEmit
 
-# Run all 8 unit test suites
-npx tsx src/store/__tests__/deviceStore.test.ts
-npx tsx src/store/__tests__/autoStore.test.ts
-npx tsx src/store/__tests__/findDevice.test.ts
-npx tsx src/store/__tests__/sleepTimer.test.ts
-npx tsx src/store/__tests__/equalizer.test.ts
-npx tsx src/store/__tests__/stats.test.ts
-npx tsx src/store/__tests__/habitStore.test.ts
-npx tsx src/store/__tests__/hearingCalibration.test.ts
+# Run all 9 unit test suites
+npm test
+
+# Layout QA check across all UI screens (0 violations)
+npm run layout:check
 
 # Export standalone offline JS bundle & drawables into Android project
 npx expo export:embed --platform android --dev false --reset-cache --entry-file node_modules/expo-router/entry.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res
 
-# Assemble debug APK
+# Assemble release APK
 cd android
-./gradlew.bat assembleDebug
+./gradlew.bat assembleRelease
 ```
 
 ---

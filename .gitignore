@@ -57,8 +57,13 @@ yarn-error.*
 # Android APK / AAB artifacts
 *.apk
 *.aab
-!EarbudKit.apk
+release/
+
+# Keystores & Release Signing
+*.keystore
+*.jks
+android/keystore.properties
+keystore.properties
 
 # QA Screenshots
 qa/screens/
-!release/*.apk

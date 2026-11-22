@@ -12,7 +12,10 @@ for (const file of files) {
   console.log(`\n=============================`);
   console.log(`Running ${file}`);
   console.log(`=============================`);
-  const result = spawnSync('npx', ['tsx', join(testDir, file)], { stdio: 'inherit', shell: true });
+  const isWin = process.platform === 'win32';
+  const cmd = isWin ? 'cmd.exe' : 'npx';
+  const args = isWin ? ['/c', 'npx', 'tsx', join(testDir, file)] : ['tsx', join(testDir, file)];
+  const result = spawnSync(cmd, args, { stdio: 'inherit' });
   if (result.status !== 0) {
     console.error(`\n❌ Test ${file} failed with exit code ${result.status}`);
     failed = true;

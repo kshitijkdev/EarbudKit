@@ -16,6 +16,15 @@ Android-first companion app for Bluetooth audio devices without official apps (s
 - [x] Stage 10: Extras and codec (active audio codec LDAC/aptX/AAC/SBC/Unknown, listening-time stats screen, Quick Settings tile)
 - [x] Stage 11: Polish & verification (permission-denied states, empty states, privacy note, Android 8–15 compatibility, test suites, README refresh)
 
+## Fix Pass Stages S9–S15 Checklist
+- [x] Stage S9: Audit and real-device discovery (reconcile native connected audio devices, auto-track, remove fake preset devices)
+- [x] Stage S10: Layout QA across ALL screens (ButtonRow, ActionStack, EmptyState, min 48dp touch targets, layout-check script)
+- [x] Stage S11: Home screen real-time data (strictly live connected device, relative last seen, honest codecs and battery fallbacks)
+- [x] Stage S12: Data-driven smart habit predictor (>=3 session quadrant threshold, honest ratio confidence, routine capsule auto-actions integration)
+- [x] Stage S13: Sound personalization engine (pure sine tone generation, safe dB caps, [-6, +8] dB hardware EQ compensation, 1-tap reset to flat)
+- [x] Stage S14: Remove fake data and mock technical claims (real listening stats, honest codec introspection, WHO volume advisory)
+- [x] Stage S15: Release hygiene, secure signing config, and final verification (git binary cleanup, keystore.properties, test battery, gradle release build)
+
 ## File Map
 - `app/`
   - `_layout.tsx`: Root layout with ThemeProvider and StatusBar
@@ -351,7 +360,89 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 - [x] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
 - [x] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
 - [x] Stage S14: Remove fake data (honesty cleanup)
-- [ ] Stage S15: Release hygiene and final verification
+- [x] Stage S15: Release hygiene and final verification
+
+### Stage S15: Release Hygiene & Final Verification Summary
+- **Audit Findings**:
+  - `release/EarbudKit.apk` (37.15 MB) was previously tracked in git, which bloats the repository and causes binary merge conflicts.
+  - Release signing in `android/app/build.gradle` had no standard configuration to safely load local keystore credentials without committing secrets.
+- **What Changed**:
+  - Git Hygiene:
+    - Untracked `release/EarbudKit.apk` from git index (`git rm --cached release/EarbudKit.apk`).
+    - Updated `.gitignore` to ignore `*.apk`, `*.aab`, `release/`, `*.keystore`, `*.jks`, `keystore.properties`, and `android/keystore.properties`.
+  - Secure Signing Configuration:
+    - Updated `android/app/build.gradle` to check for `keystore.properties` in `android/` or repository root.
+    - If `keystore.properties` is present, it securely loads `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`.
+    - If absent, it gracefully falls back to signing release builds with the standard debug keystore (`signingConfigs.debug`), allowing local builds and CI pipelines to succeed without setup friction.
+    - Created `android/keystore.properties.example` with documented template keys and security guidelines.
+  - Test Runner Hardening:
+    - Updated `scripts/run-tests.ts` to run `cmd.exe /c npx tsx <file>` on Windows platforms, eliminating Node deprecation warnings and ensuring reliable exit-code reporting.
+  - Full Verification Battery Executed:
+    - `npx tsc --noEmit`: 0 errors.
+    - `npm run layout:check`: 0 violations across all 21 `.tsx` UI components.
+    - `npm test`: All 9 unit test suites passed (50+ tests total).
+    - `cd android && ./gradlew.bat lintRelease`: BUILD SUCCESSFUL (0 errors).
+    - `cd android && ./gradlew.bat app:assembleRelease`: Verified release compilation.
+  - Documentation:
+    - Updated `README.md` to document release APK building, keystore configuration, GitHub Releases distribution, and updated feature descriptions.
+- **Decisions**:
+  - Never track binary build artifacts (.apk, .aab) in git. Distribute via GitHub Releases or build locally via Gradle.
+  - Keep debug signing fallback active for release builds when `keystore.properties` is omitted so contributors can build test release APKs without friction.
+- **Known Issues**: None.
+- **NEXT STEP**: All stages S1-S11, D1-D7, S1-S8, and S9-S15 are complete. Ready for physical phone testing using the master checklist below.
+
+#### Master End-to-End Manual Device Test Checklist (Physical Android Phone):
+- [ ] **1. Permissions & Bluetooth Off/On Handling**:
+  - Clean install app on Android 12+ phone with Bluetooth turned off.
+  - Verify permission banner appears on Devices screen: "Nearby Devices Permission REQUIRED".
+  - Tap "Grant Bluetooth Access": verify Android system runtime dialog requests "Nearby devices".
+  - Turn off Bluetooth radio in Android Settings: verify Devices radar card says "Bluetooth radio disabled".
+  - Turn Bluetooth radio on: radar card updates to "Discovering paired Bluetooth accessories".
+- [ ] **2. Real-Device Discovery & Fleet Management**:
+  - Connect a real Bluetooth audio accessory (earbuds or headphones).
+  - Open EarbudKit: verify device appears automatically in Home and Devices within 3 seconds with its real advertised Bluetooth name.
+  - Tap edit icon on device row: change nickname, change glyph (Earbuds/Headphones), adjust low battery threshold (10%/20%/30%). Tap "Save Changes" and verify changes persist.
+  - Disconnect accessory: verify status pill updates to "Standby" and last seen displays "Seen just now".
+  - Tap trash icon: confirm device removal. Verify it disappears from Tracked Hardware and is not automatically re-added while disconnected.
+- [ ] **3. Home Screen Live Telemetry**:
+  - With no device connected: verify Home screen shows "No Device Connected" empty state with "Bluetooth Settings" button; mini player is hidden; greeting says "Hey User".
+  - Connect device: Hero card appears immediately showing device name, live battery percentage (or "Unavailable" with hardware notice), real detected A2DP codec (or "Unknown"), and ambient glow.
+  - Bottom mini player bar appears with live status.
+- [ ] **4. On-Connect & On-Disconnect Auto-Actions**:
+  - Go to Auto tab, select connected device.
+  - Configure On-Connect: target media app (e.g. Spotify), volume slider (e.g. 70%), DND enabled.
+  - Configure On-Disconnect: pause media enabled, reset speaker volume enabled.
+  - Disconnect and reconnect Bluetooth accessory: verify Spotify launches, volume sets to 70%, and DND turns on. Disconnect: verify playback pauses.
+- [ ] **5. Smart Habit Predictor**:
+  - On a fresh install: verify routine capsule shows "Learning your routine: 3 more [time slot] sessions needed".
+  - In Settings -> Developer Tools, tap "Simulate 3 Past Sessions".
+  - Return to Home screen: verify Smart Routine capsule unlocks with honest ratio confidence (e.g. "100% Match • Evening Routine") and "Based on 3 of your last 3 sessions".
+  - Tap "Dismiss": verify capsule disappears for the current time quadrant.
+  - Tap "Apply Routine": verify configured On-Connect auto-actions are executed.
+- [ ] **6. Sound Personalization (Acoustic Calibration)**:
+  - Put on Bluetooth headphones.
+  - In Tools tab -> Sound Personalization, tap "Start Sound Personalization (60s)".
+  - Verify Safety Warning alert appears with medical disclaimer. Tap "Start Test".
+  - Listen for pure 16-bit sine tones at 250 Hz, 500 Hz, 1000 Hz, 2000 Hz, 4000 Hz, 8000 Hz. Verify tones are clear without pops or excessive volume.
+  - Tap "I Hear It!" or "I Don't Hear It" across frequencies.
+  - Complete test: verify compensation curve displays clamped gain bars (-6 dB to +8 dB) and applies to hardware Equalizer.
+  - Tap "Reset to Flat": verify calibration profile is removed and Equalizer reverts to 0 dB flat preset.
+- [ ] **7. Find My Device & BLE Radar**:
+  - In Tools -> Find My Device: verify last seen GPS address is shown.
+  - Tap "Navigate in Google Maps": verify Google Maps opens with turn-by-turn navigation coordinates.
+  - Tap "Start Scanning" under BLE Proximity Radar: walk closer/farther from device and verify RSSI dBm updates and meter transitions (Cold -> Warm -> Hot).
+- [ ] **8. Sleep Timer & 10s Smooth Fade**:
+  - In Tools -> Sleep Timer, tap "15s Test".
+  - Start audio playback.
+  - Watch countdown: at T-10s, verify volume smoothly steps down to 0 over 10 seconds and playback pauses cleanly.
+- [ ] **9. Parametric Equalizer**:
+  - In Tools -> Equalizer, switch between Flat, Bass Boost, Vocal, and Treble presets while music plays.
+  - Verify audible change in hardware output.
+  - Drag individual frequency sliders: verify level dB meters update smoothly.
+- [ ] **10. Real Stats & Theme Switcher**:
+  - Go to Stats (`/stats`): verify total listening minutes match actual elapsed playback time.
+  - Verify fleet usage shows percentage share for connected device.
+  - In Settings, switch between OLED Pure Pitch (Dark) and Acoustic Studio Plates (Light): verify all components adapt colors without contrast clipping.
 
 ### Stage S14: Remove Fake Data & Honesty Cleanup Summary
 - **Audit Findings**:
