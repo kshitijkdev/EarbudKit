@@ -377,7 +377,7 @@ export const habitStore = create<HabitState>()(
       },
 
       simulatePastSessions: async (deviceAddress?: string) => {
-        const targetAddr = (deviceAddress || '20:74:CF:89:12:01').toUpperCase();
+        const targetAddr = (deviceAddress || Object.keys(get().matrix)[0] || 'SIMULATED_DEVICE').toUpperCase();
         const now = Date.now();
         const timeSlot = getTimeSlot();
 

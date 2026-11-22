@@ -268,7 +268,7 @@ export default function SettingsScreen() {
                     style={[styles.tileSubtitle, { color: colors.onSurfaceVariant }]}
                     numberOfLines={1}
                   >
-                    Active • LDAC 990kbps • 92%
+                    Background Audio Watcher Tile
                   </Text>
                 </View>
               </View>
@@ -399,7 +399,7 @@ export default function SettingsScreen() {
                 </Text>
               </View>
               <Text style={[styles.privacyPidText, { color: colors.onSurfaceVariant }]}>
-                PID: sandboxed
+                Android AOSP Sandbox
               </Text>
             </View>
           </GlassCard>
@@ -600,7 +600,7 @@ export default function SettingsScreen() {
                   variant="primary"
                   icon={<Ionicons name="sparkles-outline" size={18} color={colors.onPrimary} />}
                   onPress={async () => {
-                    await habitStore.getState().simulatePastSessions(activeDeviceAddress || '20:74:CF:89:12:01');
+                    await habitStore.getState().simulatePastSessions(activeDeviceAddress || undefined);
                     showToast('Simulated 3 sessions! Check Home capsule.');
                   }}
                 />

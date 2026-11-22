@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,13 +13,13 @@ import { useTheme } from '../src/theme';
 import { useDeviceStore } from '../src/store';
 import { useStatsStore, formatDuration } from '../src/store/statsStore';
 import { FeedbackToast } from '../src/components/FeedbackToast';
-import { GlassCard, PillButton, ButtonRow } from '../src/components/ui';
+import { GlassCard, PillButton, ButtonRow, EmptyState, StatusChip } from '../src/components/ui';
 
 export default function StatsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { theme, themeMode, setThemeMode } = useTheme();
-  const { colors } = theme;
+  const { colors, fonts } = theme;
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const showToast = (msg: string) => setToastMessage(msg);
@@ -58,46 +57,26 @@ export default function StatsScreen() {
 
   const displaySeconds =
     selectedTimeframe === 'today'
-      ? todayAllSeconds > 0
-        ? todayAllSeconds
-        : 5400 // Default to 1h 30m demo if empty
+      ? todayAllSeconds
       : selectedTimeframe === 'week'
-      ? totalAllSeconds > 0
-        ? totalAllSeconds
-        : 9900 // Default to 2h 45m demo
-      : totalAllSeconds > 0
-      ? totalAllSeconds * 3
-      : 83100; // 23h 05m demo
+      ? totalAllSeconds
+      : totalAllSeconds;
 
   const handleSimulateTime = (seconds: number) => {
-    if (!activeDeviceAddress) {
-      if (trackedDevices.length > 0) {
-        recordListeningDuration(trackedDevices[0].address, seconds);
-        showToast(`Added ${formatDuration(seconds)} to ${trackedDevices[0].nickname}`);
-      } else {
-        showToast('Add a device in Devices tab first');
-      }
+    const targetAddr = activeDeviceAddress || trackedDevices[0]?.address;
+    if (!targetAddr) {
+      showToast('Track an audio device in Devices tab first');
       return;
     }
-    recordListeningDuration(activeDeviceAddress, seconds);
-    const dev = trackedDevicesMap[activeDeviceAddress];
-    showToast(`Added ${formatDuration(seconds)} to ${dev?.nickname || 'Active Device'}`);
+    recordListeningDuration(targetAddr, seconds);
+    const dev = trackedDevicesMap[targetAddr];
+    showToast(`Added ${formatDuration(seconds)} to ${dev?.nickname || dev?.name || 'Device'}`);
   };
 
   const handleResetStats = () => {
     clearStats();
     showToast('Listening statistics reset');
   };
-
-  const daysOfWeek = [
-    { day: 'Mon', height: 48, active: false, label: '1h 20m' },
-    { day: 'Tue', height: 64, active: false, label: '1h 50m' },
-    { day: 'Wed', height: 80, active: false, label: '2h 15m' },
-    { day: 'Thu', height: 110, active: true, label: '3h 15m' },
-    { day: 'Fri', height: 42, active: false, label: '1h 10m' },
-    { day: 'Sat', height: 72, active: false, label: '2h 00m' },
-    { day: 'Sun', height: 32, active: false, label: '45m' },
-  ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -120,10 +99,12 @@ export default function StatsScreen() {
           activeOpacity={0.7}
         >
           <Ionicons name="chevron-back" size={20} color={colors.onSurface} />
-          <Text numberOfLines={1} style={[styles.backText, { color: colors.onSurface }]}>Back</Text>
+          <Text numberOfLines={1} style={[styles.backText, { color: colors.onSurface, fontFamily: fonts.body }]}>
+            Back
+          </Text>
         </TouchableOpacity>
 
-        <Text style={[styles.screenHeading, { color: colors.onSurface }]}>
+        <Text style={[styles.screenHeading, { color: colors.onSurface, fontFamily: fonts.headline }]}>
           Listening Stats
         </Text>
 
@@ -173,10 +154,6 @@ export default function StatsScreen() {
                     styles.timeframeBtnActive,
                     {
                       backgroundColor: colors.primary,
-                      shadowColor: colors.primary,
-                      shadowOpacity: 0.3,
-                      shadowRadius: 6,
-                      elevation: 3,
                     },
                   ],
                 ]}
@@ -190,6 +167,7 @@ export default function StatsScreen() {
                     {
                       color: isSelected ? '#FFFFFF' : colors.onSurfaceVariant,
                       fontWeight: isSelected ? '700' : '500',
+                      fontFamily: fonts.label,
                     },
                   ]}
                 >
@@ -203,7 +181,7 @@ export default function StatsScreen() {
         {/* Hero Daily Average / Consumption Card */}
         <GlassCard style={styles.heroCard}>
           <View style={styles.heroHeaderRow}>
-            <Text style={[styles.heroCategory, { color: colors.onSurfaceVariant }]}>
+            <Text style={[styles.heroCategory, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
               ACOUSTIC CONSUMPTION
             </Text>
             <View
@@ -212,324 +190,164 @@ export default function StatsScreen() {
                 { backgroundColor: colors.surfaceContainerHigh },
               ]}
             >
-              <Ionicons name="trending-up" size={14} color="#34C759" />
-              <Text style={styles.trendText}>+18% vs last week</Text>
+              <Ionicons name="headset-outline" size={14} color={colors.primary} />
+              <Text style={[styles.trendText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                {totalAllSessions} {totalAllSessions === 1 ? 'Session' : 'Sessions'}
+              </Text>
             </View>
           </View>
 
-          <Text style={[styles.heroValue, { color: colors.onSurface }]}>
+          <Text style={[styles.heroValue, { color: colors.onSurface, fontFamily: fonts.display }]}>
             {formatDuration(displaySeconds)}
           </Text>
-          <Text style={[styles.heroSubtitle, { color: colors.onSurfaceVariant }]}>
+          <Text style={[styles.heroSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
             {selectedTimeframe === 'today'
-              ? "Today's Active Audio Load"
+              ? "Today's Active Audio Playback"
               : selectedTimeframe === 'week'
-              ? 'Daily Average Listening Time'
+              ? 'Total Audio Playback (This Week)'
               : 'Lifetime Tracked Playback'}
           </Text>
         </GlassCard>
 
-        {/* Weekly Activity Visualizer Bar Chart */}
-        <GlassCard style={styles.chartCard}>
-          <View style={styles.chartHeaderRow}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
-                Daily Breakdown
-              </Text>
-              <Text style={[styles.chartSubtitle, { color: colors.onSurfaceVariant }]}>
-                Peak Session: Thursday at 3h 15m
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.iconRound,
-                { backgroundColor: colors.surfaceContainerHigh },
-              ]}
-            >
-              <Ionicons name="bar-chart" size={16} color={colors.primary} />
-            </View>
+        {/* Fleet Usage Distribution Card (100% Real Device Store Data) */}
+        <GlassCard style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <Text style={[styles.sectionTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+              Fleet Usage Distribution
+            </Text>
+            <Text style={[styles.cardHeaderBadge, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+              {formatDuration(totalAllSeconds)} Total
+            </Text>
           </View>
 
-          {/* Bar Chart Container */}
-          <View style={styles.barsContainer}>
-            <View
-              style={[
-                styles.gridlineTop,
-                { backgroundColor: colors.surfaceVariant + '60' },
-              ]}
-            />
-            <View
-              style={[
-                styles.gridlineMid,
-                { backgroundColor: colors.surfaceVariant + '30' },
-              ]}
-            />
-
-            <View style={styles.barsRow}>
-              {daysOfWeek.map((item) => (
-                <View key={item.day} style={styles.barCol}>
-                  {item.active && (
+          {trackedDevices.length === 0 || totalAllSeconds === 0 ? (
+            <View style={{ paddingVertical: 12 }}>
+              <EmptyState
+                icon={<Ionicons name="pie-chart-outline" size={36} color={colors.outline} />}
+                title="No Listening Data Yet"
+                description="Play audio through your connected Bluetooth headphones to track usage distribution."
+              />
+            </View>
+          ) : (
+            <View style={styles.fleetList}>
+              {trackedDevices.map((dev) => {
+                const s = getDeviceStats(dev.address);
+                const percent = totalAllSeconds > 0 ? Math.round((s.totalSeconds / totalAllSeconds) * 100) : 0;
+                return (
+                  <View key={dev.address} style={styles.fleetItem}>
+                    <View style={styles.fleetItemHeader}>
+                      <View style={styles.fleetItemLeft}>
+                        <Ionicons
+                          name={dev.icon === 'headphones' ? 'headset' : 'headset-outline'}
+                          size={18}
+                          color={colors.primary}
+                        />
+                        <Text numberOfLines={1} style={[styles.fleetDeviceName, { color: colors.onSurface, fontFamily: fonts.body }]}>
+                          {dev.nickname || dev.name}
+                        </Text>
+                        <Text numberOfLines={1} style={[styles.fleetFormFactor, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                          {dev.icon === 'headphones' ? '(Over-Ear)' : '(In-Ear TWS)'}
+                        </Text>
+                      </View>
+                      <View style={styles.fleetItemRight}>
+                        <Text numberOfLines={1} style={[styles.fleetPercent, { color: colors.onSurface, fontFamily: fonts.label }]}>
+                          {percent}%
+                        </Text>
+                        <Text numberOfLines={1} style={[styles.fleetDuration, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                          {formatDuration(s.totalSeconds)}
+                        </Text>
+                      </View>
+                    </View>
                     <View
                       style={[
-                        styles.floatingBadge,
-                        { backgroundColor: colors.primary },
+                        styles.progressBarTrack,
+                        { backgroundColor: colors.surfaceContainerHigh },
                       ]}
                     >
-                      <Text style={styles.floatingBadgeText}>{item.label}</Text>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          {
+                            width: `${Math.max(percent, 2)}%`,
+                            backgroundColor: colors.primary,
+                          },
+                        ]}
+                      />
                     </View>
-                  )}
-                  <View
-                    style={[
-                      styles.barFill,
-                      {
-                        height: item.height,
-                        backgroundColor: item.active
-                          ? colors.primary
-                          : colors.surfaceContainerHigh,
-                      },
-                    ]}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </GlassCard>
+
+        {/* Codec & Transmission Profiles Card (100% Real Introspected Codecs) */}
+        <GlassCard style={styles.sectionCard}>
+          <View style={styles.cardHeaderRow}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={[styles.sectionTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                Bluetooth Audio Codecs
+              </Text>
+              <Text style={[styles.chartSubtitle, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+                Real negotiated Bluetooth A2DP audio transmission profiles
+              </Text>
+            </View>
+            <Ionicons name="hardware-chip-outline" size={20} color={colors.primary} />
+          </View>
+
+          <Text style={[styles.codecExplanation, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+            Android exposes the negotiated codec type (LDAC, aptX HD, AAC, SBC) upon active link establishment. Exact transmission bitrates are managed dynamically by the Bluetooth stack based on RF link quality.
+          </Text>
+
+          {trackedDevices.length === 0 ? (
+            <View style={{ paddingVertical: 8 }}>
+              <EmptyState
+                icon={<Ionicons name="bluetooth-outline" size={32} color={colors.outline} />}
+                title="No Hardware Tracked"
+                description="Pair a Bluetooth audio device to inspect negotiated codecs."
+              />
+            </View>
+          ) : (
+            <View style={styles.codecDeviceList}>
+              {trackedDevices.map((dev) => (
+                <View
+                  key={dev.address}
+                  style={[
+                    styles.codecDeviceRow,
+                    {
+                      backgroundColor: colors.surfaceContainerHigh,
+                      borderColor: colors.hairline,
+                    },
+                  ]}
+                >
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text numberOfLines={1} style={[styles.codecDevName, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                      {dev.nickname || dev.name}
+                    </Text>
+                    <Text numberOfLines={1} style={[styles.codecDevAddress, { color: colors.onSurfaceVariant, fontFamily: fonts.label }]}>
+                      {dev.isConnected ? 'Connected Now' : 'Standby'}
+                    </Text>
+                  </View>
+                  <StatusChip
+                    label={dev.audioCodec || 'Unknown'}
+                    dotColor={dev.audioCodec ? 'accent' : 'grey'}
+                    active={Boolean(dev.audioCodec)}
                   />
-                  <Text
-                    style={[
-                      styles.barDayText,
-                      {
-                        color: item.active ? colors.primary : colors.onSurfaceVariant,
-                        fontWeight: item.active ? '700' : '500',
-                      },
-                    ]}
-                  >
-                    {item.day}
-                  </Text>
                 </View>
               ))}
             </View>
-          </View>
+          )}
         </GlassCard>
 
-        {/* Fleet Usage Distribution Card */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
-              Fleet Usage Distribution
-            </Text>
-            <Text style={[styles.cardHeaderBadge, { color: colors.onSurfaceVariant }]}>
-              23h 05m Total
-            </Text>
-          </View>
-
-          <View style={styles.fleetList}>
-            {/* Device 1 */}
-            <View style={styles.fleetItem}>
-              <View style={styles.fleetItemHeader}>
-                <View style={styles.fleetItemLeft}>
-                  <Ionicons name="headset" size={18} color={colors.primary} />
-                  <Text style={[styles.fleetDeviceName, { color: colors.onSurface }]}>
-                    realme Studio H1
-                  </Text>
-                  <Text style={[styles.fleetFormFactor, { color: colors.onSurfaceVariant }]}>
-                    (Over-Ear)
-                  </Text>
-                </View>
-                <View style={styles.fleetItemRight}>
-                  <Text style={[styles.fleetPercent, { color: colors.onSurface }]}>62%</Text>
-                  <Text style={[styles.fleetDuration, { color: colors.onSurfaceVariant }]}>
-                    14h 20m
-                  </Text>
-                </View>
-              </View>
-              <View
-                style={[
-                  styles.progressBarTrack,
-                  { backgroundColor: colors.surfaceContainerHigh },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: '62%', backgroundColor: colors.primary },
-                  ]}
-                />
-              </View>
-            </View>
-
-            {/* Device 2 */}
-            <View style={styles.fleetItem}>
-              <View style={styles.fleetItemHeader}>
-                <View style={styles.fleetItemLeft}>
-                  <Ionicons name="headset-outline" size={18} color={colors.onSurfaceVariant} />
-                  <Text style={[styles.fleetDeviceName, { color: colors.onSurface }]}>
-                    Noise Buds Vector
-                  </Text>
-                  <Text style={[styles.fleetFormFactor, { color: colors.onSurfaceVariant }]}>
-                    (TWS)
-                  </Text>
-                </View>
-                <View style={styles.fleetItemRight}>
-                  <Text style={[styles.fleetPercent, { color: colors.onSurface }]}>28%</Text>
-                  <Text style={[styles.fleetDuration, { color: colors.onSurfaceVariant }]}>
-                    6h 30m
-                  </Text>
-                </View>
-              </View>
-              <View
-                style={[
-                  styles.progressBarTrack,
-                  { backgroundColor: colors.surfaceContainerHigh },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: '28%', backgroundColor: colors.secondary },
-                  ]}
-                />
-              </View>
-            </View>
-
-            {/* Device 3 */}
-            <View style={styles.fleetItem}>
-              <View style={styles.fleetItemHeader}>
-                <View style={styles.fleetItemLeft}>
-                  <Ionicons name="fitness-outline" size={18} color={colors.onSurfaceVariant} />
-                  <Text style={[styles.fleetDeviceName, { color: colors.onSurface }]}>
-                    Gym Pods Sport
-                  </Text>
-                  <Text style={[styles.fleetFormFactor, { color: colors.onSurfaceVariant }]}>
-                    (Sweatproof)
-                  </Text>
-                </View>
-                <View style={styles.fleetItemRight}>
-                  <Text style={[styles.fleetPercent, { color: colors.onSurface }]}>10%</Text>
-                  <Text style={[styles.fleetDuration, { color: colors.onSurfaceVariant }]}>
-                    2h 15m
-                  </Text>
-                </View>
-              </View>
-              <View
-                style={[
-                  styles.progressBarTrack,
-                  { backgroundColor: colors.surfaceContainerHigh },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    { width: '10%', backgroundColor: colors.surfaceVariant },
-                  ]}
-                />
-              </View>
-            </View>
-          </View>
-        </GlassCard>
-
-        {/* Codec & Fidelity Quality Card */}
-        <GlassCard style={styles.sectionCard}>
-          <View style={styles.cardHeaderRow}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
-                Codec & Fidelity Quality
-              </Text>
-              <Text style={[styles.chartSubtitle, { color: colors.onSurfaceVariant }]}>
-                Active Bluetooth transmission profiles
-              </Text>
-            </View>
-            <Ionicons name="pulse-outline" size={18} color={colors.primary} />
-          </View>
-
-          {/* Codec Distribution Bar */}
-          <View style={styles.codecBarWrap}>
-            <View style={styles.codecBarLabels}>
-              <Text style={[styles.codecLabelPrimary, { color: colors.primary }]}>
-                LDAC Hi-Res (78%)
-              </Text>
-              <Text style={[styles.codecLabelSec, { color: colors.onSurfaceVariant }]}>
-                AAC (16%) • SBC (6%)
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.multiBarTrack,
-                { backgroundColor: colors.surfaceContainerHigh },
-              ]}
-            >
-              <View style={[styles.multiBarSegment, { width: '78%', backgroundColor: colors.primary }]} />
-              <View style={[styles.multiBarSegment, { width: '16%', backgroundColor: colors.secondary }]} />
-              <View style={[styles.multiBarSegment, { width: '6%', backgroundColor: colors.surfaceVariant }]} />
-            </View>
-          </View>
-
-          {/* Itemized Codec Tiers */}
-          <View style={styles.codecTierList}>
-            {/* LDAC */}
-            <View
-              style={[
-                styles.codecTierItem,
-                { backgroundColor: colors.surfaceContainerHigh },
-              ]}
-            >
-              <View style={styles.codecTierLeft}>
-                <View style={styles.codecBadgeRow}>
-                  <Text style={[styles.codecTitle, { color: colors.onSurface }]}>
-                    Sony LDAC
-                  </Text>
-                  <View style={styles.hiResTag}>
-                    <Text style={styles.hiResTagText}>HI-RES AUDIO</Text>
-                  </View>
-                </View>
-                <Text style={[styles.codecDetail, { color: colors.onSurfaceVariant }]}>
-                  990 kbps • 24-bit / 96kHz Studio Master
-                </Text>
-              </View>
-              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-            </View>
-
-            {/* AAC */}
-            <View
-              style={[
-                styles.codecTierItem,
-                { backgroundColor: colors.surfaceContainerHigh },
-              ]}
-            >
-              <View style={styles.codecTierLeft}>
-                <Text style={[styles.codecTitle, { color: colors.onSurface }]}>AAC HD</Text>
-                <Text style={[styles.codecDetail, { color: colors.onSurfaceVariant }]}>
-                  256 kbps • Optimized iOS/Android Lossy
-                </Text>
-              </View>
-              <Text style={[styles.codecStatusTag, { color: colors.onSurfaceVariant }]}>
-                Auto-Switch
-              </Text>
-            </View>
-
-            {/* SBC */}
-            <View
-              style={[
-                styles.codecTierItem,
-                { backgroundColor: colors.surfaceContainerHigh, opacity: 0.75 },
-              ]}
-            >
-              <View style={styles.codecTierLeft}>
-                <Text style={[styles.codecTitle, { color: colors.onSurface }]}>SBC Standard</Text>
-                <Text style={[styles.codecDetail, { color: colors.onSurfaceVariant }]}>
-                  328 kbps • Backward Compatibility
-                </Text>
-              </View>
-              <Text style={[styles.codecStatusTag, { color: colors.onSurfaceVariant }]}>
-                Idle
-              </Text>
-            </View>
-          </View>
-        </GlassCard>
-
-        {/* Hearing Health Safety Card */}
+        {/* Hearing Health & Volume Advisory Card (Honest Advisory without Mock SPL dB) */}
         <GlassCard style={styles.sectionCard}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderLeft}>
               <View style={styles.safetyIconWrap}>
                 <Ionicons name="shield-checkmark" size={16} color="#34C759" />
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.onSurface }]}>
-                Hearing Health Safety
+              <Text style={[styles.sectionTitle, { color: colors.onSurface, fontFamily: fonts.headline }]}>
+                Listening Volume Safety
               </Text>
             </View>
             <View
@@ -538,43 +356,35 @@ export default function StatsScreen() {
                 { backgroundColor: colors.surfaceContainerHigh },
               ]}
             >
-              <Text style={styles.optimalText}>Optimal</Text>
+              <Text style={[styles.optimalText, { color: '#34C759', fontFamily: fonts.label }]}>
+                Advisory
+              </Text>
             </View>
           </View>
 
-          <View style={styles.dbRow}>
-            <View style={styles.dbLeft}>
-              <Text style={[styles.dbValue, { color: colors.onSurface }]}>72</Text>
-              <Text style={[styles.dbUnit, { color: colors.onSurfaceVariant }]}>dB Average</Text>
-            </View>
-            <Text style={[styles.dbThreshold, { color: colors.onSurfaceVariant }]}>
-              WHO Threshold: 85 dB
-            </Text>
-          </View>
+          <Text style={[styles.safetyAdvice, { color: colors.onSurfaceVariant, fontFamily: fonts.body }]}>
+            Standard Android audio APIs do not expose in-ear sound pressure levels (dB SPL) without calibrated microphone probes. To protect high-frequency hearing, the World Health Organization recommends keeping headphone listening levels below 80% volume and taking regular auditory breaks.
+          </Text>
 
-          {/* Segmented Decibel Meter Bar */}
           <View
             style={[
-              styles.meterTrack,
-              { backgroundColor: colors.surfaceContainerHigh },
+              styles.safetyTipCard,
+              {
+                backgroundColor: colors.surfaceContainerHigh,
+                borderColor: colors.hairline,
+              },
             ]}
           >
-            <View style={[styles.meterSegment, { backgroundColor: '#34C759' }]} />
-            <View style={[styles.meterSegment, { backgroundColor: '#34C759' }]} />
-            <View style={[styles.meterSegment, { backgroundColor: '#34C759' }]} />
-            <View style={[styles.meterSegment, { backgroundColor: 'rgba(52, 199, 89, 0.4)' }]} />
-            <View style={[styles.meterSegment, { backgroundColor: colors.surfaceVariant }]} />
-            <View style={[styles.meterSegment, { backgroundColor: colors.surfaceVariant }]} />
+            <Ionicons name="bulb-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+            <Text style={[styles.safetyTipText, { color: colors.onSurface, fontFamily: fonts.label }]}>
+              Tip: Configure safe Media Gain in Auto-Actions to automatically enforce volume limits when connecting.
+            </Text>
           </View>
-
-          <Text style={[styles.safetyAdvice, { color: colors.onSurfaceVariant }]}>
-            Your current listening levels protect high-frequency cochlear sensitivity and align with daily international wellness standards.
-          </Text>
         </GlassCard>
 
-        {/* Quick Testing & Telemetry Simulation Card */}
+        {/* Testing & Telemetry Simulation Card */}
         <GlassCard style={styles.sectionCard}>
-          <Text style={[styles.sectionTitle, { color: colors.onSurface, marginBottom: 12 }]}>
+          <Text style={[styles.sectionTitle, { color: colors.onSurface, fontFamily: fonts.headline, marginBottom: 12 }]}>
             Stats Verification & Telemetry
           </Text>
 
@@ -629,15 +439,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingVertical: 4,
+    minHeight: 48,
   },
   backText: {
     fontSize: 15,
-    fontFamily: 'Inter',
     fontWeight: '500',
   },
   screenHeading: {
     fontSize: 17,
-    fontFamily: 'Inter',
     fontWeight: '600',
   },
   headerActionBtn: {
@@ -649,12 +458,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    gap: 16,
   },
   timeframeSegment: {
     flexDirection: 'row',
     borderRadius: 9999,
     padding: 3,
+    marginBottom: 16,
   },
   timeframeBtn: {
     flex: 1,
@@ -664,26 +473,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   timeframeBtnActive: {
-    borderRadius: 9999,
+    elevation: 2,
   },
   timeframeText: {
     fontSize: 13,
-    fontFamily: 'Inter',
   },
   heroCard: {
     padding: 20,
-    borderRadius: 20,
+    marginBottom: 16,
   },
   heroHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
   heroCategory: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     letterSpacing: 0.8,
   },
   trendBadge: {
@@ -691,129 +498,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 9999,
   },
   trendText: {
     fontSize: 11,
-    fontFamily: 'Inter',
     fontWeight: '600',
-    color: '#34C759',
   },
   heroValue: {
-    fontSize: 44,
-    fontFamily: 'Inter',
+    fontSize: 42,
     fontWeight: '700',
     letterSpacing: -1,
+    marginVertical: 4,
   },
   heroSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Inter',
-    marginTop: 4,
-  },
-  chartCard: {
-    padding: 20,
-    borderRadius: 20,
-  },
-  chartHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-  },
-  chartSubtitle: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-    marginTop: 2,
-  },
-  iconRound: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  barsContainer: {
-    position: 'relative',
-    height: 160,
-    justifyContent: 'flex-end',
-    paddingTop: 24,
-  },
-  gridlineTop: {
-    position: 'absolute',
-    top: 24,
-    left: 0,
-    right: 0,
-    height: 1,
-  },
-  gridlineMid: {
-    position: 'absolute',
-    top: 80,
-    left: 0,
-    right: 0,
-    height: 1,
-  },
-  barsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 120,
-    paddingHorizontal: 4,
-  },
-  barCol: {
-    alignItems: 'center',
-    width: 36,
-    position: 'relative',
-  },
-  floatingBadge: {
-    position: 'absolute',
-    top: -24,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 9999,
-    shadowColor: '#000000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  floatingBadgeText: {
-    fontSize: 10,
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  barFill: {
-    width: 14,
-    borderRadius: 9999,
-  },
-  barDayText: {
-    fontSize: 11,
-    fontFamily: 'Inter',
-    marginTop: 8,
+    fontSize: 13,
   },
   sectionCard: {
-    padding: 20,
-    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
   },
   cardHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   cardHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+  safetyIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+  },
+  optimalBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 9999,
+  },
+  optimalText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  chartSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   cardHeaderBadge: {
     fontSize: 12,
-    fontFamily: 'Inter',
     fontWeight: '500',
   },
   fleetList: {
@@ -824,197 +566,83 @@ const styles = StyleSheet.create({
   },
   fleetItemHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   fleetItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flex: 1,
+    marginRight: 8,
   },
   fleetDeviceName: {
-    fontSize: 15,
-    fontFamily: 'Inter',
+    fontSize: 13,
     fontWeight: '600',
   },
   fleetFormFactor: {
-    fontSize: 12,
-    fontFamily: 'Inter',
+    fontSize: 11,
   },
   fleetItemRight: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
+    alignItems: 'center',
+    gap: 8,
   },
   fleetPercent: {
-    fontSize: 14,
-    fontFamily: 'Inter',
+    fontSize: 13,
     fontWeight: '700',
   },
   fleetDuration: {
-    fontSize: 12,
-    fontFamily: 'Inter',
+    fontSize: 11,
   },
   progressBarTrack: {
-    height: 8,
-    borderRadius: 9999,
+    height: 6,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 9999,
+    borderRadius: 3,
   },
-  codecBarWrap: {
-    gap: 6,
-    marginBottom: 14,
-  },
-  codecBarLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  codecLabelPrimary: {
+  codecExplanation: {
     fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '700',
+    lineHeight: 17,
+    marginBottom: 12,
   },
-  codecLabelSec: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-  },
-  multiBarTrack: {
-    height: 8,
-    borderRadius: 9999,
-    flexDirection: 'row',
-    overflow: 'hidden',
-  },
-  multiBarSegment: {
-    height: '100%',
-  },
-  codecTierList: {
+  codecDeviceList: {
     gap: 8,
   },
-  codecTierItem: {
+  codecDeviceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 12,
-    borderRadius: 14,
+    borderRadius: 12,
+    borderWidth: 0.5,
   },
-  codecTierLeft: {
-    flex: 1,
-  },
-  codecBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  codecTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-  },
-  hiResTag: {
-    backgroundColor: 'rgba(212, 175, 55, 0.2)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  hiResTagText: {
-    fontSize: 9,
-    fontFamily: 'Inter',
-    fontWeight: '800',
-    color: '#D4AF37',
-    letterSpacing: 0.5,
-  },
-  codecDetail: {
-    fontSize: 11,
-    fontFamily: 'Inter',
-    marginTop: 2,
-  },
-  codecStatusTag: {
-    fontSize: 11,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-  },
-  safetyIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(52, 199, 89, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optimalBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 9999,
-  },
-  optimalText: {
-    fontSize: 11,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    color: '#34C759',
-  },
-  dbRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  dbLeft: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  dbValue: {
-    fontSize: 28,
-    fontFamily: 'Inter',
-    fontWeight: '700',
-  },
-  dbUnit: {
+  codecDevName: {
     fontSize: 13,
-    fontFamily: 'Inter',
+    fontWeight: '600',
   },
-  dbThreshold: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-  },
-  meterTrack: {
-    height: 12,
-    borderRadius: 9999,
-    padding: 2,
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: 10,
-  },
-  meterSegment: {
-    flex: 1,
-    borderRadius: 9999,
-    height: '100%',
+  codecDevAddress: {
+    fontSize: 11,
+    marginTop: 2,
   },
   safetyAdvice: {
     fontSize: 12,
-    fontFamily: 'Inter',
-    lineHeight: 16,
+    lineHeight: 18,
+    marginBottom: 12,
   },
-  simButtonsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  simBtn: {
-    flex: 1,
+  safetyTipCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    minHeight: 48,
-    borderRadius: 9999,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 0.5,
   },
-  simBtnText: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '600',
+  safetyTipText: {
+    fontSize: 11,
+    flex: 1,
+    lineHeight: 16,
   },
 });

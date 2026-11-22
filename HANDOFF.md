@@ -350,8 +350,39 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
 - [x] Stage S11: Home screen real-time data
 - [x] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
 - [x] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
-- [ ] Stage S14: Remove fake data (honesty cleanup)
+- [x] Stage S14: Remove fake data (honesty cleanup)
 - [ ] Stage S15: Release hygiene and final verification
+
+### Stage S14: Remove Fake Data & Honesty Cleanup Summary
+- **Audit Findings**:
+  - `app/stats.tsx` contained numerous hardcoded mock values: "+18% vs last week", fake weekly bars (Mon–Sun), fake 78% LDAC / 16% AAC distributions, "Sony LDAC 990 kbps master" claims, "72 dB Average" SPL hearing health card, and fake device rows ("realme Studio H1", "Noise Buds Vector", "Gym Pods Sport").
+  - `app/(tabs)/settings.tsx` displayed mock status text on the Quick Settings tile preview ("Active • LDAC 990kbps • 92%") and technical claims ("PID: sandboxed").
+- **What Changed**:
+  - `app/stats.tsx`:
+    - Removed all hardcoded demo fallbacks (`5400`, `9900`, `83100`). Unrecorded sessions display `0m`.
+    - Removed fake "+18% vs last week" badge, replacing it with the real session count badge (`${totalAllSessions} Sessions`).
+    - Removed fake "Daily Breakdown" mock bar chart and replaced with clean `EmptyState` when no listening data has been accumulated.
+    - Replaced hardcoded fleet distribution with dynamic calculations derived from `trackedDevices` and `getDeviceStats(dev.address)`. If no sessions have been logged, displays a clean `EmptyState` ("No Listening Data Yet").
+    - Replaced fake codec distribution bars and 990 kbps master claims with real Bluetooth A2DP codec introspection per tracked device (`StatusChip` with real detected codec or "Unknown") and an honest explanation of dynamic Bluetooth A2DP bitrates.
+    - Replaced fake "72 dB Average" card with an honest "Listening Volume Safety" advisory card citing WHO 85 dB threshold recommendations without fabricating in-ear SPL measurements.
+  - `app/(tabs)/settings.tsx`:
+    - Replaced mock status text on the Quick Settings tile preview with generic "Background Audio Watcher Tile".
+    - Replaced "PID: sandboxed" claim with accurate "Android AOSP Sandbox".
+    - Removed hardcoded mock MAC addresses from simulation fallback logic.
+  - Codebase Scan:
+    - Confirmed 0 occurrences of "LDAC 990", "78%", "72 dB", "Noise Buds", "realme Studio", or "Gym Pods" across all application code.
+- **Decisions**:
+  - Never fabricate numbers or metrics that standard Android audio APIs cannot genuinely measure (such as in-ear dB SPL).
+  - Empty states guide the user cleanly until real hardware sessions are recorded.
+- **Known Issues**: None.
+- **NEXT STEP**: Stage S15: Release hygiene and final verification.
+
+#### Stage S14 Manual Device Test Checklist:
+- [ ] Open Stats screen (`/stats`) on a fresh install: verify total listening time shows "0m", session count shows "0 Sessions", and fleet usage shows "No Listening Data Yet" empty state.
+- [ ] Connect a real Bluetooth audio device and play music for 1 minute: verify Stats updates with real listening time and device allocation.
+- [ ] Verify Codec card lists real tracked devices and their actual detected codecs (e.g. AAC, SBC, LDAC, or Unknown).
+- [ ] Verify Volume Safety card provides honest advice without fabricating in-ear decibel SPL readings.
+- [ ] In Settings, verify Quick Settings tile preview has clean vector illustration without mock battery/bitrate text.
 
 ### Stage S13: Sound Personalization & Acoustic Calibration Summary
 - **Audit Findings**:
