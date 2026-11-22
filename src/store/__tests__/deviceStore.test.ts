@@ -94,7 +94,98 @@ export async function runStoreVerification() {
   const parsed = JSON.parse(storedJson);
   console.log('Persisted devices count:', Object.keys(parsed.state.trackedDevices).length);
 
-  console.log('✅ Stage 5 Verification PASSED: Battery reading, Unavailable fallback, and low-battery alert work cleanly!');
+  // 8. Stage S9: Verify Live Reconciliation, Auto-Tracking, and Ignored Devices logic
+  console.log('Testing Stage S9 reconcileDevices and auto-track logic...');
+
+  // Reset store for S9 test
+  useDeviceStore.setState({ trackedDevices: {}, ignoredDevices: [], activeDeviceAddress: null });
+  if (Object.keys(useDeviceStore.getState().trackedDevices).length !== 0) {
+    throw new Error('Fresh install trackedDevices must be empty');
+  }
+
+  // Simulate native connected devices and bonded devices
+  const connectedMock = [
+    {
+      name: 'Sony WH-1000XM5',
+      address: '11:22:33:44:55:66',
+      isConnected: true,
+      batteryLevel: 90,
+      codec: 'LDAC',
+      type: 'classic',
+      deviceType: 'headphones',
+    },
+  ];
+  const bondedMock = [
+    ...connectedMock,
+    {
+      name: 'Pixel Buds Pro',
+      address: 'AA:BB:CC:11:22:33',
+      isConnected: false,
+      batteryLevel: 70,
+      codec: 'AAC',
+      type: 'classic',
+      deviceType: 'earbuds',
+    },
+  ];
+
+  // Run reconcile
+  useDeviceStore.getState().reconcileDevices(connectedMock, bondedMock);
+
+  // Auto-track should have added the connected Sony headset
+  const postReconcile = useDeviceStore.getState().getTrackedDevice('11:22:33:44:55:66');
+  if (!postReconcile) {
+    throw new Error('Connected device should be auto-tracked');
+  }
+  if (!postReconcile.isConnected || postReconcile.icon !== 'headphones') {
+    throw new Error('Auto-tracked device status/icon mismatch');
+  }
+  if (useDeviceStore.getState().activeDeviceAddress !== '11:22:33:44:55:66') {
+    throw new Error('Auto-tracked connected device should be set to active');
+  }
+  console.log('✓ Connected device auto-tracked cleanly:', postReconcile.name);
+
+  // Unconnected bonded device should not be auto-tracked yet
+  if (useDeviceStore.getState().getTrackedDevice('AA:BB:CC:11:22:33')) {
+    throw new Error('Unconnected bonded device should not be auto-tracked');
+  }
+  console.log('✓ Unconnected bonded devices remain untracked until connected or manually tracked');
+
+  // Test remove device -> adds to ignoredDevices
+  useDeviceStore.getState().removeTrackedDevice('11:22:33:44:55:66');
+  if (useDeviceStore.getState().getTrackedDevice('11:22:33:44:55:66')) {
+    throw new Error('Device should be removed from trackedDevices');
+  }
+  if (!useDeviceStore.getState().ignoredDevices.includes('11:22:33:44:55:66')) {
+    throw new Error('Removed device must be remembered in ignoredDevices');
+  }
+  console.log('✓ Removed device added to ignoredDevices');
+
+  // Reconcile should NOT re-add the ignored device
+  useDeviceStore.getState().reconcileDevices(connectedMock, bondedMock);
+  if (useDeviceStore.getState().getTrackedDevice('11:22:33:44:55:66')) {
+    throw new Error('Ignored device should not be auto-tracked on reconcile');
+  }
+  console.log('✓ Ignored device is not auto-added on subsequent reconciles');
+
+  // Manual add unignores device
+  useDeviceStore.getState().addTrackedDevice({
+    name: 'Sony WH-1000XM5',
+    address: '11:22:33:44:55:66',
+  });
+  if (useDeviceStore.getState().ignoredDevices.includes('11:22:33:44:55:66')) {
+    throw new Error('Manual add should remove device from ignoredDevices');
+  }
+  console.log('✓ Manual add clears device from ignoredDevices');
+
+  // Reconcile with device now disconnected
+  useDeviceStore.getState().reconcileDevices([], bondedMock);
+  const nowDisconnected = useDeviceStore.getState().getTrackedDevice('11:22:33:44:55:66');
+  if (nowDisconnected?.isConnected !== false) {
+    throw new Error('Live reconcile should mark disconnected device as isConnected: false');
+  }
+  console.log('✓ Reconcile cleanly marked disconnected device');
+
+  console.log('✅ Stage S9 Verification PASSED: Reconcile, auto-track, and ignore logic work cleanly!');
 }
 
 if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {

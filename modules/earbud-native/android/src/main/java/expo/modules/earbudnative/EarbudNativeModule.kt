@@ -660,6 +660,7 @@ class EarbudNativeModule : Module() {
                                 "batteryLevel" to cleanBattery,
                                 "codec" to (if (isConnected) getAudioCodec(device) else "Unknown"),
                                 "type" to deviceType,
+                                "deviceType" to guessDeviceType(cleanName, btClass),
                                 "majorDeviceClass" to (btClass?.majorDeviceClass ?: 0),
                                 "deviceClass" to (btClass?.deviceClass ?: 0)
                             )
@@ -670,6 +671,71 @@ class EarbudNativeModule : Module() {
                 if (BuildConfig.DEBUG) Log.e(TAG, "SecurityException reading bonded devices", e)
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) Log.e(TAG, "Exception reading bonded devices", e)
+            }
+
+            result
+        }
+
+        /**
+         * Stage S9: Get Bluetooth audio devices currently connected over A2DP and HEADSET profiles
+         */
+        AsyncFunction("getConnectedAudioDevices") {
+            val result = mutableListOf<Map<String, Any?>>()
+            val adapter = bluetoothAdapter ?: return@AsyncFunction result
+
+            if (!hasConnectPermission()) {
+                if (BuildConfig.DEBUG) Log.w(TAG, "BLUETOOTH_CONNECT permission not granted for getConnectedAudioDevices")
+                return@AsyncFunction result
+            }
+
+            try {
+                val connectedMap = mutableMapOf<String, BluetoothDevice>()
+
+                a2dpProfile?.let { a2dp ->
+                    for (dev in a2dp.connectedDevices) {
+                        connectedMap[dev.address.uppercase()] = dev
+                    }
+                }
+                headsetProfile?.let { headset ->
+                    for (dev in headset.connectedDevices) {
+                        connectedMap[dev.address.uppercase()] = dev
+                    }
+                }
+
+                adapter.bondedDevices?.forEach { dev ->
+                    if (checkDeviceConnected(dev)) {
+                        connectedMap[dev.address.uppercase()] = dev
+                    }
+                }
+
+                for (device in connectedMap.values) {
+                    val cleanAddress = EarbudSecurityUtils.sanitizeMacAddress(device.address) ?: continue
+                    if (!isAudioDevice(device)) continue
+
+                    val rawName = try { if (hasConnectPermission()) device.name else "Unknown Audio" } catch (_: SecurityException) { "Unknown Audio" }
+                    val cleanName = EarbudSecurityUtils.sanitizeDeviceName(rawName)
+                    val rawBattery = getBatteryReflection(device) ?: batteryCache[cleanAddress]
+                    val cleanBattery = EarbudSecurityUtils.clampBattery(rawBattery)
+                    val btClass = try { device.bluetoothClass } catch (_: SecurityException) { null }
+                    val guessedType = guessDeviceType(cleanName, btClass)
+                    val codec = getAudioCodec(device)
+
+                    result.add(
+                        mapOf(
+                            "name" to cleanName,
+                            "address" to cleanAddress,
+                            "isConnected" to true,
+                            "batteryLevel" to cleanBattery,
+                            "codec" to codec,
+                            "type" to "connected",
+                            "deviceType" to guessedType,
+                            "majorDeviceClass" to (btClass?.majorDeviceClass ?: 0),
+                            "deviceClass" to (btClass?.deviceClass ?: 0)
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) Log.e(TAG, "Error in getConnectedAudioDevices", e)
             }
 
             result
@@ -989,6 +1055,27 @@ class EarbudNativeModule : Module() {
             BluetoothClass.Device.Major.UNCATEGORIZED -> true
             else -> false
         }
+    }
+
+    private fun guessDeviceType(name: String, btClass: BluetoothClass?): String {
+        val lower = name.lowercase()
+        if (lower.contains("earbud") || lower.contains("buds") || lower.contains("airpod") || lower.contains("tws") || lower.contains("in-ear") || lower.contains("earphone")) {
+            return "earbuds"
+        }
+        if (lower.contains("headphone") || lower.contains("studio") || lower.contains("over-ear") || lower.contains("wh-") || lower.contains("around-ear")) {
+            return "headphones"
+        }
+        val devClass = btClass?.deviceClass
+        if (devClass == BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES) {
+            return "headphones"
+        }
+        if (devClass == BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET) {
+            return "headset"
+        }
+        if (devClass == BluetoothClass.Device.AUDIO_VIDEO_HANDSFREE || devClass == BluetoothClass.Device.AUDIO_VIDEO_CAR_AUDIO) {
+            return "hands-free"
+        }
+        return "audio"
     }
 
     private fun checkDeviceConnected(device: BluetoothDevice): Boolean {

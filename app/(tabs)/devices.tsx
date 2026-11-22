@@ -117,42 +117,7 @@ export default function DevicesScreen() {
     );
   };
 
-  const handleAddPreset = (type: 'noise' | 'realme' | 'generic') => {
-    if (type === 'noise') {
-      addTrackedDevice({
-        name: 'Noise Buds Vector',
-        address: '20:74:CF:89:12:01',
-        nickname: 'Noise Buds Vector',
-        icon: 'earbuds',
-        isConnected: true,
-        batteryLevel: 85,
-        audioCodec: 'LDAC',
-      });
-      showToast('Added Noise Buds Vector (85%)');
-    } else if (type === 'realme') {
-      addTrackedDevice({
-        name: 'realme TechLife Studio H1',
-        address: 'D8:55:75:A4:77:88',
-        nickname: 'realme Studio H1',
-        icon: 'headphones',
-        isConnected: false,
-        batteryLevel: null,
-        audioCodec: 'AAC',
-      });
-      showToast('Added realme Studio H1 (Unavailable)');
-    } else {
-      addTrackedDevice({
-        name: 'Generic BLE Audio',
-        address: 'AA:BB:CC:DD:EE:FF',
-        nickname: 'BLE Headset',
-        icon: 'headphones',
-        isConnected: false,
-        batteryLevel: 70,
-        audioCodec: 'SBC',
-      });
-      showToast('Added Generic BLE Audio');
-    }
-  };
+
 
   if (Platform.OS !== 'android') {
     return (
@@ -634,64 +599,7 @@ export default function DevicesScreen() {
           </View>
         )}
 
-        {/* Quick-Add Preset Chips */}
-        <View style={styles.sectionBlock}>
-          <Text style={[styles.sectionCaption, { color: colors.onSurfaceVariant, fontFamily: fonts.label, marginBottom: 8 }]}>
-            DEVICE PROFILES CATALOG
-          </Text>
-          <View style={styles.presetsShelf}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => handleAddPreset('noise')}
-              style={[
-                styles.presetPill,
-                {
-                  backgroundColor: colors.surfaceContainerHigh,
-                  borderColor: colors.hairline,
-                },
-              ]}
-            >
-              <Ionicons name="add-circle-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-              <Text style={[styles.presetText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                Noise Buds Vector
-              </Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => handleAddPreset('realme')}
-              style={[
-                styles.presetPill,
-                {
-                  backgroundColor: colors.surfaceContainerHigh,
-                  borderColor: colors.hairline,
-                },
-              ]}
-            >
-              <Ionicons name="add-circle-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-              <Text style={[styles.presetText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                realme Studio H1
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => handleAddPreset('generic')}
-              style={[
-                styles.presetPill,
-                {
-                  backgroundColor: colors.surfaceContainerHigh,
-                  borderColor: colors.hairline,
-                },
-              ]}
-            >
-              <Ionicons name="add-circle-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
-              <Text style={[styles.presetText, { color: colors.onSurface, fontFamily: fonts.label }]}>
-                Generic BLE Audio
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </ScrollView>
 
       {/* Edit Modal Sheet */}

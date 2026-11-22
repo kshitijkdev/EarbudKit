@@ -37,6 +37,7 @@ export interface TrackedDevice {
 
 interface DeviceState {
   trackedDevices: Record<string, TrackedDevice>; // Keyed by MAC address
+  ignoredDevices: string[]; // MAC addresses explicitly removed by the user
   activeDeviceAddress: string | null;
 
   // Actions
@@ -53,6 +54,7 @@ interface DeviceState {
     lastLocation?: DeviceLocation | null;
   }) => void;
   removeTrackedDevice: (address: string) => void;
+  unignoreDevice: (address: string) => void;
   updateNickname: (address: string, nickname: string) => void;
   updateIcon: (address: string, icon: DeviceIconType) => void;
   setAudioCodec: (address: string, codec: string | null) => void;
@@ -69,6 +71,7 @@ interface DeviceState {
   triggerTestLowBatteryAlert: (address: string) => Promise<boolean>;
   triggerTestDisconnectAlert: (address: string) => Promise<boolean>;
   syncWithBondedDevices: (bonded: BondedDevice[]) => void;
+  reconcileDevices: (connected: BondedDevice[], bonded: BondedDevice[]) => void;
   getTrackedDeviceList: () => TrackedDevice[];
   getTrackedDevice: (address: string) => TrackedDevice | undefined;
   getActiveDevice: () => TrackedDevice | undefined;
@@ -94,6 +97,7 @@ export const useDeviceStore = create<DeviceState>()(
   persist(
     (set, get) => ({
       trackedDevices: {},
+      ignoredDevices: [],
       activeDeviceAddress: null,
 
       addTrackedDevice: (device) => {
@@ -131,6 +135,7 @@ export const useDeviceStore = create<DeviceState>()(
               ...state.trackedDevices,
               [address]: newDevice,
             },
+            ignoredDevices: state.ignoredDevices.filter((a) => a !== address),
             activeDeviceAddress:
               state.activeDeviceAddress === null || isFirstDevice
                 ? address
@@ -151,11 +156,23 @@ export const useDeviceStore = create<DeviceState>()(
             nextActive = remainingKeys.length > 0 ? remainingKeys[0] : null;
           }
 
+          const nextIgnored = state.ignoredDevices.includes(addr)
+            ? state.ignoredDevices
+            : [...state.ignoredDevices, addr];
+
           return {
             trackedDevices: next,
             activeDeviceAddress: nextActive,
+            ignoredDevices: nextIgnored,
           };
         });
+      },
+
+      unignoreDevice: (address) => {
+        const addr = address.toUpperCase();
+        set((state) => ({
+          ignoredDevices: state.ignoredDevices.filter((a) => a !== addr),
+        }));
       },
 
       updateNickname: (address, nickname) => {
@@ -409,6 +426,117 @@ export const useDeviceStore = create<DeviceState>()(
         });
       },
 
+      reconcileDevices: (connected: BondedDevice[], bonded: BondedDevice[]) => {
+        const connectedMap = new Map<string, BondedDevice>();
+        for (const dev of connected) {
+          connectedMap.set(dev.address.toUpperCase(), dev);
+        }
+
+        const bondedMap = new Map<string, BondedDevice>();
+        for (const dev of bonded) {
+          bondedMap.set(dev.address.toUpperCase(), dev);
+        }
+
+        set((state) => {
+          let hasChanges = false;
+          const nextTracked = { ...state.trackedDevices };
+          const ignoredSet = new Set(state.ignoredDevices);
+
+          // 1. Auto-track any connected audio device not yet tracked and not ignored
+          for (const [addr, cDev] of connectedMap.entries()) {
+            if (!nextTracked[addr] && !ignoredSet.has(addr)) {
+              hasChanges = true;
+              const icon: DeviceIconType =
+                cDev.deviceType === 'headphones' ? 'headphones' : deduceDeviceIcon(cDev.name);
+              nextTracked[addr] = {
+                address: addr,
+                name: cDev.name,
+                nickname: cDev.name,
+                icon,
+                isActive: Object.keys(nextTracked).length === 0,
+                isConnected: true,
+                batteryLevel: cDev.batteryLevel ?? null,
+                lowBatteryThreshold: 20,
+                batteryAlertSent: false,
+                disconnectAlertEnabled: true,
+                lastLocation: null,
+                audioCodec: cDev.codec ?? null,
+                addedAt: Date.now(),
+                lastConnectedAt: Date.now(),
+                lastDisconnectedAt: null,
+              };
+            }
+          }
+
+          // 2. Reconcile live connection status for all tracked devices
+          for (const [addr, tracked] of Object.entries(nextTracked)) {
+            const isNowConnected = connectedMap.has(addr);
+            const cDev = connectedMap.get(addr);
+            const bDev = bondedMap.get(addr);
+            const latestName = cDev?.name || bDev?.name || tracked.name;
+            const latestBattery =
+              cDev?.batteryLevel !== undefined && cDev.batteryLevel !== null
+                ? cDev.batteryLevel
+                : (bDev?.batteryLevel !== undefined ? bDev.batteryLevel : tracked.batteryLevel);
+            const latestCodec =
+              cDev?.codec !== undefined && cDev.codec !== null
+                ? cDev.codec
+                : (bDev?.codec !== undefined ? bDev.codec : tracked.audioCodec);
+
+            if (
+              tracked.isConnected !== isNowConnected ||
+              tracked.name !== latestName ||
+              tracked.batteryLevel !== latestBattery ||
+              tracked.audioCodec !== latestCodec
+            ) {
+              hasChanges = true;
+              nextTracked[addr] = {
+                ...tracked,
+                name: latestName,
+                isConnected: isNowConnected,
+                batteryLevel: latestBattery,
+                audioCodec: latestCodec,
+                lastConnectedAt: isNowConnected
+                  ? (tracked.isConnected ? tracked.lastConnectedAt : Date.now())
+                  : tracked.lastConnectedAt,
+                lastDisconnectedAt: !isNowConnected
+                  ? (tracked.isConnected ? Date.now() : tracked.lastDisconnectedAt)
+                  : tracked.lastDisconnectedAt,
+              };
+            }
+          }
+
+          // 3. Ensure activeDeviceAddress prioritizes currently connected device
+          let nextActive = state.activeDeviceAddress;
+          const trackedKeys = Object.keys(nextTracked);
+          if (!nextActive || !nextTracked[nextActive] || !nextTracked[nextActive].isConnected) {
+            const firstConnected = trackedKeys.find((k) => nextTracked[k].isConnected);
+            if (firstConnected && firstConnected !== nextActive) {
+              nextActive = firstConnected;
+              hasChanges = true;
+            } else if (!nextActive && trackedKeys.length > 0) {
+              nextActive = trackedKeys[0];
+              hasChanges = true;
+            }
+          }
+
+          if (hasChanges) {
+            for (const key of Object.keys(nextTracked)) {
+              nextTracked[key] = {
+                ...nextTracked[key],
+                isActive: key === nextActive,
+              };
+            }
+            return {
+              trackedDevices: nextTracked,
+              activeDeviceAddress: nextActive,
+            };
+          }
+
+          return state;
+        });
+      },
+
       getTrackedDeviceList: () => {
         return Object.values(get().trackedDevices);
       },
@@ -426,6 +554,11 @@ export const useDeviceStore = create<DeviceState>()(
     {
       name: '@earbudkit/devices-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        trackedDevices: state.trackedDevices,
+        ignoredDevices: state.ignoredDevices,
+        activeDeviceAddress: state.activeDeviceAddress,
+      }),
     }
   )
 );

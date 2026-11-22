@@ -124,32 +124,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleAddPreset = (type: 'noise' | 'realme') => {
-    if (type === 'noise') {
-      addTrackedDevice({
-        name: 'Noise Buds Vector',
-        address: '20:74:CF:89:12:01',
-        nickname: 'Noise Buds Vector',
-        icon: 'earbuds',
-        isConnected: true,
-        batteryLevel: 85,
-        audioCodec: 'LDAC',
-      });
-      showToast('Added Noise Buds Vector (85%)');
-    } else {
-      addTrackedDevice({
-        name: 'realme TechLife Studio H1',
-        address: 'D8:55:75:A4:77:88',
-        nickname: 'realme Studio H1',
-        icon: 'headphones',
-        isConnected: true,
-        batteryLevel: null,
-        audioCodec: 'AAC',
-      });
-      showToast('Added realme Studio H1 (Unavailable)');
-    }
-  };
-
   const connectedCount = trackedDevices.filter((d) => d.isConnected).length;
 
   // Active / Hero Device
@@ -469,11 +443,10 @@ export default function HomeScreen() {
                 { color: colors.onSurfaceVariant, fontFamily: fonts.body, textAlign: 'center', marginBottom: 16 },
               ]}
             >
-              Add a preset device or scan paired Bluetooth audio gear.
+              Connect your Bluetooth audio gear or scan paired accessories in Devices.
             </Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
-              <PillButton label="+ Noise Buds" size="sm" onPress={() => handleAddPreset('noise')} />
-              <PillButton label="+ realme H1" variant="secondary" size="sm" onPress={() => handleAddPreset('realme')} />
+              <PillButton label="Go to Devices" size="sm" onPress={() => router.push('/(tabs)/devices' as any)} />
             </View>
           </GlassCard>
         )}

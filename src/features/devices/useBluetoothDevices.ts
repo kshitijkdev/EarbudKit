@@ -4,6 +4,7 @@ import {
   BondedDevice,
   ConnectionChangeEvent,
   getBondedAudioDevices,
+  getConnectedAudioDevices,
   hasBluetoothPermission,
   isBluetoothEnabled,
   requestBluetoothPermissions,
@@ -56,43 +57,46 @@ export function useBluetoothDevices() {
 
     setIsLoading(true);
     try {
-      const devices = await getBondedAudioDevices();
-      safeLog.log(`[EarbudKit] Fetched ${devices.length} bonded audio device(s)`);
-      setBondedDevices(devices);
-      syncWithBondedDevices(devices);
+      const [connected, bonded] = await Promise.all([
+        getConnectedAudioDevices(),
+        getBondedAudioDevices(),
+      ]);
+      safeLog.log(`[EarbudKit] Reconciled ${connected.length} connected, ${bonded.length} bonded audio device(s)`);
+      setBondedDevices(bonded);
+
+      // Live reconcile in Zustand store
+      useDeviceStore.getState().reconcileDevices(connected, bonded);
 
       // Fetch battery, codec, location, and start listening session for connected devices
-      for (const dev of devices) {
-        if (dev.isConnected) {
-          const upperAddr = dev.address.toUpperCase();
-          const currentStats = useStatsStore.getState().stats[upperAddr];
-          if (!currentStats || currentStats.sessionStartTimestamp === null) {
-            useStatsStore.getState().startListeningSession(dev.address);
-          }
-
-          getDeviceBatteryLevel(dev.address).then((lvl) => {
-            if (lvl !== null) {
-              setBatteryLevel(dev.address, lvl);
-            }
-          });
-          getActiveAudioCodec(dev.address).then((codec) => {
-            if (codec) {
-              useDeviceStore.getState().setAudioCodec(dev.address, codec);
-            }
-          });
-          captureCurrentLocation().then((loc) => {
-            if (loc) {
-              useDeviceStore.getState().setDeviceLocation(dev.address, loc);
-            }
-          });
+      for (const dev of connected) {
+        const upperAddr = dev.address.toUpperCase();
+        const currentStats = useStatsStore.getState().stats[upperAddr];
+        if (!currentStats || currentStats.sessionStartTimestamp === null) {
+          useStatsStore.getState().startListeningSession(dev.address);
         }
+
+        getDeviceBatteryLevel(dev.address).then((lvl) => {
+          if (lvl !== null) {
+            setBatteryLevel(dev.address, lvl);
+          }
+        });
+        getActiveAudioCodec(dev.address).then((codec) => {
+          if (codec) {
+            useDeviceStore.getState().setAudioCodec(dev.address, codec);
+          }
+        });
+        captureCurrentLocation().then((loc) => {
+          if (loc) {
+            useDeviceStore.getState().setDeviceLocation(dev.address, loc);
+          }
+        });
       }
     } catch (err) {
-      safeLog.error('[EarbudKit] Error fetching bonded audio devices:', err);
+      safeLog.error('[EarbudKit] Error reconciling audio devices:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [syncWithBondedDevices, setBatteryLevel]);
+  }, [setBatteryLevel]);
 
   const requestPermission = useCallback(async () => {
     const granted = await requestBluetoothPermissions();
@@ -170,6 +174,9 @@ export function useBluetoothDevices() {
           }
         });
       }
+
+      // Reconcile complete device state
+      checkAndRefresh();
     });
 
     // Listen for live battery level updates
@@ -182,9 +189,7 @@ export function useBluetoothDevices() {
     const btStateSub = addBluetoothStateListener((event) => {
       safeLog.log(`[EarbudKit BT STATE] Bluetooth is now ${event.enabled ? 'ON' : 'OFF'}`);
       setBluetoothEnabled(event.enabled);
-      if (event.enabled) {
-        checkAndRefresh();
-      }
+      checkAndRefresh();
     });
 
     // Listen for bonding state changes (device paired/unpaired)

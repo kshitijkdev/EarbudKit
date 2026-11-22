@@ -7,6 +7,7 @@ export interface BondedDevice {
   batteryLevel?: number | null;
   codec?: string;
   type: string;
+  deviceType?: string;
   majorDeviceClass?: number;
   deviceClass?: number;
 }
@@ -486,12 +487,48 @@ export async function getBondedAudioDevices(): Promise<BondedDevice[]> {
         ...d,
         name: sanitizeDeviceName(d.name),
         address: d.address.toUpperCase(),
+        deviceType: typeof d.deviceType === 'string' ? d.deviceType : 'audio',
         batteryLevel: typeof d.batteryLevel === 'number' && d.batteryLevel >= 0 && d.batteryLevel <= 100
           ? Math.round(d.batteryLevel)
           : null,
       }));
   } catch (e) {
     devLog.error('[EarbudNative] Failed to get bonded audio devices:', e);
+    return [];
+  }
+}
+
+/**
+ * Stage S9: Get Bluetooth audio devices currently connected over A2DP and HEADSET profiles.
+ */
+export async function getConnectedAudioDevices(): Promise<BondedDevice[]> {
+  if (Platform.OS !== 'android') {
+    return [];
+  }
+
+  try {
+    if (!hasBluetoothPermission()) {
+      devLog.warn('[EarbudNative] BLUETOOTH_CONNECT permission not granted');
+      return [];
+    }
+
+    const devices = await NativeModule?.getConnectedAudioDevices();
+    if (!Array.isArray(devices)) return [];
+    return devices
+      .filter((d: any) => isValidMac(d?.address))
+      .map((d: any) => ({
+        ...d,
+        name: sanitizeDeviceName(d.name),
+        address: d.address.toUpperCase(),
+        isConnected: true,
+        deviceType: typeof d.deviceType === 'string' ? d.deviceType : 'audio',
+        batteryLevel:
+          typeof d.batteryLevel === 'number' && d.batteryLevel >= 0 && d.batteryLevel <= 100
+            ? Math.round(d.batteryLevel)
+            : null,
+      }));
+  } catch (e) {
+    devLog.error('[EarbudNative] Failed to get connected audio devices:', e);
     return [];
   }
 }

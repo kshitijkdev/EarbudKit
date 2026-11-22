@@ -344,5 +344,43 @@ All 7 design stages (D1–D7) are fully implemented, verified, and running on An
     - R8 Release Build: `./gradlew.bat app:assembleRelease -PreactNativeArchitectures=arm64-v8a` completed successfully in 1m 34s.
     - Production APK updated: `release/EarbudKit.apk` and `C:\Users\kumar\Downloads\EarbudKit.apk` (37.15 MB, SHA-256: `12355E6C71722FE79C2C6FBAF1E084AF8439BAA15B5223C091A2DAF3606DAE0B`).
 
+## Fix Pass S9-S15 Checklist
+- [x] Stage S9: Audit and real-device discovery (foundation for everything else)
+- [ ] Stage S10: Layout QA across ALL screens (shared layout primitives and automated check)
+- [ ] Stage S11: Home screen real-time data
+- [ ] Stage S12: Fix Smart Habit Predictor (real evidence, session recording, honest confidence)
+- [ ] Stage S13: Fix Personal Hearing Calibration / Sound Personalization
+- [ ] Stage S14: Remove fake data (honesty cleanup)
+- [ ] Stage S15: Release hygiene and final verification
+
+### Stage S9: Audit and Real-Device Discovery Summary
+- **Audit Findings**:
+  - Startup previously relied on `syncWithBondedDevices` which only updated devices already present in `trackedDevices`.
+  - Preset fake devices ("Noise Buds Vector" `20:74:CF:89:12:01`, "realme Studio H1" `D8:55:75:A4:77:88`, "Generic BLE" `AA:BB:CC:DD:EE:FF`) were seeded via `handleAddPreset` buttons on Home and Devices.
+  - Stored connection state could go stale if disconnects occurred while the app process was terminated.
+- **What Changed**:
+  - `EarbudNativeModule.kt`: Added `getConnectedAudioDevices` returning live connected devices across A2DP and HEADSET profile proxies, with `guessDeviceType` (earbuds, headphones, headset, hands-free, audio) derived from name heuristics and `BluetoothClass`.
+  - `modules/earbud-native/src/index.ts`: Added typed export `getConnectedAudioDevices(): Promise<BondedDevice[]>`.
+  - `src/store/deviceStore.ts`:
+    - Added `ignoredDevices: string[]` to remember user-removed devices so auto-track does not re-add them.
+    - Added `reconcileDevices(connected, bonded)`: auto-tracks any newly detected connected audio device (unless ignored), and authoritatively sets `isConnected` based on live native connections.
+    - Updated `removeTrackedDevice` to add to `ignoredDevices`; updated `addTrackedDevice` to clear from `ignoredDevices`.
+    - Persisted `ignoredDevices` in AsyncStorage partialize config.
+  - Removed all fake device preset buttons and catalogs from `app/(tabs)/devices.tsx` and `app/(tabs)/index.tsx`. Fresh installs now begin with an empty device list.
+  - `src/features/devices/useBluetoothDevices.ts`: Reconciles connected and bonded devices concurrently on app mount, `AppState` active transition, Bluetooth state change, bonding state change, and ACL connection events.
+  - Added full test coverage for S9 reconcile, auto-track, and ignore logic in `src/store/__tests__/deviceStore.test.ts`.
+- **Decisions**:
+  - Connection status is never trusted from stale storage; live native proxy status overrides stored state on reconcile.
+  - Unpaired/unconnected bonded devices remain untracked until connected or manually tracked via the Discovered Nearby Hardware list.
+- **Known Issues**: None.
+- **NEXT STEP**: Stage S10: Layout QA across ALL screens (shared layout primitives and automated check).
+
+#### Stage S9 Manual Device Test Checklist:
+- [ ] Clean install app with a real Bluetooth headset connected: headset must appear automatically on Home and Devices with real name, codec, and battery.
+- [ ] Disconnect headset: Home and Devices must update to disconnected/offline within seconds.
+- [ ] Remove the headset: device disappears and is not auto-added back while disconnected.
+- [ ] Manually track headset from Discovered list: device reappears in tracked hardware.
+- [ ] Clean install with no Bluetooth accessories connected: Home shows "No Tracked Devices" clean empty state, Devices shows "No Tracked Devices Yet" empty state.
+
 ## Soft Studio Redesign, Features, Security Hardening & Bug Fixes Complete (Stages S1–S9)
 All stages (S1–S9) have been implemented, verified, tested, hardened, built into a standalone release APK (37.15 MB), and copied to Downloads.
